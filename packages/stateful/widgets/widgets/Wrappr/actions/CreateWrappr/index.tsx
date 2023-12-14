@@ -23,25 +23,16 @@ import { useTokenBalances } from '../../../../../actions'
 import { ChainId, TokenType } from '@dao-dao/types'
 
 const useDefaults: UseDefaults<CreateWrapprData> = () => ({
-  // key of the type of Wrappr 
   key: '',
-  uploaded: false,
-  // wrappr data 
-  data: {
-    entity: '',
-    jurisdiction: '',
-    name: '',
-    symbol: '',
-    description: '',
-    admin: '',
-    mintFee: '',
-    baseURI: '',
-    agreement: '',
-    attributes: {
-      trait_types: '',
-      value: '',
-    }
-  },
+  tokenUri: '',
+  chainId: '',
+  entity: 'llc',
+  jurisdiction: 'deleware',
+  mode: 'llc',
+  amount: 0,
+  denom: '',
+  tokenId: '',
+  // uploaded: false,
 })
 
 const Component: ActionComponent = (props) => {
@@ -50,10 +41,13 @@ const Component: ActionComponent = (props) => {
   const tokenUri = watch((props.fieldNamePrefix + 'tokenUri') as 'tokenUri')
   const entity = watch ((props.fieldNamePrefix + 'entity') as 'entity')
   const jurisdiction = watch ((props.fieldNamePrefix + 'jurisdiction') as 'jurisdiction')
-  const uploaded = watch((props.fieldNamePrefix + 'uploaded') as 'uploaded')
+  const chainId = watch((props.fieldNamePrefix + 'chainId') as 'chainId')
+  const denom = watch((props.fieldNamePrefix + 'denom') as 'denom')
+  // const uploaded = watch((props.fieldNamePrefix + 'uploaded') as 'uploaded')
+  
 
   const wrapprLoading = useCachedLoading(
-    uploaded && tokenId && tokenUri
+     tokenId && tokenUri // uploaded &&
       ? wrapprSelector({
           id: tokenId,
           metadataUri: tokenUri,
@@ -61,9 +55,6 @@ const Component: ActionComponent = (props) => {
       : undefined,
     undefined
   )
-
-  const chainId = watch((props.fieldNamePrefix + 'chainId') as 'chainId')
-  const denom = watch((props.fieldNamePrefix + 'denom') as 'denom')
 
   const tokens = useTokenBalances({
     filter: TokenType.Native,
@@ -118,22 +109,23 @@ export const makeCreateWrapprActionMaker =
             contract_addr: {},
             funds: {},
             msg: {
-              mint_wrappr: {
-                entity: {},
-                jurisdiction: {},
+              mint: {
+                token_uri: {},
               },
             },
           },
         },
-      }) &&
-      msg.wasm.execute.contract_addr === contract &&
-      msg.wasm.execute.msg.mint_wrappr.entity && 
-      msg.wasm.execute.msg.mint_wrappr.jurisdiction
+      }) 
+
+      &&
+      msg.wasm.execute.contract_addr === contract 
+      // && msg.wasm.execute.msg.mint_wrappr.entity && 
+      // msg.wasm.execute.msg.mint_wrappr.jurisdiction
         ? {
             match: true,
             data: {
-              destinationChain: msg.wasm.execute.msg.mint_wrappr.entity,
-              destinationAddress: msg.wasm.execute.msg.mint_wrappr.jurisdiction,
+              // destinationChain: msg.wasm.execute.msg.mint_wrappr.entity,
+              // destinationAddress: msg.wasm.execute.msg.mint_wrappr.jurisdiction,
               uploaded: true,
             },
           }
@@ -143,16 +135,15 @@ export const makeCreateWrapprActionMaker =
 
     const useTransformToCosmos: UseTransformToCosmos<CreateWrapprData> = () =>
       useCallback(
-        ({ entity, jurisdiction }) =>
+        ({ tokenUri }) =>
           makeWasmMessage({
             wasm: {
               execute: {
                 contract_addr: contract,
                 funds: [],
                 msg: {
-                  mint_wrappr: {
-                    entity: entity,
-                    jurisdiction: jurisdiction,
+                  mint: {
+                    token_uri: tokenUri,
                   },
                 },
               },

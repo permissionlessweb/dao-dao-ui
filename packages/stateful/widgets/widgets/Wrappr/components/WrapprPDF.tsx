@@ -3,7 +3,6 @@ import clsx from 'clsx'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { PDFRenderer, Tooltip } from '@dao-dao/stateless'
 import {
   formatDateTimeTz,
   formatDateWithDayAndMaybeYear,

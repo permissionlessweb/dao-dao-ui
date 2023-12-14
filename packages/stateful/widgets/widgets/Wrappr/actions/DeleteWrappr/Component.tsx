@@ -21,7 +21,7 @@ export type DeleteWrapprData = {
 }
 
 type DeleteWrapprOptions = {
-  warpprsLoading: LoadingData<Wrappr[]>
+  wrapprLoading: LoadingData<Wrappr[]>
   wrapprLoading: LoadingData<Wrappr | undefined>
 }
 
@@ -68,8 +68,8 @@ export const DeleteWrapprComponent: ActionComponent<DeleteWrapprOptions> = ({
       {wrapprLoading.data.title}
 
       {/* If wrappr still exists in current list, link to it. */}
-      {!warpprsLoading.loading &&
-        warpprsLoading.data.some((wrappr) => wrappr.id === id) && (
+      {!wrapprLoading.loading &&
+        wrapprLoading.data.some((wrappr) => wrappr.id === id) && (
           <IconButtonLink
             Icon={ArrowOutwardRounded}
             href={getDaoPath(coreAddress, `wrappr/${wrapprLoading.data.id}`)}

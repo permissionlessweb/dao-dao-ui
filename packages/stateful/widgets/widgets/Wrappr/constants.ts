@@ -10,18 +10,16 @@ export enum Environment {
 }
 
 
-
-
-export const wrapprMainnetChains = [
-    { value: 'Avalanche', label: 'Avalanche'},
-    { value: 'arbitrum', label: 'Arbitrum'},
-    { value: 'binance', label: 'Binance'},
-    { value: 'Ethereum', label: 'Ethereum'},
-    { value: 'evmos', label: 'Evmos'},
-    { value: 'Fantom', label: 'Fantom'},
-    { value: 'optimism', label: 'Optimism'},
-    { value: 'Polygon', label: 'Polygon'},
-  ]
+// export const wrapprMainnetChains = [
+//     { value: 'Avalanche', label: 'Avalanche'},
+//     { value: 'arbitrum', label: 'Arbitrum'},
+//     { value: 'binance', label: 'Binance'},
+//     { value: 'Ethereum', label: 'Ethereum'},
+//     { value: 'evmos', label: 'Evmos'},
+//     { value: 'Fantom', label: 'Fantom'},
+//     { value: 'optimism', label: 'Optimism'},
+//     { value: 'Polygon', label: 'Polygon'},
+//   ]
 
   export const templates: Templates = {
     deLLC: ['name', 'ricardianId'],

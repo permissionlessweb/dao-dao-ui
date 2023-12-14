@@ -1,5 +1,5 @@
 import { ArrowBackIosRounded, ArrowRightAltRounded, SubdirectoryArrowRightRounded } from '@mui/icons-material'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback,  RefCallback, useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { Trans, useTranslation } from 'react-i18next'
@@ -19,42 +19,43 @@ import {
   AddressInput,
   TokenInput,
   TokenAmountDisplay,
-  PDFViewer,
 } from '@dao-dao/stateless'
-import { ActionComponent, ActionContextType, GenericTokenBalance, LoadingData } from '@dao-dao/types'
+import { ActionComponent, ActionContextType, Coin, GenericTokenBalance, LoadingData, Uint128 } from '@dao-dao/types'
 import { convertMicroDenomToDenomWithDecimals, processError, uploadNft, validateRequired } from '@dao-dao/utils'
 
-// import { WrapprPDF } from '../../components/WrapprPDF'
+
 import { LLCJurisdictionOptions, Wrappr } from '../../types'
-import { wrapprMainnetChains } from '../../constants'
+// import { wrapprMainnetChains } from '../../constants'
 import { useActionOptions } from '../../../../../actions'
+import clsx from 'clsx'
 
 export type CreateWrapprData = {
-  entity: string
-  jurisdiction: string
+  chainId: string
+  entity: 'llc' | 'una' | 'undefined',
+  jurisdiction: 'deleware' | 'offshore' | 'undefined',
+  mode: 'llc' | 'una'| 'undefined'
+  amount: number,
+  denom: string,
   tokenId: string
   tokenUri: string
   // Used while creating, uploaded to IPFS.
-  uploaded: boolean
-  data?: {
-    title: string
-    description: string
-    content: string
-  }
+  // uploaded: boolean
+  // data?: {
+  //   title: string
+  //   description: string
+  //   content: string
+  // }
+  _error?: string
 }
 
 
-const initiallySelectedOption = 'option1';
+const initiallySelectedOption = undefined;
 
-const llcJurisdictionOptions: LLCJurisdictionOptions[] = [
-  { value: 'deleware', label: 'Deleware'},
-  { value: 'offshore', label: 'Offshore'},
-]
+// const llcJurisdictionOptions: LLCJurisdictionOptions[] = [
+//   { value: 'deleware', label: 'Deleware'},
+//   { value: 'offshore', label: 'Offshore'},
+// ]
 
-const handleOptionSelect = (selectedOption: LLCJurisdictionOptions, index: number) => {
-  console.log(`Selected: ${selectedOption.value} (index: ${index})`);
-  // You can perform additional actions here based on the selected option.
-};
 
 
 type CreateWrapprOptions = {
@@ -65,7 +66,7 @@ type CreateWrapprOptions = {
 export const CreateWrapprComponent: ActionComponent<
 CreateWrapprOptions
 > = ({
-  fieldNamePrefix, errors, isCreating, options: { wrapprLoading, tokens }, }) => {
+  fieldNamePrefix, errors, isCreating, options: { wrapprLoading, tokens, }, }) => {
   const { t } = useTranslation()
   const { context } = useActionOptions()
   const { register, watch, setValue, setError, clearErrors} =
@@ -75,6 +76,13 @@ CreateWrapprOptions
   const spendAmount = watch((fieldNamePrefix + 'amount') as 'amount')
   const spendDenom = watch((fieldNamePrefix + 'denom') as 'denom')
 
+// on jurisdiction option select, set the value to the selected jurisdiction
+  const handleOptionSelect = (selectedOption: LLCJurisdictionOptions, index: number) => {
+    console.log(`Selected: ${selectedOption.value} (index: ${index})`);
+    const jurisdiction = watch((fieldNamePrefix + 'jurisdiction') as 'jurisdiction')
+    setValue((fieldNamePrefix + 'jurisdiction') as 'jurisdiction', jurisdiction)
+  };
+  
 
   const validatePossibleSpend = useCallback(
     (chainId: string, denom: string, amount: number): string | boolean => {
@@ -195,23 +203,20 @@ const balance = convertMicroDenomToDenomWithDecimals(
 {mode === 'llc' && (
 
 <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-  <Dropdown
-  options={llcJurisdictionOptions}
+  {/* <Dropdown
+  options={entity}
   placeholder="Select Wrappr Jurisdiction"
   selected={initiallySelectedOption}
   onSelect={handleOptionSelect}
-  containerClassName="optional-container-class" // Optional container class name
-  labelContainerClassName="optional-label-container-class" // Optional label container class name
-  labelClassName="optional-label-class" // Optional label class name
-  iconClassName="optional-icon-class" // Optional icon class name
-  keepOpenOnSelect={false} // Set to true to keep the dropdown open after selection
-/>
+  keepOpenOnSelect={false}
+// containerClassName="" labelContainerClassName=""labelClassName=""iconClassName="" 
+/> */}
 <div className="flex flex-col gap-1">
             <InputLabel name={t('title.name')} />
             <TextInput
               disabled={!isCreating}
               error={errors?.data?.title}
-              fieldName={(fieldNamePrefix + 'data.title') as 'data.title'}
+              // fieldName={(fieldNamePrefix + 'data.title') as 'data.title'}
               register={register}
               validation={[validateRequired]}
             />
@@ -223,7 +228,7 @@ const balance = convertMicroDenomToDenomWithDecimals(
 
 {mode === 'una' && (
    <div className="flex grow flex-col gap-4">
-   <div className="flex flex-col gap-1">
+   {/* <div className="flex flex-col gap-1">
      <InputLabel name={t('title.name')} />
      <TextInput
        disabled={!isCreating}
@@ -245,7 +250,7 @@ const balance = convertMicroDenomToDenomWithDecimals(
           validation={[validateRequired]}
         />
         <InputErrorMessage error={errors?.data?.content} />
-      </div>
+      </div> */}
  </div>
 
 )}
@@ -253,8 +258,8 @@ const balance = convertMicroDenomToDenomWithDecimals(
 
 <p className="header-text truncate leading-[5rem]">{t('title.selectWrapprChain')}</p>
 <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-  <Dropdown
-  options={wrapprMainnetChains}
+  {/* <Dropdown
+  options={''}
   placeholder="Select Chain To Mint Wrappr Contract"
   selected={initiallySelectedOption}
   onSelect={handleOptionSelect}
@@ -263,7 +268,7 @@ const balance = convertMicroDenomToDenomWithDecimals(
   labelClassName="optional-label-class" 
   iconClassName="optional-icon-class" 
   keepOpenOnSelect={false} 
-/>
+/> */}
 
 </div>
 <div className="flex flex-col gap-1">
@@ -352,17 +357,16 @@ To handle fees.
   ) : (
     <>
       {isCreating && (
-        <Button
-          className="self-start"
-          onClick={continueEditing}
-          variant="secondary"
-        >
-          <ArrowBackIosRounded className="!h-4 !w-4" />
-          {t('button.continueEditing')}
-        </Button>
+        // <Button
+        //   className="self-start"
+        //   onClick={continueEditing}
+        //   variant="secondary"
+        // >
+        //   <ArrowBackIosRounded className="!h-4 !w-4" />
+        //   {t('button.continueEditing')}
+        // </Button>
+        <></>
       )}
-
-    {/* <PDFViewer src={}/> */}
     </>
   )
 }
