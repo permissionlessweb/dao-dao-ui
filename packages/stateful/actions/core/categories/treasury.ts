@@ -26,5 +26,6 @@ export const makeTreasuryActionCategory: ActionCategoryMaker = ({
     ActionKey.EnableRetroactiveCompensation,
     ActionKey.CommunityPoolSpend,
     ActionKey.CommunityPoolDeposit,
+    ActionKey.ManageShitstrap,
   ],
 })

@@ -15,6 +15,7 @@ export enum WidgetId {
   Press = 'press',
   RetroactiveCompensation = 'retroactive',
   VestingPayments = 'vesting',
+  ShitStrap = 'shitstrap',
 }
 
 export enum WidgetLocation {

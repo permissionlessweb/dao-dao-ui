@@ -629,7 +629,9 @@
       "DaoProposalSingle": 5852,
       "DaoVotingCw4": 5853,
       "DaoVotingCw721Staked": 5854,
-      "DaoVotingTokenStaked": 5855
+      "DaoVotingTokenStaked": 5855,
+      "Shitstrap": 11052,
+      "ShitstrapFactory": 11053
     },
     "2.5.0": {
       "Cw1Whitelist": 5839,
@@ -649,7 +651,9 @@
       "DaoRewardsDistributor": 10904,
       "DaoVotingCw4": 10905,
       "DaoVotingCw721Staked": 10906,
-      "DaoVotingTokenStaked": 10907
+      "DaoVotingTokenStaked": 10907,
+      "Shitstrap": 11052,
+      "ShitstrapFactory": 11053
     }
   },
   "osmosis-1": {
