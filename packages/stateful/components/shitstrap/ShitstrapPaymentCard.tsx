@@ -7,7 +7,7 @@ import { cwShitstrapExtraQueries } from "@dao-dao/state/query";
 
 import { useEffect, useState } from "react";
 import { getChainForChainId, getDaoProposalSinglePrefill, isValidBech32Address, processError } from "@dao-dao/utils";
-import { useFormContext } from "react-hook-form";
+import { useForm, useFormContext } from "react-hook-form";
 
 import clsx from "clsx";
 import { HugeDecimal } from "@dao-dao/math";
@@ -18,12 +18,9 @@ import { useEntity, useQueryLoadingDataWithError, useWallet } from "../../hooks"
 import { useTokenBalances } from "../../actions";
 import { useMakeShitstrapPayment } from "../../hooks/contracts/CwShitstrap";
 
-
-
 export const ShitstrapPaymentCard = ({
     shitstrapInfo: fallbackInfo,
     shitting,
-    // transparentBackground,
 }: StatefulShitStrapPaymentCardProps) => {
     const { t } = useTranslation()
     const { chain_id: chainId } = useChain()
@@ -36,29 +33,26 @@ export const ShitstrapPaymentCard = ({
         chain: { chain_id: currentChainId },
     } = useActionOptions()
 
-
     // create form for selecting token and amount 
-    const { register, control, watch, setValue, setError, getValues, clearErrors } = useFormContext()
+    const { register, control, watch, setValue, setError, getValues, clearErrors } = useForm()
 
-    // token selected to pay for some shit
+
     const watchShitToken = watch(('payment.' + 'shitToken') as 'shitToken')
-    // amount of selected watchShitToken 
     const watchAmount = watch(('payment.' + 'amount') as 'amount')
 
-    // Wallet & balance of wallet
     const { address: walletAddress = '', getSigningClient } = useWallet()
-    const selfPartyTokenBalances = useTokenBalances()
 
     // Get entities
+    const [usingOwnShit, setUsingOwnShit] = useState(true)
     const { entity } = useEntity(
-        context.type === ActionContextType.Dao
+        usingOwnShit
             ? isValidBech32Address(address, bech32Prefix) ? address : ''
             : isValidBech32Address(walletAddress, bech32Prefix) ? walletAddress : ''
     );
 
     // DAO & balance of DAO 
     // Try to retrieve governance token address, failing if not a cw20-based DAO.
-    const counterpartyDaoGovernanceTokenAddressLoadable = useRecoilValueLoadable(
+    const currentEntityDAOTokenLoadable = useRecoilValueLoadable(
         !entity.loading &&
             entity.data.type === EntityType.Dao &&
             // Only care about loading the governance token if on the chain we're
@@ -71,17 +65,17 @@ export const ShitstrapPaymentCard = ({
             : constSelector(undefined)
     )
     // Load balances as loadables since they refresh automatically on a timer.
-    const ownerEntityTokenBalances = useCachedLoading(
+    const currentEntityTokenBalances = useCachedLoading(
         entity &&
             !entity.loading &&
             entity.data &&
-            counterpartyDaoGovernanceTokenAddressLoadable.state !== 'loading'
+            currentEntityDAOTokenLoadable.state !== 'loading'
             ? genericTokenBalancesSelector({
                 chainId: entity.data.chainId,
                 address: entity.data.address,
                 cw20GovernanceTokenAddress:
-                    counterpartyDaoGovernanceTokenAddressLoadable.state === 'hasValue'
-                        ? counterpartyDaoGovernanceTokenAddressLoadable.contents
+                    currentEntityDAOTokenLoadable.state === 'hasValue'
+                        ? currentEntityDAOTokenLoadable.contents
                         : undefined,
                 filter: {
                     account: {
@@ -95,13 +89,13 @@ export const ShitstrapPaymentCard = ({
     )
 
     // if wallet is selected to make payment, use wallet tokens in TokenInput, broacast payment via wallet
-    const [usingOwnShit, setUsingOwnShit] = useState(false)
+
+    // if wallet is selected to make payment, use wallet tokens in TokenInput, broacast payment via wallet
     useEffect(() => {
         if (context.type === ActionContextType.Wallet) {
             setUsingOwnShit(true)
         }
     }, [context.type]);
-    const ownerIsDao = watchShitToken && !entity.loading && entity.data.type === EntityType.Dao;
 
     // helper for actions to occur once token is selected
     const [initialValueSet, setInitialValueSet] = useState(false);
@@ -138,24 +132,19 @@ export const ShitstrapPaymentCard = ({
     } = shitstrapInfo
 
 
-    const selectedToken = watchShitToken && selfPartyTokenBalances.loading == false
-        ? selfPartyTokenBalances.data.find((token) =>
-            ('native' in watchShitToken && token.token.denomOrAddress === watchShitToken.native)
-            || ('cw20' in watchShitToken && token.token.denomOrAddress === watchShitToken.cw20)
-        )
-        : undefined;
-
-    const eligibleAsset = watchShitToken
-        ? shitstrapInfo.eligibleAssets.find((asset) =>
-        (typeof asset.token === 'object' && typeof watchShitToken === 'object'
-            ? (('native' in asset.token && 'native' in watchShitToken && asset.token.native === watchShitToken.native)
-                || ('cw20' in asset.token && 'cw20' in watchShitToken && asset.token.cw20 === watchShitToken.cw20))
-            : asset.token === watchShitToken)
-        )
+    const eligibleAsset = watchShitToken ?
+        shitstrapInfo.eligibleAssets.find((asset) => {
+            if (typeof asset.token === 'object') {
+                return ('native' in asset.token && asset.token.native === watchShitToken?.denomOrAddress)
+                    || ('cw20' in asset.token && asset.token.cw20 === watchShitToken?.denomOrAddress);
+            } else {
+                return asset.token === watchShitToken?.denomOrAddress;
+            }
+        })
         : undefined;
     // microdenom helpers
-    const decimals = watchShitToken ? selectedToken?.token.decimals ?? 0 : 0
-    const selectedMicroBalance = watchShitToken ? selectedToken?.balance ?? 0 : 0
+    const decimals = watchShitToken ? watchShitToken?.decimals ?? 0 : 0
+    const selectedMicroBalance = watchShitToken ? watchShitToken?.balance ?? 0 : 0
     const selectedBalance = watchShitToken ? HugeDecimal.from(selectedMicroBalance).toHumanReadableString(decimals) : 0
     const insufficientBalanceI18nKey = watchShitToken
         ? (context.type === ActionContextType.Wallet
@@ -163,12 +152,15 @@ export const ShitstrapPaymentCard = ({
             : 'error.cantSpendMoreThanTreasury')
         : '';
 
+    const estimatedToken = eligibleAsset ? (HugeDecimal.from(eligibleAsset.shit_rate ?? 1).div(HugeDecimal.from(10).pow(6)).toNumber()) * parseInt(watchAmount) : 1;
 
-    // estimate shitstrap rewards
-    const estimatedToken = eligibleAsset ?
-        HugeDecimal.from(1).div(HugeDecimal.fromHumanReadable(eligibleAsset.shit_rate, 6)).times(watchAmount)
-        : HugeDecimal.from(0);
-
+    const displayShitToken = shit ? shit.denomOrAddress.startsWith(`factory/osmo1`) ? !shit.denomOrAddress.substring(51).startsWith('/') ? shit.denomOrAddress.substring(71) : shit.denomOrAddress.substring(52) : shit.denomOrAddress : 'hsh'
+    // useEffect(() => {
+    //     console.log(eligibleAsset)
+    //     console.log(watchAmount)
+    //     console.log(watchShitToken)
+    //     console.log(estimatedToken)
+    // }, [watchAmount]);
 
     // if user wants to make payment with fund from account,
     // we make use of the recoilHook here that takes the props currently set
@@ -177,54 +169,55 @@ export const ShitstrapPaymentCard = ({
         sender: walletAddress,
     })
 
-    const shitAction = useInitializedActionForKey(ActionKey.ManageShitstrap)
-
+    // const shitAction = useInitializedActionForKey(ActionKey.ManageShitstrap)
     const [makingPayment, setMakingPayment] = useState(false)
     const onShitstrapPayment = async () => {
         setMakingPayment(true)
         try {
+            // if (!shitAction.loading && !shitAction.errored && !entity.loading && !usingOwnShit) {
+            //     await goToDaoProposal(entity.data.address, 'create', {
+            //         prefill: getDaoProposalSinglePrefill({
+            //             actions: [
+            //                 {
+            //                     actionKey: shitAction.data.key,
+            //                     data: {
+            //                         chainId,
+            //                         address: shitstrapInfo.shitstrapContractAddr,
+            //                         message: JSON.stringify(
+            //                             {
+            //                                 shistrap: {
+            //                                     shit: { native: watchShitToken }
+            //                                 },
+            //                             },
+            //                             null,
+            //                             2
+            //                         ),
+            //                         funds: [{
+            //                             denom: watchShitToken,
+            //                             amount: parseInt(watchAmount)
+            //                         }],
+            //                         cw20: false,
+            //                     },
+            //                 },
+            //             ],
+            //         }),
+            //     })
+            // } else if (watchShitToken && watchShitToken.type == TokenType.Native && usingOwnShit) { // limit to only use native tokens for now lol
 
-            if (!shitAction.loading && !shitAction.errored && !entity.loading) {
-                await goToDaoProposal(entity.data.address, 'create', {
-                    prefill: getDaoProposalSinglePrefill({
-                        actions: [
-                            {
-                                actionKey: shitAction.data.key,
-                                data: {
-                                    chainId,
-                                    address: shitstrapInfo.shitstrapContractAddr,
-                                    message: JSON.stringify(
-                                        {
-                                            shistrap: {
-                                                shit: { native: watchShitToken }
-                                            },
-                                        },
-                                        null,
-                                        2
-                                    ),
-                                    funds: [{
-                                        denom: watchShitToken,
-                                        amount: parseInt(watchAmount)
-                                    }],
-                                    cw20: false,
-                                },
-                            },
-                        ],
-                    }),
-                })
-            } else if (watchShitToken && watchShitToken.type == TokenType.Native) {
-                makeShitstrapPayment(
-                    {
-                        shit: {
-                            amount: watchAmount,
-                            denom: watchShitToken.type == TokenType.Native ?
-                                { native: watchShitToken?.denomOrAddress } : { native: watchShitToken?.denomOrAddress }
-                        }
-                    },
-                    "auto",
-                    "shitstrap payment",
-                    [{ amount: HugeDecimal.fromHumanReadable(watchAmount, 6).toString(), denom: watchShitToken.denomOrAddress }])
-            }
+            await makeShitstrapPayment(
+                {
+                    shit: {
+                        amount: HugeDecimal.fromHumanReadable(watchAmount, 6).toString(),
+                        denom: watchShitToken.type == TokenType.Native ?
+                            { native: watchShitToken?.denomOrAddress } : { native: watchShitToken?.denomOrAddress }
+                    }
+                },
+                "auto",
+                "shitstrap payment",
+                [{ amount: HugeDecimal.fromHumanReadable(watchAmount, 6).toString(), denom: watchShitToken?.denomOrAddress }],
+            )
+
+            // }
         } catch (err) {
             console.error(err)
             toast.error(processError(err))
@@ -247,39 +240,50 @@ export const ShitstrapPaymentCard = ({
                         {t('info.shitstrapPaymentDescription')}
                     </p>
                 </div>
-
-                <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
-                    <Tooltip title={"test"}>
-                        <p className="caption-text leading-5 text-text-body">
-                            Eligible Assets
-                        </p>
-                    </Tooltip>
-                    <div className="flex flex-row items-start justify-between gap-8">
-                        {/* leading-5 to match link-text's line-height. */}
+                <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-0">
+                    <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
+                        <h4 className="text-lg font-bold">{t('eligibleTokens')}</h4>
                         {shitstrapInfo.eligibleAssets && shitstrapInfo.eligibleAssets.length > 0 ? (
                             shitstrapInfo.eligibleAssets.map((asset, index) => (
-                                <div className={clsx(
-                                    'b h-8 cursor-pointer grid-cols-2 items-center gap-3 rounded-lg py-2 px-3 transition hover:bg-background-interactive-hover active:bg-background-interactive-pressed',
-                                    'bg-background-tertiary'
-                                )} key={index}>
-
+                                <div
+                                    className={clsx(
+                                        'flex flex-row items-center justify-between p-4 rounded-lg',
+                                        'bg-background-tertiary hover:bg-background-interactive-hover'
+                                    )}
+                                    key={index}
+                                >
                                     <TokenAmountDisplay
-                                        prefix="for every: "
-                                        suffix={`, recieve 1 ${shitstrapInfo.shit.denomOrAddress}`}
-                                        amount={HugeDecimal.from(asset.shit_rate ?? 0)}
+                                        prefix="For every  "
+                                        suffix={`, recieve  ${HugeDecimal.from(asset.shit_rate ?? 1).div(HugeDecimal.from(10).pow(6)).toNumber()}  ${displayShitToken} `}
+                                        amount={1}
+                                        // HugeDecimal.from(1).div(HugeDecimal.fromHumanReadable(eligibleAsset.shit_rate, 6)).times(watchAmount)
                                         className="body-text truncate font-mono"
-                                        decimals={0}
+                                        decimals={4}
                                         symbol={typeof asset.token === 'object'
-                                            ? ('native' in asset.token ? asset.token.native : asset.token.cw20)
-                                            : asset.token}
+                                            ? ('native' in asset.token
+                                                ? asset.token.native.startsWith(`factory/osmo1`)
+                                                    ? !asset.token.native.substring(51).startsWith('/')
+                                                        ? asset.token.native.substring(71)
+                                                        : asset.token.native.substring(52)
+                                                    : asset.token.native
+                                                : asset.token.cw20.startsWith(`factory/osmo1`)
+                                                    ? !asset.token.cw20.substring(51).startsWith('/')
+                                                        ? asset.token.cw20.substring(71)
+                                                        : asset.token.cw20.substring(52)
+                                                    : asset.token.cw20
+                                            )
+                                            : asset.token.startsWith(`factory/osmo1`)
+                                                ? !asset.token.substring(51).startsWith('/')
+                                                    ? asset.token.substring(71)
+                                                    : asset.token.substring(52)
+                                                : asset.token
+                                        }
                                     />
-
                                 </div>
                             ))
                         ) : (
                             <p>{t('info.unknown')}</p>
                         )}
-
                     </div>
                     <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
 
@@ -328,7 +332,7 @@ export const ShitstrapPaymentCard = ({
                                 allowCustomToken={false}
                                 amount={{
                                     watch,
-                                    setValue,
+                                    setValue: (fieldName, value) => setValue(fieldName, value),
                                     register,
                                     getValues,
                                     fieldName: ('payment.' + 'amount') as 'amount',
@@ -344,39 +348,26 @@ export const ShitstrapPaymentCard = ({
                                                     maximumFractionDigits: decimals,
                                                 }),
                                                 tokenSymbol:
-                                                    selectedToken?.token.symbol ??
+                                                    watchShitToken?.symbol ??
                                                     t('info.token').toLocaleUpperCase(),
                                             }),
                                     ],
                                 }}
                                 onSelectToken={(token) => {
-                                    // set the token in balance array that has the same owner and address
-                                    const matchedToken = selfPartyTokenBalances.loading ? false : selfPartyTokenBalances.data.find((t) =>
-                                        t.owner.address === walletAddress &&
-                                        t.token.denomOrAddress === token.denomOrAddress
-                                    );
+                                    // Save the matched token to the form in shitToken field
+                                    setValue(('payment.' + 'shitToken') as 'shitToken', token);
 
-                                    if (matchedToken) {
-                                        // Save the matched token to the form in shitToken field
-                                        setValue(('payment.' + 'shitToken') as 'shitToken',
-                                            matchedToken.token.type === TokenType.Native
-                                                ? { native: matchedToken.token.denomOrAddress }
-                                                : { cw20: matchedToken.token.denomOrAddress }
-                                        );
-                                        console.log(matchedToken)
-                                    } else {
-                                        console.log("none")
-                                    }
                                 }}
-                                readOnly={shitting}
-                                selectedToken={selectedToken?.token}
+                                // readOnly={shitting}
+                                selectedToken={watchShitToken}
                                 showChainImage
                                 tokens={
+                                    // usingOwnShit ?
                                     {
                                         loading: false,
-                                        data: selfPartyTokenBalances.loading
+                                        data: currentEntityTokenBalances.loading
                                             ? []
-                                            : (selfPartyTokenBalances.data
+                                            : (currentEntityTokenBalances.data
                                                 ?.filter(({ token }) =>
                                                     shitstrapInfo.eligibleAssets.some((asset) => {
                                                         if (typeof asset.token === 'object') {
@@ -392,51 +383,67 @@ export const ShitstrapPaymentCard = ({
                                                         }
                                                     })
                                                 )
-                                                ?.map(({ owner, balance, token }) => ({
+                                                ?.map(({ balance, token }) => ({
                                                     ...token,
-                                                    owner,
                                                     description:
                                                         t('title.balance') +
                                                         ': ' + HugeDecimal.from(balance).toInternationalizedHumanReadableString({ decimals })
                                                     ,
                                                 })) ?? []),
                                     }
+                                    //  :
+                                    //     {
+                                    //         loading: false,
+                                    //         data: currentDaoEntityTokenBalances.loading
+                                    //             ? []
+                                    //             : (currentDaoEntityTokenBalances.data
+                                    //                 ?.filter(({ token }) =>
+                                    //                     shitstrapInfo.eligibleAssets.some((asset) => {
+                                    //                         if (typeof asset.token === 'object') {
+                                    //                             if ('native' in asset.token) {
+                                    //                                 return asset.token.native === token.denomOrAddress;
+                                    //                             } else if ('cw20' in asset.token) {
+                                    //                                 return asset.token.cw20 === token.denomOrAddress;
+                                    //                             } else {
+                                    //                                 return false;
+                                    //                             }
+                                    //                         } else {
+                                    //                             return asset.token === token.denomOrAddress;
+                                    //                         }
+                                    //                     })
+                                    //                 )
+                                    //                 ?.map(({ balance, token }) => ({
+                                    //                     ...token,
+                                    //                     owner: owner,
+                                    //                     description:
+                                    //                         t('title.balance') +
+                                    //                         ': ' + HugeDecimal.from(balance).toInternationalizedHumanReadableString({ decimals })
+                                    //                     ,
+                                    //                 })) ?? []),
+                                    //     }
                                 }
                             /></>) : null}
                         {mode === ShitstrapPaymentMode.Flush ? (<></>) : null}
                         {mode === ShitstrapPaymentMode.OverFlow ? (<></>) : null}
                     </div>
-
                     {!entity.loading && (
                         <div className="flex flex-col gap-2 border-t border-border-secondary px-6 py-4">
                             <p className="link-text mb-1">{t('info.previewShitstrapPayment')}</p>
 
                             <div className="flex flex-row items-center justify-between gap-8">
                                 <p className="secondary-text">{t('title.estimatedToShit')}</p>
-                                {estimatedToken !== HugeDecimal.zero && (
+                                {estimatedToken !== HugeDecimal.zero.toNumber() && (
                                     <TokenAmountDisplay
                                         amount={estimatedToken}
                                         className="caption-text text-right font-mono text-text-body"
                                         decimals={6}
-                                        symbol={shitstrapInfo.shit.denomOrAddress}
+                                        symbol={shitstrapInfo.shit.denomOrAddress.substring(0, 15)}
                                         hideSymbol={false}
                                     />
                                 )}
                             </div>
 
                             <div className="flex flex-row items-center justify-between gap-8">
-                                {/* <p className="secondary-text">{t('title.stakedTo')}</p> */}
-
-                            </div>
-
-                            <div className="flex flex-row items-center justify-between gap-8">
-                                {/* <p className="secondary-text">{t('title.unstakingTokens')}</p>
-
-
-                        </div>
-
-                        <div className="flex flex-row items-center justify-between gap-8">
-                            {/* <p className="secondary-text">{t('info.pendingRewards')}</p> */}
                             </div>
 
                             {onShitstrapPayment && (

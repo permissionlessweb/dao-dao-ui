@@ -18,6 +18,7 @@ import { ShitstrapInfo, UncheckedDenom } from "@dao-dao/types/contracts/ShitStra
 import { HugeDecimal } from "@dao-dao/math"
 import { InstantiateMsg as ShitstrapInstantiateMsg } from "@dao-dao/types/contracts/ShitStrap"
 import { InstantiateNativeShitstrapContractMsg, ExecuteMsg, Uint128 } from "@dao-dao/types/contracts/ShitstrapFactory"
+import { coins } from "@cosmjs/amino"
 
 export type ManageShitStrapData = {
     mode: ShitstrapPaymentMode
@@ -26,6 +27,14 @@ export type ManageShitStrapData = {
     flush: FlushShitstrapData
     overflow: ShitstrapOverFlowData
 }
+
+export type TokenToShit = {
+    denomOrAddress: string,
+    type: TokenType,
+    chainId: string,
+    decimals: number,
+}
+
 
 const instantiateStructure = {
     instantiate_msg: {
@@ -335,7 +344,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
             mode: this.widgetData ? ShitstrapPaymentMode.Create : ShitstrapPaymentMode.Payment,
             create: {
                 chainId: this.options.chain.chain_id,
-                cutoff: 1,
+                cutoff: '1',
                 tokenToShit: getNativeTokenForChainId(this.options.chain.chain_id),
                 title: '',
                 description: '',
@@ -439,10 +448,11 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                     }
                     return {
                         token,
-                        shit_rate: BigInt(Number(asset.shit_rate) * Math.pow(10, 6)).toString(),
+                        shit_rate: HugeDecimal.from(asset.shit_rate).times(HugeDecimal.from(10).pow(6)).toString(),
                     };
                 }),
-                cutoff: (BigInt(create.cutoff * Math.pow(10, 6))).toString(),
+                cutoff: HugeDecimal.from(create.cutoff).times(HugeDecimal.from(10).pow(6)).toString(),
+
                 owner: create.ownerEntity?.address!,
                 shitmos: create.tokenToShit.type === TokenType.Native ? {
                     native: create.tokenToShit.denomOrAddress,
@@ -508,16 +518,17 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                 throw new Error(this.options.t('error.loadingData'))
             }
 
-            const viaCw20 = mode === 'payment' && payment.shitToken ? payment.shitToken.type === TokenType.Native ? {
-                native: payment.shitToken.denomOrAddress,
-            } : {
-                cw20: payment.shitToken.denomOrAddress,
-            } : {}
+            // const viaCw20 = mode === 'payment' && payment.shitToken ? payment.shitToken.type === TokenType.Native ? {
+            //     native: payment.shitToken.denomOrAddress,
+            // } : {
+            //     cw20: payment.shitToken.denomOrAddress,
+            // } : {}
 
             cosmosMsg = makeExecuteSmartContractMessage({
                 chainId,
                 contractAddress,
                 sender: from,
+                funds: payment.shitToken ? coins(HugeDecimal.fromHumanReadable(payment.amount, payment.shitToken.decimals).toString(), payment.shitToken.denomOrAddress) : [],
                 msg:
                     mode === 'overflow'
                         ? {
@@ -525,7 +536,10 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                         }
                         : {
                             shit_strap: {
-                                shit: payment.shitToken
+                                shit:
+                                    payment.shitToken && payment.shitToken.type === TokenType.Cw20
+                                        ? { cw20: payment.shitToken.denomOrAddress }
+                                        : { native: payment.shitToken?.denomOrAddress }
                             },
                         },
             })
@@ -534,11 +548,11 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
             //     ? // Wrap in cw1-whitelist execute.
             //     cosmosMsg = makeExecuteSmartContractMessage({
             //         chainId,
-            //         contractAddress: create.tokenToShit.denomOrAddress,
+            //         contractAddress: payment.shitstrapAddress,
             //         sender: from,
             //         msg: {
             //             send: {
-            //                 amount: create.tokenToShit.toString(),
+            //                 amount: payment.amount,
             //                 contract: payment.shitstrapAddress,
             //                 msg: encodeJsonToBase64(msg),
             //             },
@@ -597,28 +611,28 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                     instantiate_shitstrap_factory_contract: instantiateStructure,
                 }
             )
-        const isCw20ShitStrapPayment =
-            objectMatchesStructure(decodedMessage, {
-                wasm: {
-                    execute: {
-                        contract_addr: {},
-                        funds: {},
-                        msg: {
-                            send: {
-                                amount: {},
-                                contract: {},
-                                msg: {},
-                            },
-                        },
-                    },
-                },
-            }) &&
-            objectMatchesStructure(
-                decodeJsonFromBase64(decodedMessage.wasm.execute.msg.send.msg, true),
-                {
-                    shit_strap: { shit: {} },
-                }
-            )
+        // const isCw20ShitStrapPayment =
+        //     objectMatchesStructure(decodedMessage, {
+        //         wasm: {
+        //             execute: {
+        //                 contract_addr: {},
+        //                 funds: {},
+        //                 msg: {
+        //                     send: {
+        //                         amount: {},
+        //                         contract: {},
+        //                         msg: {},
+        //                     },
+        //                 },
+        //             },
+        //         },
+        //     }) &&
+        //     objectMatchesStructure(
+        //         decodeJsonFromBase64(decodedMessage.wasm.execute.msg.send.msg, true),
+        //         {
+        //             shit_strap: { shit: {} },
+        //         }
+        //     )
 
         const isShitStrapPayment = objectMatchesStructure(decodedMessage, {
             wasm: {
@@ -627,7 +641,9 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                     funds: {},
                     msg: {
                         shit_strap: {
-                            shit: {}
+                            shit: {
+                                native: {}
+                            }
                         },
                     },
                 },
@@ -651,17 +667,17 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
             decodedMessage,
             isNativeCreate,
             isCw20Create,
-            isCw20ShitStrapPayment,
+            // isCw20ShitStrapPayment,
             isShitStrapPayment,
             isOverflow,
         }
     }
 
     match([message]: ProcessedMessage[]): ActionMatch {
-        const { isNativeCreate, isCw20Create, isCw20ShitStrapPayment, isShitStrapPayment, isOverflow } =
+        const { isNativeCreate, isCw20Create, isShitStrapPayment, isOverflow } =
             this.breakDownMessage(message)
 
-        return isNativeCreate || isCw20Create || isCw20ShitStrapPayment || isShitStrapPayment || isOverflow
+        return isNativeCreate || isCw20Create || isShitStrapPayment || isOverflow
     }
 
     async decode([message]: ProcessedMessage[]): Promise<
@@ -672,7 +688,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
             decodedMessage,
             isNativeCreate,
             isCw20Create,
-            isCw20ShitStrapPayment,
+            // isCw20ShitStrapPayment,
             isShitStrapPayment,
             isOverflow,
         } = this.breakDownMessage(message)
@@ -727,14 +743,8 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                     eligibleAssets: instantiateMsg.accepted,
                     title: instantiateMsg.title,
                     description: instantiateMsg.description || "Shitstrap owned by" + instantiateMsg.owner,
-                    startDate: new Date(
-                        // nanoseconds => milliseconds
-                        // Number(instantiateMsg.start_time) / 1e6
-                    ).toISOString(),
-                    cutoff: HugeDecimal.from(instantiateMsg.cutoff).toNumber(
-                        token.decimals
-                    ),
-                    // ownerMode,
+                    startDate: new Date().toISOString(),
+                    cutoff: HugeDecimal.from(instantiateMsg.cutoff).toString(),
                     tokenToShit: {
                         chainId,
                         denomOrAddress: 'cw20' in instantiateMsg.shitmos ? instantiateMsg.shitmos.cw20 : 'native' in instantiateMsg.shitmos ? instantiateMsg.shitmos.native : '',

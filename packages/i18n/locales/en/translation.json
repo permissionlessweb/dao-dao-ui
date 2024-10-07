@@ -290,7 +290,14 @@
     "withDecodedModuleMessages": "with Decoded Module Messages",
     "withdrawAvailableBalance": "Withdraw available balance",
     "withdrawFiat": "Withdraw fiat",
-    "yourProfile": "Your profile"
+    "yourProfile": "Your profile",
+    "makeShitStrapPayment": "Your profile",
+    "shitstrapPaymentMode": {
+      "payment": "Make Payment",
+      "flush": "Flush Shitstrap",
+      "useYourWallet": "Use connected wallet",
+      "useTheDao": "Propose to DAO"
+    }
   },
   "daoCreator": {
     "MembershipBased": {
@@ -1307,6 +1314,7 @@
     "preReleaseExplanation": "This is a pre-release version of DAO DAO running on the {{chain}} chain.",
     "predictedAddress": "Predicted address",
     "pressDescriptionTooltip": "This description will be included with the post's NFT metadata and may show up in wallets or other places. Think of it as a brief description of the post.",
+    "previewShitstrapPayment": "Review the shitstrap payment before broadcasting it",
     "priceHistoryRange_day": "Every 5 minutes for the past day",
     "priceHistoryRange_hour": "Every 5 minutes for the past hour",
     "priceHistoryRange_month": "Every hour for the past month",
@@ -1403,6 +1411,10 @@
     "searchMessages": "Search messages",
     "searchNftsPlaceholder": "Find an NFT...",
     "searchPlaceholder": "Search...",
+    "selectEligibleAsset": "View {{number}} eligible",
+    "shitstrapSecondaryText": "To poo, or not to poo...",
+    "shitstrapPaymentTitle": "Shitstrap Payment",
+    "shitstrapPaymentDescription": "Decide what shit to send!",
     "searchProposalsPlaceholder": "Search proposals...",
     "searchValidatorsPlaceholder": "Find a validator...",
     "selectExistingProposalBelow": "Select an existing proposal below.",
@@ -1993,6 +2005,9 @@
     "saveTransaction": "Save transaction",
     "saved": "Saved",
     "scanQrCode": "Scan QR Code",
+    "estimatedToShit": "Estimated tokens to recieve",
+    "shitstrapAction": "Choose the action to perform",
+    "previewShitstrapPayment": "Review the shitstrap payment before broadcasting it",
     "search": "Search",
     "selectNftToBurn": "Select NFT To Burn",
     "selectNftToTransfer": "Select NFT To Transfer",
@@ -2155,6 +2170,7 @@
     "mint_nft": "Mint NFT",
     "press": "Press",
     "retroactive": "Retroactive Compensation",
-    "vesting": "Vesting Payments"
+    "vesting": "Vesting Payments",
+    "shitstrap": "Shitstraps"
   }
 }

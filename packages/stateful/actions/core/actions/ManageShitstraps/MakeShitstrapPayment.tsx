@@ -3,7 +3,7 @@ import { Counterparty } from "../token_swap/types"
 import { ActionComponent, GenericToken, GenericTokenBalanceWithOwner, LoadingDataWithError, TokenType } from "@dao-dao/types"
 import { ShitstrapPaymentWidgetData } from "../../../../widgets/widgets/Shitstrap/types"
 import { useTranslation } from "react-i18next"
-import { AddressInput, Button, ChainProvider, InputErrorMessage, InputLabel, TokenInput, useActionOptions } from "@dao-dao/stateless"
+import { AddressInput, Button, ChainProvider, InputErrorMessage, InputLabel, TokenAmountDisplay, TokenInput, useActionOptions } from "@dao-dao/stateless"
 import { useFormContext } from "react-hook-form"
 import { getChainAddressForActionOptions, makeValidateAddress, processError, validateRequired } from "@dao-dao/utils"
 import { EntityDisplay } from "../../../../components"
@@ -12,6 +12,7 @@ import { cwShitstrapExtraQueries, shitStrapQueries } from "@dao-dao/state/query"
 import { HugeDecimal } from "@dao-dao/math"
 import { useRecoilCallback } from "recoil"
 import { useEffect, useState } from "react"
+import { TokenToShit } from "."
 
 
 export type MakeShitstrapPaymentData = {
@@ -93,8 +94,7 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
 
     // selected token for payment info
     const selectedToken = watchShitToken ? tokens.find((token) =>
-        ('native' in token.token && token.token.native === watchShitToken)
-        || ('cw20' in token.token && token.token.cw20 === watchShitToken)
+        token.token.denomOrAddress == watchShitToken
     )
         : undefined;
     const selectedDecimals = selectedToken?.token.decimals ?? 0
@@ -271,70 +271,78 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
                             )} */}
 
                             {activeShitstrap && (
-                                <></>
-                                // <TokenInput
-                                //     amount={{
-                                //         watch,
-                                //         setValue: (fieldName, value) => {
-
-
-                                //         },
-                                //         register,
-                                //         getValues,
-                                //         fieldName: (fieldNamePrefix + `amount`) as `amount`,
-                                //         error: errors?.amount,
-                                //         min: 0,
-                                //         max: 999999999999,
-                                //         step: HugeDecimal.one.toHumanReadableNumber(selectedDecimals),
-                                //         validations: [],
-                                //     }}
-                                //     onSelectToken={(token) => {
-                                //         setValue(
-                                //             (fieldNamePrefix + `shitToken`) as `shitToken`,
-                                //             token
-                                //         )
-                                //     }}
-                                //     readOnly={!isCreating}
-                                //     selectedToken={watchShitToken}
-                                //     showChainImage
-                                //     tokens={
-                                //         {
-                                //             loading: false,
-                                //             data: tokens
-                                //                 .filter(({ token }) =>
-                                //                     activeShitstrap.eligibleAssets.some((asset) => {
-                                //                         if (typeof asset.token === 'object') {
-                                //                             if ('native' in asset.token) {
-                                //                                 return asset.token.native === token.denomOrAddress;
-                                //                             } else if ('cw20' in asset.token) {
-                                //                                 return asset.token.cw20 === token.denomOrAddress;
-                                //                             } else {
-                                //                                 return false;
-                                //                             }
-                                //                         } else {
-                                //                             return asset.token === token.denomOrAddress;
-                                //                         }
-                                //                     })
-                                //                 )
-                                //                 .map(({ owner, balance, token }) => ({
-                                //                     ...token,
-                                //                     owner,
-                                //                     description:
-                                //                         t('title.balance') +
-                                //                         ': ' + HugeDecimal.from(
-                                //                             balance
-                                //                         ).toInternationalizedHumanReadableString({
-                                //                             decimals: token.decimals,
-                                //                         })
-                                //                     ,
-                                //                 })),
-                                //         }
-                                //     }
-                                // />
+                                // <></>
+                                <TokenInput
+                                    amount={{
+                                        watch,
+                                        setValue,
+                                        register,
+                                        getValues,
+                                        fieldName: (fieldNamePrefix + `amount`) as `amount`,
+                                        error: errors?.amount,
+                                        min: 0,
+                                        max: 999999999999,
+                                        step: HugeDecimal.one.toHumanReadableNumber(0),
+                                        validations: [],
+                                    }}
+                                    onSelectToken={(token) => {
+                                        setValue(
+                                            (fieldNamePrefix + `shitToken`) as `shitToken`,
+                                            token
+                                        )
+                                    }}
+                                    readOnly={!isCreating}
+                                    selectedToken={watchShitToken}
+                                    showChainImage
+                                    tokens={
+                                        {
+                                            loading: false,
+                                            data: tokens
+                                                .filter(({ token }) =>
+                                                    activeShitstrap.eligibleAssets.some((asset) => {
+                                                        if (typeof asset.token === 'object') {
+                                                            if ('native' in asset.token) {
+                                                                return asset.token.native === token.denomOrAddress;
+                                                            } else if ('cw20' in asset.token) {
+                                                                return asset.token.cw20 === token.denomOrAddress;
+                                                            } else {
+                                                                return false;
+                                                            }
+                                                        } else {
+                                                            return asset.token === token.denomOrAddress;
+                                                        }
+                                                    })
+                                                )
+                                                .map(({ owner, balance, token }) => ({
+                                                    ...token,
+                                                    owner,
+                                                    description:
+                                                        t('title.balance') +
+                                                        ': ' + HugeDecimal.from(balance).toInternationalizedHumanReadableString({
+                                                            decimals: token.decimals,
+                                                        })
+                                                    ,
+                                                })),
+                                        }
+                                    }
+                                />
                             )}
                         </div>
                     </div>
+                    <p className="link-text mb-1">{t('info.previewShitstrapPayment')}</p>
 
+                    <div className="flex flex-row items-center justify-between gap-8">
+                        <p className="secondary-text">{t('title.estimatedToShit')}</p>
+                        {estimatedToken !== HugeDecimal.zero && (
+                            <TokenAmountDisplay
+                                amount={estimatedToken.toNumber()}
+                                className="caption-text text-right font-mono text-text-body"
+                                decimals={6}
+                                symbol={activeShitstrap ? activeShitstrap.shit.symbol : ''}
+                                hideSymbol={false}
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
         </ChainProvider>

@@ -103,7 +103,6 @@ export const TabRenderer = ({
                         {t('info.shitstrapSecondaryText',)}
                     </p>
                 </div>
-fdghjh
                 {createShitStrapHref && (
                     <Tooltip
                         title={

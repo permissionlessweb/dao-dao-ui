@@ -37,7 +37,7 @@ export type TokenToShit = {
 export type CreateShitstrapData = {
     chainId: string
     title: string
-    cutoff: number
+    cutoff: string
     description: string
     tokenToShit: TokenToShit
     eligibleAssets: PossibleShit[]
@@ -83,7 +83,7 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
 
     // get connected wallet balance info
     const { address: walletAddress, getSigningClient } = useWallet()
-    const selfPartyTokenBalances = useTokenBalances()
+    const tokenBalances = useTokenBalances()
 
     if (chainContext.type !== ActionChainContextType.Supported) {
         throw new Error('Unsupported chain context')
@@ -95,10 +95,8 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
     const watchCutoffAmount = watch((fieldNamePrefix + 'cutoff') as 'cutoff')
     const watchDescription = watch((fieldNamePrefix + 'description') as 'description')
     const watchEligibleAssets = watch((fieldNamePrefix + 'eligibleAssets') as 'eligibleAssets')
-    const watchOwnerEntity = watch((fieldNamePrefix + 'ownerEntity') as 'ownerEntity')
+    const watchShitstrapOwner = watch((fieldNamePrefix + 'ownerEntity') as 'ownerEntity')
     const watchTokentoShit = watch((fieldNamePrefix + 'tokenToShit') as 'tokenToShit')
-    const watchParsedStartDate = Date.parse(watch((fieldNamePrefix + 'startDate') as 'startDate')
-    )
     const {
         fields: eligibleAssetFields,
         append: appendEligibleAsset,
@@ -111,10 +109,8 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
     const selectedToken = tokens.find(
         ({ token }) => token.denomOrAddress === watchTokentoShit.denomOrAddress
     )
-    const selectedDecimals = selectedToken?.token.decimals ?? 0
     const selectedMicroBalance = selectedToken?.balance ?? 0
     const selectedBalance = HugeDecimal.from(selectedMicroBalance)
-    const selectedSymbol = selectedToken?.token?.symbol ?? t('info.tokens')
     // If widget not set up, don't render anything because begin shitstrap cannot be
     // used.
     if (!widgetData) {
@@ -129,15 +125,15 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
         watchChainId
     )
 
-    const shitstrapManagerExists =
+    const shitstrapFactoryExists =
         !!widgetData?.factories?.[watchChainId]
     const crossChainAccountActionExists = allActionsWithData.some(
         (action) => action.actionKey === ActionKey.ManageShitstrap
     )
 
     const shitstrapOwnerAddrValid =
-        !!watchOwnerEntity &&
-        isValidBech32Address(watchOwnerEntity.address, bech32Prefix)
+        !!watchShitstrapOwner &&
+        isValidBech32Address(watchShitstrapOwner.address, bech32Prefix)
 
     // A DAO can create a shitstrap payment factory on the current chain and any
     // polytone connection that is also a supported chain (since the shitstrap
@@ -151,17 +147,18 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
 
     // Only set defaults once.
     const watchSelfEntity = watch(fieldNamePrefix + 'selfEntity' as 'selfEntity')
-    const [defaultsSet, setDefaultsSet] = useState(!!watchSelfEntity && !!watchOwnerEntity)
+    const [defaultsSet, setDefaultsSet] = useState(!!watchSelfEntity && !!watchShitstrapOwner)
     useEffect(() => {
         if (defaultsSet) {
             return
         }
 
         // Default selfParty to first CW20 if present. Otherwise, native.
-        const selfPartySetData = selfPartyTokenBalances.loading === false ? selfPartyTokenBalances.data.filter(
+        const selfEntitySetData = tokenBalances.loading === false ? tokenBalances.data.filter(
             ({ token }) => token.chainId === watchChainId
         ) : []
-        const selfPartyDefaultCw20 = selfPartySetData.find(
+
+        const selfPartyDefaultCw20 = selfEntitySetData.find(
             (tokenBalance) => tokenBalance.token.type === TokenType.Cw20
         )
 
@@ -177,6 +174,7 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
                     : nativeToken.decimals,
             },
         })
+
         resetField(fieldNamePrefix + 'ownerEntity' as 'ownerEntity', {
             defaultValue: {
                 address: '',
@@ -196,44 +194,65 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
         fieldNamePrefix + 'ownerEntity.address' as 'ownerEntity.address'
     )
 
-
     // Get counterparty entity, which reverse engineers a DAO from its polytone
     // proxy.
-    const { entity } = useEntity(
-        ownerEntityAddress &&
-            isValidBech32Address(ownerEntityAddress, bech32Prefix)
-            ? ownerEntityAddress
-            : ''
-    )
+    // Get entities
+    const [usingOwnShit, setUsingOwnShit] = useState(true)
+    const { entity: watchShitstrapOwnerEntity } = useEntity(
+        usingOwnShit
+            ? isValidBech32Address(ownerEntityAddress, bech32Prefix) ? ownerEntityAddress : ''
+            : walletAddress ? isValidBech32Address(walletAddress, bech32Prefix) ? walletAddress : '' : ''
+    );
+
+    const { entity: walletEntity } = useEntity(
+        walletAddress ? isValidBech32Address(walletAddress, bech32Prefix) ? walletAddress : '' : ''
+    );
 
     // Try to retrieve governance token address, failing if not a cw20-based DAO.
-    const counterpartyDaoGovernanceTokenAddressLoadable = useRecoilValueLoadable(
-        !entity.loading &&
-            entity.data.type === EntityType.Dao &&
+    const currentEntityDAOTokenLoadable = useRecoilValueLoadable(
+        !watchShitstrapOwnerEntity.loading &&
+            watchShitstrapOwnerEntity.data.type === EntityType.Dao &&
             // Only care about loading the governance token if on the chain we're
             // creating the token swap on.
-            entity.data.chainId === watchChainId
+            watchShitstrapOwnerEntity.data.chainId === watchChainId
             ? DaoDaoCoreSelectors.tryFetchGovernanceTokenAddressSelector({
                 chainId: watchChainId,
-                contractAddress: entity.data.address,
+                contractAddress: watchShitstrapOwnerEntity.data.address,
             })
             : constSelector(undefined)
     )
 
 
     // Load balances as loadables since they refresh automatically on a timer.
-    const ownerEntityTokenBalances = useCachedLoading(
-        ownerEntityAddress &&
-            !entity.loading &&
-            entity.data &&
-            counterpartyDaoGovernanceTokenAddressLoadable.state !== 'loading'
+    const currentWalletTokenBalances = useCachedLoading(
+        walletAddress &&
+            !walletEntity.loading &&
+            walletEntity.data &&
+            currentEntityDAOTokenLoadable.state !== 'loading'
             ? genericTokenBalancesSelector({
-                chainId: entity.data.chainId,
-                address: entity.data.address,
-                cw20GovernanceTokenAddress:
-                    counterpartyDaoGovernanceTokenAddressLoadable.state === 'hasValue'
-                        ? counterpartyDaoGovernanceTokenAddressLoadable.contents
-                        : undefined,
+                chainId: walletEntity.data.chainId,
+                address: walletEntity.data.address,
+                cw20GovernanceTokenAddress: undefined,
+                filter: {
+                    account: {
+                        chainId: watchChainId,
+                        address: walletAddress,
+                    },
+                },
+            })
+            : undefined,
+        []
+    )
+
+    // Load balances as loadables since they refresh automatically on a timer.
+    const watchShitstrapOwnerTokenBalances = useCachedLoading(
+        ownerEntityAddress &&
+            !walletEntity.loading &&
+            walletEntity.data
+            ? genericTokenBalancesSelector({
+                chainId: walletEntity.data.chainId,
+                address: walletEntity.data.address,
+                cw20GovernanceTokenAddress: undefined,
                 filter: {
                     account: {
                         chainId: watchChainId,
@@ -245,11 +264,12 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
         []
     )
 
-    const counterpartyToken = ownerEntityTokenBalances.loading
-        ? undefined
-        : ownerEntityTokenBalances.data.find(
-            ({ token }) => watchOwnerEntity?.denomOrAddress === token.denomOrAddress
-        )
+    // if wallet is selected to make payment, use wallet tokens in TokenInput, broacast payment via wallet
+    useEffect(() => {
+        if (context.type === ActionContextType.Wallet) {
+            setUsingOwnShit(true)
+        }
+    }, [context.type]);
 
     return (
 
@@ -257,7 +277,7 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
             <p className="max-w-prose">{t('info.shitStrapExplanation')}</p>
             <div className="flex  flex-col gap-4">
 
-                {isCreating && !shitstrapManagerExists && configureCreateShitStrapActionDefaults && (
+                {isCreating && !shitstrapFactoryExists && configureCreateShitStrapActionDefaults && (
                     <StatusCard
                         className="max-w-lg"
                         content={t('info.shitstrapManagerNeeded', {
@@ -330,8 +350,7 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
                             </div>
                         </div>
 
-                        {watchOwnerEntity?.address ? (
-
+                        {watchShitstrapOwner?.address ? (
                             <TokenInput
                                 amount={{
                                     watch,
@@ -340,8 +359,9 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
                                     getValues,
                                     fieldName: (fieldNamePrefix + 'cutoff') as 'cutoff',
                                     error: errors?.amount,
-                                    step: HugeDecimal.one.toHumanReadableNumber(selectedDecimals),
-                                    // validations: [],
+                                    min: HugeDecimal.one.toHumanReadableNumber(6),
+                                    step: HugeDecimal.one.toHumanReadableNumber(6),
+                                    ...props
                                 }}
                                 // disabled={!shitstrapOwnerAddrValid}
                                 onSelectToken={({ type, denomOrAddress, chainId }) => {
@@ -356,30 +376,16 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
                                     chainId: watchTokentoShit.chainId,
                                 }}
                                 showChainImage
-                                tokens={!shitstrapOwnerAddrValid ? { loading: false, data: [] } : ownerEntityTokenBalances.loading ? { loading: true } : {
-                                    loading: false, data: ownerEntityTokenBalances.data.map(
-                                        ({ token }) => token
-                                    ),
+                                tokens={!shitstrapOwnerAddrValid ? { loading: false, data: [] } : watchShitstrapOwnerTokenBalances.loading ? { loading: true } : {
+                                    loading: false, data: watchShitstrapOwnerTokenBalances.data.map(
+                                        ({ token, balance }) => ({
+                                            ...token,
+                                            description:
+                                                t('title.balance') +
+                                                ': ' + HugeDecimal.from(balance).toInternationalizedHumanReadableString({ decimals: 6 })
+                                            ,
+                                        })),
                                 }}
-                            // tokens={{
-                            //     loading: false,
-                            //     data: tokens
-                            //         .filter(({ token: { chainId } }) =>
-                            //             possibleChainIds.includes(chainId)
-                            //         )
-                            //         .map(({ balance, token }) => ({
-                            //             ...token,
-                            //             description:
-                            //                 t('title.balance') +
-                            //                 ': ' +
-                            //                 convertMicroDenomToDenomWithDecimals(
-                            //                     balance,
-                            //                     token.decimals
-                            //                 ).toLocaleString(undefined, {
-                            //                     maximumFractionDigits: token.decimals,
-                            //                 }),
-                            //         })),
-                            // }}
                             />
 
                         ) : undefined}
@@ -416,40 +422,25 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
                                             getValues,
                                             register,
                                             fieldName: (fieldNamePrefix + `eligibleAssets.${index}.shit_rate`) as `eligibleAssets.${number}.shit_rate`,
-                                            error: errors?.amount,
-                                            min: HugeDecimal.one.toHumanReadableNumber(selectedDecimals),
-                                            step: HugeDecimal.one.toHumanReadableNumber(selectedDecimals),
-                                            validations: [],
+                                            // error: errors?.amount,
+                                            min: HugeDecimal.one.toHumanReadableNumber(6),
+                                            step: HugeDecimal.one.toHumanReadableNumber(6),
                                         }}
                                         onSelectToken={({ chainId, denomOrAddress, type }) => {
                                             if (type === TokenType.Native) {
-
-                                                setValue((fieldNamePrefix + `eligibleAssets.${index}.token`) as `eligibleAssets.${number}.token`, { native: denomOrAddress })
+                                                setValue((fieldNamePrefix + `eligibleAssets.${index}.token`) as `eligibleAssets.${number}.token`, denomOrAddress)
                                             }
-                                            // } else if (type === TokenType.Cw20) {
-                                            //     setValue(
-                                            //         (fieldNamePrefix + `eligibleAssets.${index}.token`) as `eligibleAssets.${number}.token`,
-                                            //         { cw20: denomOrAddress }
-                                            //     )
-                                            // }
-
                                         }}
-                                        // onSelectToken={({ type, denomOrAddress, chainId }) => {
-                                        //     setValue((fieldNamePrefix + 'tokenToShit.denomOrAddress') as 'tokenToShit.denomOrAddress',denomOrAddress)
-                                        //     setValue((fieldNamePrefix + 'tokenToShit.type') as 'tokenToShit.type',type)
-                                        //     setValue((fieldNamePrefix + 'tokenToShit.chainId') as 'tokenToShit.chainId',chainId)
-                                        // }}
                                         readOnly={!isCreating}
-                                        selectedToken={tokens.find(({ token }) =>
+                                        selectedToken={!currentWalletTokenBalances.loading ? currentWalletTokenBalances.data.find(({ token }) =>
                                             watchEligibleAssets[index] && watchEligibleAssets[index].token && (
-                                                (token.type === TokenType.Native && watchEligibleAssets[index].token === token.denomOrAddress) ||
-                                                (token.type === TokenType.Cw20 && watchEligibleAssets[index].token === token.denomOrAddress)
+                                                watchEligibleAssets[index].token === token.denomOrAddress
                                             )
-                                        )?.token}
+                                        )?.token : watchTokentoShit}
                                         showChainImage
                                         tokens={{
                                             loading: false,
-                                            data: tokens
+                                            data: !currentWalletTokenBalances.loading ? currentWalletTokenBalances.data
                                                 .filter(({ token: { chainId } }) =>
                                                     possibleChainIds.includes(chainId)
                                                 )
@@ -461,9 +452,9 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
                                                         HugeDecimal.from(
                                                             balance
                                                         ).toInternationalizedHumanReadableString({
-                                                            decimals: token.decimals,
+                                                            decimals: 6,
                                                         }),
-                                                })),
+                                                })) : [],
                                         }}
                                     />
                                     {isCreating && (
