@@ -416,6 +416,7 @@ export const CreateShitstrap: ComponentType<ActionComponentProps<CreateShitstrap
                                 </div>
                                 <div className="flex flex-row gap-1">
                                     <TokenInput
+                                        required={index == 0 ? true : false}
                                         amount={{
                                             watch,
                                             setValue,

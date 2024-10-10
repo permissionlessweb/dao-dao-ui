@@ -113,10 +113,14 @@ export const ShitstrapPaymentLine = ({
                     {/* Show Cutoff Token */}
                     total to shit:
                     <TokenAmountDisplay
-                        amount={HugeDecimal.from(shitstrapInfo.cutoff).times(HugeDecimal.from(10).pow(-9))}
+                        amount={HugeDecimal.from(shitstrapInfo.cutoff).times(HugeDecimal.from(10).pow(-6))}
                         className="body-text truncate font-mono"
                         decimals={shit.decimals}
-                        symbol={shit.denomOrAddress.substring(0, 15)}
+                        symbol={shit.denomOrAddress.startsWith(`factory/osmo1`)
+                            ? !shit.denomOrAddress.substring(51).startsWith('/')
+                                ? shit.denomOrAddress.substring(71)
+                                : shit.denomOrAddress.substring(52)
+                            : shit.denomOrAddress}
                     />
 
                 </div>

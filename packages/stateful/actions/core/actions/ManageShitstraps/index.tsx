@@ -35,7 +35,6 @@ export type TokenToShit = {
     decimals: number,
 }
 
-
 const instantiateStructure = {
     instantiate_msg: {
         cutoff: {},
@@ -51,9 +50,8 @@ const shitStrapPaymentStrucutre = {
     }
 }
 
-
 /**
- * Get vesting sources from widget data.
+ * Get shitstrap sources from widget data.
  */
 const getShitstrapSourcesFromWidgetData = (
     options: ActionOptions,
@@ -114,32 +112,6 @@ const getShitstrapContractsOwnedByEntityQueries = (
             : []
     )
 }
-// const getShitstrapContractsInfoQueries = (
-//     options: ActionOptions,
-//     widgetData?: ShitstrapPaymentWidgetData
-// ) => {
-//     const sources =
-//         widgetData && getShitstrapSourcesFromWidgetData(options, widgetData)
-//     return options.context.accounts.flatMap(({ chainId, address }) =>
-//         chainIsIndexed(chainId)
-//             ?
-//             options.context.type === ActionContextType.Dao
-//                 ?
-//                 options.context.dao.accounts.map(({ chainId, address }) =>
-//                     cwShitstrapExtraQueries.info(options.queryClient, {
-//                         chainId,
-//                         address,
-//                     })
-//                 )
-//                 : options.context.accounts.map(({ chainId, address }) =>
-//                     cwShitstrapExtraQueries.info(options.queryClient, {
-//                         chainId,
-//                         address,
-//                     }))
-
-//             : []
-//     )
-// }
 
 /**
 * Get the shitstrap infos owned by the current
@@ -154,6 +126,7 @@ const useShitstrapContractsOwnedByEntity = () => {
         }),
     })
 }
+
 const Component: ComponentType<
     ActionComponentProps<undefined, ManageShitStrapData> & {
         widgetData?: ShitstrapPaymentWidgetData
@@ -167,6 +140,8 @@ const Component: ComponentType<
         useFormContext<ManageShitStrapData>()
 
     const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
+
+    const tokenBalances = useTokenBalances()
     const selectedChainId =
         mode === 'create'
             ? watch((props.fieldNamePrefix + 'create.chainId') as 'create.chainId')
@@ -178,8 +153,6 @@ const Component: ComponentType<
                         ? watch((props.fieldNamePrefix + 'overflow.chainId') as 'overflow.chainId')
                         : nativeChainId
 
-    const shitstrapContracts = useShitstrapContractsOwnedByEntity()
-    const tokenBalances = useTokenBalances()
 
     const tabs: SegmentedControlsProps<ManageShitStrapData['mode']>['tabs'] = [
         // Only allow beginning a vest if widget is setup.
@@ -240,17 +213,17 @@ const Component: ComponentType<
                 />
             ) : null}
             {mode === ShitstrapPaymentMode.Payment ? (
-                // <></>
-                <MakeShitstrapPayment
-                    {...props}
-                    errors={props.errors?.create}
-                    fieldNamePrefix={props.fieldNamePrefix + 'payment.'}
-                    options={{
-                        factories: {},
-                        widgetData,
-                        tokens: tokenBalances.loading ? [] : tokenBalances.data,
-                    }}
-                />
+                <></>
+                // <MakeShitstrapPayment
+                //     {...props}
+                //     errors={props.errors?.create}
+                //     fieldNamePrefix={props.fieldNamePrefix + 'payment.'}
+                //     options={{
+                //         factories: {},
+                //         widgetData,
+                //         tokens: tokenBalances.loading ? [] : tokenBalances.data,
+                //     }}
+                // />
             ) : null}
             {mode === ShitstrapPaymentMode.Flush ? (
                 <></>
@@ -275,9 +248,6 @@ const DaoComponent: ActionComponent<undefined, ManageShitStrapData> = (props) =>
 const WalletComponent: ActionComponent<undefined, ManageShitStrapData> = (
     props
 ) => <Component {...props} />
-
-
-
 
 export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
     public readonly key = ActionKey.ManageShitstrap
@@ -360,7 +330,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                 chainId: this.options.chain.chain_id,
                 shitstrapAddress: '',
                 shitToken: undefined,
-                amount: '',
+                amount: '0',
                 eligibleAssets: [],
                 contractChosen: false,
             },
@@ -397,40 +367,6 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                     })
                 )
             }
-
-            // const [nativeUnstakingDurationSeconds, token, preV1VestingFactoryOwner] =
-            //     await Promise.all([
-            //         this.options.queryClient.fetchQuery(
-            //             chainQueries.nativeUnstakingDurationSeconds({
-            //                 chainId,
-            //             })
-            //         ),
-            //         this.options.queryClient.fetchQuery(
-            //             tokenQueries.info(this.options.queryClient, {
-            //                 chainId,
-            //                 type: begin.type,
-            //                 denomOrAddress: begin.denomOrAddress,
-            //             })
-            //         ),
-            //         // Pre-v1 vesting widgets use the factory owner as the vesting owner.
-            //         this.widgetData.factory && !this.widgetData.version
-            //             ? this.options.queryClient
-            //                 .fetchQuery(
-            //                     cwPayrollFactoryQueries.ownership(this.options.queryClient, {
-            //                         chainId: this.options.chain.chain_id,
-            //                         contractAddress: this.widgetData.factory,
-            //                     })
-            //                 )
-            //                 .then(({ owner }) => owner || null)
-            //             : null,
-            //     ])
-
-            // const total = HugeDecimal.fromHumanReadable(create.cutoff, create.tokenToShit.decimals)
-
-            // const vestingDurationSeconds = begin.steps.reduce(
-            //     (acc, { delay }) => acc + convertDurationWithUnitsToSeconds(delay),
-            //     0
-            // )
 
             const instantiateMsg: ShitstrapInstantiateMsg = {
                 title: create.title,
@@ -518,17 +454,14 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                 throw new Error(this.options.t('error.loadingData'))
             }
 
-            // const viaCw20 = mode === 'payment' && payment.shitToken ? payment.shitToken.type === TokenType.Native ? {
-            //     native: payment.shitToken.denomOrAddress,
-            // } : {
-            //     cw20: payment.shitToken.denomOrAddress,
-            // } : {}
+            const total = HugeDecimal.fromHumanReadable(payment.amount, 6)
+             console.log("payment amount", payment.amount)
 
             cosmosMsg = makeExecuteSmartContractMessage({
                 chainId,
                 contractAddress,
                 sender: from,
-                funds: payment.shitToken ? coins(HugeDecimal.fromHumanReadable(payment.amount, payment.shitToken.decimals).toString(), payment.shitToken.denomOrAddress) : [],
+                funds: payment.shitToken ? total.toCoins(payment.shitToken.denomOrAddress) : [],
                 msg:
                     mode === 'overflow'
                         ? {
@@ -536,10 +469,11 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                         }
                         : {
                             shit_strap: {
-                                shit:
-                                    payment.shitToken && payment.shitToken.type === TokenType.Cw20
-                                        ? { cw20: payment.shitToken.denomOrAddress }
-                                        : { native: payment.shitToken?.denomOrAddress }
+                                shit: {
+                                    amount: total.toHumanReadableString(6),
+                                    denom: payment.shitToken && payment.shitToken.type === TokenType.Native ?
+                                        { native: payment.shitToken?.denomOrAddress } : { native: payment.shitToken?.denomOrAddress }
+                                }
                             },
                         },
             })
@@ -611,41 +545,13 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                     instantiate_shitstrap_factory_contract: instantiateStructure,
                 }
             )
-        // const isCw20ShitStrapPayment =
-        //     objectMatchesStructure(decodedMessage, {
-        //         wasm: {
-        //             execute: {
-        //                 contract_addr: {},
-        //                 funds: {},
-        //                 msg: {
-        //                     send: {
-        //                         amount: {},
-        //                         contract: {},
-        //                         msg: {},
-        //                     },
-        //                 },
-        //             },
-        //         },
-        //     }) &&
-        //     objectMatchesStructure(
-        //         decodeJsonFromBase64(decodedMessage.wasm.execute.msg.send.msg, true),
-        //         {
-        //             shit_strap: { shit: {} },
-        //         }
-        //     )
 
         const isShitStrapPayment = objectMatchesStructure(decodedMessage, {
             wasm: {
                 execute: {
                     contract_addr: {},
                     funds: {},
-                    msg: {
-                        shit_strap: {
-                            shit: {
-                                native: {}
-                            }
-                        },
-                    },
+                    msg: shitStrapPaymentStrucutre,
                 },
             },
         })
@@ -697,7 +603,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
             const instantiateMsg: ShitstrapInstantiateMsg = isNativeCreate
                 ? decodedMessage.wasm.execute.msg.instantiate_native_shitstrap_contract
                     .instantiate_msg
-                : // isCw20Begin
+                : 
                 // Extract instantiate message from cw20 send message.
                 (decodeJsonFromBase64(decodedMessage.wasm.execute.msg.send.msg, true)
                     .instantiate_payroll_contract
@@ -713,20 +619,6 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                             : decodedMessage.wasm.execute.contract_addr,
                     })
                 ),
-                // Attempt to load cw1-whitelist admins if the owner is set. Will only
-                // succeed if the owner is a cw1-whitelist contract. Otherwise it
-                // returns null.
-                // instantiateMsg.owner
-                //     ? this.options.queryClient.fetchQuery(
-                //         cw1WhitelistExtraQueries.adminsIfCw1Whitelist(
-                //             this.options.queryClient,
-                //             {
-                //                 chainId,
-                //                 address: instantiateMsg.owner,
-                //             }
-                //         )
-                //     )
-                //     : null,
             ])
 
             const ownerMode = !instantiateMsg.owner
@@ -760,7 +652,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                     chainId,
                     contractChosen: true,
                     shitstrapAddress: decodedMessage.wasm.execute.contract_addr,
-                    amount: decodedMessage.wasm.execute.msg.shit_strap.shit.amount,
+                    amount: HugeDecimal.from(decodedMessage.wasm.execute.msg.shit_strap.shit.amount).toHumanReadableString(6),
                     eligibleAssets: [],
                 }
             }

@@ -3,7 +3,7 @@ import { Counterparty } from "../token_swap/types"
 import { ActionComponent, GenericToken, GenericTokenBalanceWithOwner, LoadingDataWithError, TokenType } from "@dao-dao/types"
 import { ShitstrapPaymentWidgetData } from "../../../../widgets/widgets/Shitstrap/types"
 import { useTranslation } from "react-i18next"
-import { AddressInput, Button, ChainProvider, InputErrorMessage, InputLabel, TokenAmountDisplay, TokenInput, useActionOptions } from "@dao-dao/stateless"
+import { AddressInput, Button, ChainProvider, InputErrorMessage, InputLabel, NumericInput, TextInput, TokenAmountDisplay, TokenInput, useActionOptions } from "@dao-dao/stateless"
 import { useFormContext } from "react-hook-form"
 import { getChainAddressForActionOptions, makeValidateAddress, processError, validateRequired } from "@dao-dao/utils"
 import { EntityDisplay } from "../../../../components"
@@ -13,8 +13,9 @@ import { HugeDecimal } from "@dao-dao/math"
 import { useRecoilCallback } from "recoil"
 import { useEffect, useState } from "react"
 import { TokenToShit } from "."
+import { genericTokenSelector } from "@dao-dao/state/recoil"
 
-
+import {Config as ShitstrapConfig} from '@dao-dao/types/ShitStrap'
 export type MakeShitstrapPaymentData = {
     chainId: string
     // Whether or not the contract has been chosen. When this is `false`, shows
@@ -32,7 +33,6 @@ export type MakeShitstrapPaymentData = {
     selfParty?: Omit<Counterparty, 'address'>
     ownerEntity?: Counterparty
 }
-
 
 export type MakeShitstrapPaymentOptions = {
     widgetData: ShitstrapPaymentWidgetData | undefined
@@ -72,49 +72,22 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
 
     const { control, register, watch, getValues, resetField, setValue, setError, clearErrors, trigger } =
         useFormContext()
+    const watchShitstrapAddress: string | undefined = watch((fieldNamePrefix + 'shitstrapAddress') as 'shitstrapAddress')
     const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
-    const watchContractIsChosen = watch((fieldNamePrefix + 'contractChosen') as 'contractChosen')
     const watchShitToken = watch((fieldNamePrefix + 'shitToken') as 'shitToken')
     const shitstrapOwner = watch((fieldNamePrefix + 'ownerEntity.address') as 'ownerEntity.address')
-    const watchShitstrapAddress: string | undefined = watch((fieldNamePrefix + 'shitstrapAddress') as 'shitstrapAddress')
-    const watchAmountToSendToShit = watch((fieldNamePrefix + 'amount') as 'amount')
 
     // The only shistrap contracts that can have payments made:
     //   - have not been flushed by owner
     //   - are not full of shit
     // selected shitstrap info
     const queryClient = useQueryClient()
-    const selectedShitstrapInfo = useQuery(
-        cwShitstrapExtraQueries.info(queryClient, {
-            chainId: watchChainId,
-            address: watchShitstrapAddress!,
-        })
-    )
-    const activeShitstrap = selectedShitstrapInfo.isLoading || selectedShitstrapInfo.isError ? false : selectedShitstrapInfo.data
 
-    // selected token for payment info
-    const selectedToken = watchShitToken ? tokens.find((token) =>
-        token.token.denomOrAddress == watchShitToken
-    )
-        : undefined;
-    const selectedDecimals = selectedToken?.token.decimals ?? 0
-    const selectedMicroBalance = selectedToken?.balance ?? 0
-    const selectedBalance = HugeDecimal.from(selectedMicroBalance)
-    const eligibleAsset = activeShitstrap ?
-        activeShitstrap.eligibleAssets.find((asset) => {
-            if (typeof asset.token === 'object') {
-                return ('native' in asset.token && asset.token.native === watchShitToken?.denomOrAddress)
-                    || ('cw20' in asset.token && asset.token.cw20 === watchShitToken?.denomOrAddress);
-            } else {
-                return asset.token === watchShitToken?.denomOrAddress;
-            }
-        })
-        : undefined;
 
-    // estimate shitstrap rewards
-    const estimatedToken = eligibleAsset ?
-        HugeDecimal.from(1).div(HugeDecimal.fromHumanReadable(eligibleAsset.shit_rate, 6)).times(watchAmountToSendToShit)
-        : HugeDecimal.from(0);
+    // const estimatedToken = eligibleAsset ? (HugeDecimal.from(eligibleAsset.shit_rate ?? 1).div(HugeDecimal.from(10).pow(6)).toNumber()) * parseInt(watchAmountToSendToShit) : 1;
+    const [contractChosen, setChoossetContractChosen] = useState(false)
+    const [queryShitstrapInfo, setQueryShitstrapInfo] = useState(false)
+    const [shitstrapInfo, setShitstrapInfo] = useState<ShitstrapConfig>()
 
 
     // handle loading and affirm shitstrap contract
@@ -122,7 +95,6 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
     const onChooseExistingContract = useRecoilCallback(
         ({ snapshot }) => async () => {
             setChooseLoading(true)
-
             try {
                 clearErrors(
                     (fieldNamePrefix + 'shitstrapAddress') as 'shitstrapAddress'
@@ -139,10 +111,9 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
                 if (!watchShitstrapAddress) {
                     throw new Error(t('error.loadingData'))
                 }
-                setValue(
-                    (fieldNamePrefix + 'contractChosen') as 'contractChosen',
-                    true, { shouldValidate: true }
-                )
+                setChoossetContractChosen(true)
+                setQueryShitstrapInfo(true)
+
             } catch (err) {
                 console.error(err)
                 setError(
@@ -159,29 +130,29 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
             }
         },
         [
-            trigger,
-            fieldNamePrefix,
-            setValue,
-            watchShitstrapAddress,
-            setError,
-            clearErrors,
+            // clearErrors,
+            // fieldNamePrefix,
+            // trigger,
+            // setError,
             setChooseLoading,
         ]
     )
     useEffect(() => {
         const verifyShitstrapContract = async () => {
-            if (!watchShitstrapAddress) return;
+          if (queryShitstrapInfo || shitstrapInfo) return;
             try {
                 const info = await queryClient.fetchQuery(
-                    shitStrapQueries.fullOfShit(queryClient, {
+                    shitStrapQueries.config(queryClient, {
                         chainId: watchChainId,
-                        contractAddress: watchShitstrapAddress,
+                        contractAddress: watchShitstrapAddress!,
                     })
                 );
-                if (typeof info !== 'boolean') {
+                if (typeof info.full_of_shit !== 'boolean') {
                     throw new Error(t('error.notAShitstrapAddress'));
                 }
                 console.log("all good!")
+
+                setShitstrapInfo(info as (ShitstrapConfig | undefined));
             } catch (err) {
                 console.error(err);
                 if (
@@ -213,25 +184,18 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
 
         verifyShitstrapContract();
     }, [
+        queryShitstrapInfo,
         watchShitstrapAddress,
-        fieldNamePrefix,
-        setError,
-        watchChainId,
-        queryClient,
-        t,
-    ]);
+        // ...
+      ]);
 
     return (
         <ChainProvider chainId={watchChainId}>
             <p className="max-w-prose">{t('info.shitStrapExplanation')}</p>
             <div className="flex flex-col gap-3">
                 <p className="max-w-prose">{t('form.tokenSwapExistingInstructions')}</p>
-                <div
-                    // key={id}
-                    className="flex flex-row flex-wrap items-center gap-2"
-                >
+                <div className="flex flex-row flex-wrap items-center gap-2">
                     <div className="flex shrink-0 flex-col gap-1">
-
                         <div className="flex flex-row items-end justify-between gap-2">
                             <InputLabel name={t('form.inputShitstrap')} />
                         </div>
@@ -245,32 +209,15 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
                                 validation={[validateRequired, makeValidateAddress(bech32Prefix)]}
                             />
                             <InputErrorMessage error={errors?.collectionAddress} />
-
-                            {/* {activeShitstrap && (
-                                <div className="!mt-4 space-y-2">
-                                    <InputLabel name={t('title.suggestions')} />
-
-                                    <div className="flex flex-row flex-wrap gap-1">
-                                        {activeShitstrap.eligibleAssets.map((props) => (
-                                            <Button
-                                                key={props.token.cw20 ? props.token.cw20 : props.token.native}
-                                                center
-                                                onClick={() =>
-                                                    setValue(fieldNamePrefix + 'shitstrapAddress' as 'shitstrapAddress', shitstrapContractAddr)
-                                                }
-                                                pressed={undefined}
-                                                size="sm"
-                                                type="button"
-                                                variant="secondary"
-                                            >
-                                                {props.shit_rate}
-                                            </Button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )} */}
-
-                            {activeShitstrap && (
+                            <Button
+                                className="self-end"
+                                loading={chooseLoading}
+                                onClick={onChooseExistingContract}
+                                size="lg"
+                            >
+                                {t('button.continue')}
+                            </Button>
+                            {shitstrapInfo && contractChosen ? (
                                 // <></>
                                 <TokenInput
                                     amount={{
@@ -282,7 +229,7 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
                                         error: errors?.amount,
                                         min: 0,
                                         max: 999999999999,
-                                        step: HugeDecimal.one.toHumanReadableNumber(0),
+                                        step: HugeDecimal.one.toNumber(),
                                         validations: [],
                                     }}
                                     onSelectToken={(token) => {
@@ -299,7 +246,7 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
                                             loading: false,
                                             data: tokens
                                                 .filter(({ token }) =>
-                                                    activeShitstrap.eligibleAssets.some((asset) => {
+                                                    shitstrapInfo.accepted.some((asset) => {
                                                         if (typeof asset.token === 'object') {
                                                             if ('native' in asset.token) {
                                                                 return asset.token.native === token.denomOrAddress;
@@ -319,31 +266,37 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
                                                     description:
                                                         t('title.balance') +
                                                         ': ' + HugeDecimal.from(balance).toInternationalizedHumanReadableString({
-                                                            decimals: token.decimals,
+                                                            decimals: 6,
                                                         })
                                                     ,
                                                 })),
                                         }
                                     }
                                 />
-                            )}
+                            ) : undefined}
                         </div>
                     </div>
-                    <p className="link-text mb-1">{t('info.previewShitstrapPayment')}</p>
 
+                </div>
+                <div className="flex flex-row items-center justify-between gap-8">
+                    <p className="link-text mb-1">{t('info.previewShitstrapPayment')}</p>
                     <div className="flex flex-row items-center justify-between gap-8">
-                        <p className="secondary-text">{t('title.estimatedToShit')}</p>
-                        {estimatedToken !== HugeDecimal.zero && (
-                            <TokenAmountDisplay
-                                amount={estimatedToken.toNumber()}
-                                className="caption-text text-right font-mono text-text-body"
-                                decimals={6}
-                                symbol={activeShitstrap ? activeShitstrap.shit.symbol : ''}
-                                hideSymbol={false}
-                            />
-                        )}
                     </div>
                 </div>
+                <p className="secondary-text">{t('title.estimatedToShit')}</p>
+                {/* {activeShitstrap && estimatedToken !== HugeDecimal.zero.toNumber() && (
+                                    <TokenAmountDisplay
+                                        amount={estimatedToken}
+                                        className="grow header-text text-sm"
+                                        decimals={6}
+                                        symbol={activeShitstrap.shit.denomOrAddress.startsWith(`factory/osmo1`)
+                                            ? !activeShitstrap.shit.denomOrAddress.substring(51).startsWith('/')
+                                                ? activeShitstrap.shit.denomOrAddress.substring(71)
+                                                : activeShitstrap.shit.denomOrAddress.substring(52)
+                                            : activeShitstrap.shit.denomOrAddress}
+                                        hideSymbol={false}
+                                    />
+                )} */}
             </div>
         </ChainProvider>
     )
