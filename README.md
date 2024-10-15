@@ -1,5 +1,13 @@
 ## DAO DAO UI
 
+## SHITSTRAP TODO
+- Add payment suggestion for funding shitstrap if no balance 
+- Add filtering support 
+- use chain prefix to trunicate factorytoken labels.
+- Improve shitstrap line 
+- Improve shitstrap card
+- Improve shitstrap payment proposal form
+
 This project creates a web UI for the [DAO DAO smart
 contracts](https://github.com/DA0-DA0/dao-contracts), enabling users to:
 

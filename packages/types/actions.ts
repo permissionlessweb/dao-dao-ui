@@ -118,7 +118,6 @@ export enum ActionKey {
   ResumeRewardDistribution = 'resumeRewardDistribution',
   // Shitstrap
   ManageShitstrap = 'manageShitstrap',
-
 }
 
 export type ActionAndData<

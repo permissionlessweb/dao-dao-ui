@@ -1,9 +1,10 @@
 import { ComponentType } from 'react'
+
 import { PossibleShit, ShitstrapInfo } from '../contracts/ShitStrap'
-import { StatefulEntityDisplayProps } from './EntityDisplay'
 import { DOmit, LoadingData } from '../misc'
-import { TokenInputOption, TokenInputProps } from './TokenInput'
 import { GenericToken } from '../token'
+import { StatefulEntityDisplayProps } from './EntityDisplay'
+import { TokenInputOption, TokenInputProps } from './TokenInput'
 
 export type StatefulShitStrapPaymentCardProps = {
   shitstrapInfo: ShitstrapInfo
@@ -23,14 +24,12 @@ export type StatefulShitStrapPaymentLineProps = Omit<
   'EntityDisplay'
 >
 
-
 export enum ShitstrapPaymentMode {
   Create = 'create',
   Flush = 'flush',
   OverFlow = 'overflow',
   Payment = 'payment',
 }
-
 
 export interface ShitstrapModalProps {
   // The mode to open the staking modal in.

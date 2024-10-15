@@ -3,8 +3,8 @@ import { Widget } from '@dao-dao/types'
 import {
   PressWidget,
   RetroactiveCompensationWidget,
-  VestingPaymentsWidget,
   ShitstrapWidget,
+  VestingPaymentsWidget,
 } from './widgets'
 
 // Add widgets here.

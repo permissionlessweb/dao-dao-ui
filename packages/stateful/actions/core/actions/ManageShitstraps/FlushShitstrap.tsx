@@ -1,5 +1,5 @@
 export type FlushShitstrapData = {
-    chainId: string
-    shitstrap: string
-    owner: string
+  chainId: string
+  shitstrap: string
+  owner: string
 }

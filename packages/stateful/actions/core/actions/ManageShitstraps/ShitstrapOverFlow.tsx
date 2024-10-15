@@ -1,4 +1,4 @@
 export type ShitstrapOverFlowData = {
-    chainId: string
-    shitstrapAddress: string
+  chainId: string
+  shitstrapAddress: string
 }

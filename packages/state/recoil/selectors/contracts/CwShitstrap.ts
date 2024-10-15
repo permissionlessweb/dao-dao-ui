@@ -11,7 +11,7 @@ export type ExecuteClientParams = WithChainId<{
 }>
 
 export const executeClient = selectorFamily<
-ShitStrapClient | undefined,
+  ShitStrapClient | undefined,
   ExecuteClientParams
 >({
   key: 'cwShitstrapExecuteClient',

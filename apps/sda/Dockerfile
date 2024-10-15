@@ -1,5 +1,6 @@
 # Use the official Node.js image as the base
-FROM node:18 AS builder
+FROM node:18  
+## FROM node:18 as builder
 
 # Set the working directory to /app
 WORKDIR /app
@@ -8,7 +9,7 @@ WORKDIR /app
 COPY ./apps/sda/.env.testnet .
 
 # Copy the package.json and yarn.lock files
-COPY package*.json yarn.lock ./ 
+COPY package*.json yarn.lock ./
 
 # Install the workspace dependencies using yarn first
 RUN yarn install

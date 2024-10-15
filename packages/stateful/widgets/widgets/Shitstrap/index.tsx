@@ -11,7 +11,6 @@ import { Renderer } from './Renderer'
 import { ShitStrapEditor as Editor } from './ShitstrapEditor'
 import { ShitstrapPaymentWidgetData } from './types'
 
-
 export const ShitstrapWidget: Widget<ShitstrapPaymentWidgetData> = {
   id: WidgetId.ShitStrap,
   Icon: PaidOutlined,

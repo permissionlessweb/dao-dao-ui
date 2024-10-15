@@ -46,7 +46,10 @@ const instantiateStructure = {
 }
 const shitStrapPaymentStrucutre = {
     shit_strap: {
-        shit: {},
+        shit: {
+            amount: {},
+            denom: {}
+        },
     }
 }
 
@@ -141,6 +144,7 @@ const Component: ComponentType<
 
     const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
 
+    const shitstrapContracts = useShitstrapContractsOwnedByEntity()
     const tokenBalances = useTokenBalances()
     const selectedChainId =
         mode === 'create'
@@ -213,17 +217,17 @@ const Component: ComponentType<
                 />
             ) : null}
             {mode === ShitstrapPaymentMode.Payment ? (
-                <></>
-                // <MakeShitstrapPayment
-                //     {...props}
-                //     errors={props.errors?.create}
-                //     fieldNamePrefix={props.fieldNamePrefix + 'payment.'}
-                //     options={{
-                //         factories: {},
-                //         widgetData,
-                //         tokens: tokenBalances.loading ? [] : tokenBalances.data,
-                //     }}
-                // />
+                // <></>
+                <MakeShitstrapPayment
+                    {...props}
+                    errors={props.errors?.create}
+                    fieldNamePrefix={props.fieldNamePrefix + 'payment.'}
+                    options={{
+                        factories: {},
+                        widgetData,
+                        tokens: tokenBalances.loading ? [] : tokenBalances.data,
+                    }}
+                />
             ) : null}
             {mode === ShitstrapPaymentMode.Flush ? (
                 <></>
@@ -455,7 +459,6 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
             }
 
             const total = HugeDecimal.fromHumanReadable(payment.amount, 6)
-             console.log("payment amount", payment.amount)
 
             cosmosMsg = makeExecuteSmartContractMessage({
                 chainId,
@@ -470,28 +473,13 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                         : {
                             shit_strap: {
                                 shit: {
-                                    amount: total.toHumanReadableString(6),
+                                    amount: total.toString(),
                                     denom: payment.shitToken && payment.shitToken.type === TokenType.Native ?
                                         { native: payment.shitToken?.denomOrAddress } : { native: payment.shitToken?.denomOrAddress }
                                 }
                             },
                         },
             })
-
-            // cosmosMsg = viaCw20
-            //     ? // Wrap in cw1-whitelist execute.
-            //     cosmosMsg = makeExecuteSmartContractMessage({
-            //         chainId,
-            //         contractAddress: payment.shitstrapAddress,
-            //         sender: from,
-            //         msg: {
-            //             send: {
-            //                 amount: payment.amount,
-            //                 contract: payment.shitstrapAddress,
-            //                 msg: encodeJsonToBase64(msg),
-            //             },
-            //         },
-            //     }) : msg
         } else {
             throw new Error(this.options.t('error.unexpectedError'))
         }
@@ -545,6 +533,28 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
                     instantiate_shitstrap_factory_contract: instantiateStructure,
                 }
             )
+        // const isCw20ShitStrapPayment =
+        //     objectMatchesStructure(decodedMessage, {
+        //         wasm: {
+        //             execute: {
+        //                 contract_addr: {},
+        //                 funds: {},
+        //                 msg: {
+        //                     send: {
+        //                         amount: {},
+        //                         contract: {},
+        //                         msg: {},
+        //                     },
+        //                 },
+        //             },
+        //         },
+        //     }) &&
+        //     objectMatchesStructure(
+        //         decodeJsonFromBase64(decodedMessage.wasm.execute.msg.send.msg, true),
+        //         {
+        //             shit_strap: { shit: {} },
+        //         }
+        //     )
 
         const isShitStrapPayment = objectMatchesStructure(decodedMessage, {
             wasm: {

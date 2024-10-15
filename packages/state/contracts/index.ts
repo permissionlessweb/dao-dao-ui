@@ -156,7 +156,4 @@ export {
   SecretCw4GroupClient,
   SecretCw4GroupQueryClient,
 } from './SecretCw4Group'
-export {
-  ShitStrapClient,
-  ShitStrapQueryClient,
-} from './ShitStrap'
+export { ShitStrapClient, ShitStrapQueryClient } from './ShitStrap'

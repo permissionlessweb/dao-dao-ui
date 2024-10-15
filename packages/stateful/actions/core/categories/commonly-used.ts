@@ -19,5 +19,6 @@ export const makeCommonlyUsedCategory: ActionCategoryMaker = ({ t }) => ({
     ActionKey.Execute,
     ActionKey.Instantiate,
     ActionKey.ConfigureVestingPayments,
+    ActionKey.ManageShitstrap,
   ],
 })

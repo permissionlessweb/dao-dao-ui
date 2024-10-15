@@ -2,20 +2,16 @@ import { QueryClient, queryOptions } from '@tanstack/react-query'
 
 import { ArrayOfShitstrapContract } from '@dao-dao/types/contracts/ShitstrapFactory'
 
-import { indexerQueries } from '../indexer'
-import { cwPayrollFactoryQueries } from './CwPayrollFactory'
 import { shitStrapFactoryQueries } from './ShitstrapFactory'
-
 
 /**
  * List all vesting contracts.
-**/
+ **/
 export const listAllShitstrapContracts = async (
   queryClient: QueryClient,
   {
     chainId,
     address,
-
   }: {
     chainId: string
     address: string
@@ -43,7 +39,8 @@ export const listAllShitstrapContracts = async (
   // }
 
   // If indexer query fails, fallback to contract queries.
-  const defaultSEZShitstrapFactoryContractAddress = 'osmo1dv9hjuxaxwzgj8m7memnvzu5t2tsnkuafqdjv3vl4g6snxefkwfqkt0gy3';
+  const defaultSEZShitstrapFactoryContractAddress =
+    'osmo1dv9hjuxaxwzgj8m7memnvzu5t2tsnkuafqdjv3vl4g6snxefkwfqkt0gy3'
   const shistrapContracts: ArrayOfShitstrapContract = []
   const limit = 30
   while (true) {
@@ -115,17 +112,22 @@ export const listAllShitstrapContractsByInstantiator = async (
   const shistrapContracts: ArrayOfShitstrapContract = []
   const limit = 30
   while (true) {
-    const defaultSEZShitstrapFactoryContractAddress = 'osmo1dv9hjuxaxwzgj8m7memnvzu5t2tsnkuafqdjv3vl4g6snxefkwfqkt0gy3';
+    const defaultSEZShitstrapFactoryContractAddress =
+      'osmo1dv9hjuxaxwzgj8m7memnvzu5t2tsnkuafqdjv3vl4g6snxefkwfqkt0gy3'
     const response = await queryClient.fetchQuery(
-      shitStrapFactoryQueries.listShitstrapContractsByInstantiator(queryClient, {
-        chainId,
-        contractAddress: defaultSEZShitstrapFactoryContractAddress,
-        args: {
-          instantiator,
-          startAfter: shistrapContracts[shistrapContracts.length - 1]?.contract,
-          limit,
-        },
-      })
+      shitStrapFactoryQueries.listShitstrapContractsByInstantiator(
+        queryClient,
+        {
+          chainId,
+          contractAddress: defaultSEZShitstrapFactoryContractAddress,
+          args: {
+            instantiator,
+            startAfter:
+              shistrapContracts[shistrapContracts.length - 1]?.contract,
+            limit,
+          },
+        }
+      )
     )
 
     console.log(response)
@@ -157,7 +159,11 @@ export const cwShitstrapFactoriesExtraQuery = {
     options: Parameters<typeof listAllShitstrapContracts>[1]
   ) =>
     queryOptions({
-      queryKey: ['cwShitstrapFactoryExtra', 'listAllShitstrapContracts', options],
+      queryKey: [
+        'cwShitstrapFactoryExtra',
+        'listAllShitstrapContracts',
+        options,
+      ],
       queryFn: () => listAllShitstrapContracts(queryClient, options),
     }),
   /**
@@ -168,7 +174,12 @@ export const cwShitstrapFactoriesExtraQuery = {
     options: Parameters<typeof listAllShitstrapContractsByInstantiator>[1]
   ) =>
     queryOptions({
-      queryKey: ['cwShitstrapFactoryExtra', 'listAllShitstrapContractsByInstantiator', options],
-      queryFn: () => listAllShitstrapContractsByInstantiator(queryClient, options),
+      queryKey: [
+        'cwShitstrapFactoryExtra',
+        'listAllShitstrapContractsByInstantiator',
+        options,
+      ],
+      queryFn: () =>
+        listAllShitstrapContractsByInstantiator(queryClient, options),
     }),
 }
