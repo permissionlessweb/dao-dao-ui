@@ -177,6 +177,7 @@
     "loadSaves": "Load saves",
     "logIn": "Log in",
     "logOut": "Log out",
+    "makeShitStrapPayment": "Make Shitstrap Payment",
     "manage": "Manage",
     "manageStake": "Manage your ${{tokenSymbol}} stake",
     "manageStaking": "Manage staking",
@@ -244,6 +245,12 @@
     "setUpNewNotifier": "Set up new notifier",
     "setUpRebalancer": "Set up rebalancer",
     "settings": "Settings",
+    "shitstrapPaymentMode": {
+      "flush": "Flush Shitstrap",
+      "payment": "Make Payment",
+      "useTheDao": "Propose to DAO",
+      "useYourWallet": "Use connected wallet"
+    },
     "showInstantiateMessage": "Show Instantiate Message",
     "showQrCode": "Show QR code",
     "showRawData": "Show raw data",
@@ -290,13 +297,6 @@
     "withDecodedModuleMessages": "with Decoded Module Messages",
     "withdrawAvailableBalance": "Withdraw available balance",
     "withdrawFiat": "Withdraw fiat",
-    "makeShitStrapPayment": "Make Shitstrap Payment",
-    "shitstrapPaymentMode": {
-      "flush": "Flush Shitstrap",
-      "payment": "Make Payment",
-      "useTheDao": "Propose to DAO",
-      "useYourWallet": "Use connected wallet"
-    },
     "yourProfile": "Your profile"
   },
   "daoCreator": {
@@ -663,6 +663,7 @@
     "earlyExecuteTooltip": "If the vetoer decides NOT to veto a passed proposal, this allows them to execute the proposal instead, effectively skipping the timelock duration and speeding up the governance process.",
     "editValidatorMessage": "Edit validator message",
     "editValidatorMessageTooltip": "Update the information of a validator controlled by your DAO.",
+    "eligibleAssets": "Select what is accepted, and the accepted coversion ratio for this shitstrap. For example, 2.5 here would mean 2.5 tokens are sent to payment maker, for every 1 token sent to shitstrap.",
     "encodedMessages": "List of encoded messages",
     "encodedMessagesTooltip": "Provide a list of protobuf encoded messages with the values in base64.",
     "enterImageUrl": "Enter image URL",
@@ -708,7 +709,6 @@
     "initialDeposit": "Initial deposit",
     "initialFunds": "Initial funds",
     "initialTokenSupply": "Initial token supply",
-    "eligibleAssets": "Select what is accepted, and the accepted coversion ratio for this shitstrap. For example, 2.5 here would mean 2.5 tokens are sent to payment maker, for every 1 token sent to shitstrap.",
     "inputShitstrap": "Provide the contract address of the Shitstrap you intend to make a payment to",
     "instantiatedAddress": "Instantiated address",
     "instructions": "Instructions",

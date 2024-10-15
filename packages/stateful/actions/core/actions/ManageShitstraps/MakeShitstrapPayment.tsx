@@ -1,20 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query'
-
-import { useRecoilCallback } from "recoil"
-import { useEffect, useState } from "react"
-import { useFormContext } from "react-hook-form"
+import { useEffect, useState } from 'react'
+import { useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { HugeDecimal } from "@dao-dao/math"
+import { useRecoilCallback } from 'recoil'
+
 import { shitStrapQueries } from '@dao-dao/state/query'
-import {
-  AddressInput,
-  Button,
-  ChainProvider,
-  InputErrorMessage,
-  InputLabel,
-  TokenInput,
-  useActionOptions,
-} from '@dao-dao/stateless'
+import { useActionOptions } from '@dao-dao/stateless'
 import {
   ActionComponent,
   GenericToken,
@@ -22,11 +13,7 @@ import {
 } from '@dao-dao/types'
 import { PossibleShit } from '@dao-dao/types/contracts/ShitStrap'
 import { Config as ShitstrapConfig } from '@dao-dao/types/ShitStrap'
-import {
-  makeValidateAddress,
-  processError,
-  validateRequired,
-} from '@dao-dao/utils'
+import { processError } from '@dao-dao/utils'
 
 import { ShitstrapPaymentWidgetData } from '../../../../widgets/widgets/Shitstrap/types'
 import { Counterparty } from '../token_swap/types'
@@ -201,7 +188,7 @@ export const MakeShitstrapPayment: ActionComponent<
       }
     }
 
-    verifyShitstrapContract();
+    verifyShitstrapContract()
   }, [
     queryShitstrapInfo,
     watchShitstrapAddress,

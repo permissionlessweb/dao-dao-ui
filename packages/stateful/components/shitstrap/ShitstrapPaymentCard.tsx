@@ -86,8 +86,8 @@ export const ShitstrapPaymentCard = ({
         ? address
         : ''
       : isValidBech32Address(walletAddress, bech32Prefix)
-        ? walletAddress
-        : ''
+      ? walletAddress
+      : ''
   )
 
   // DAO & balance of DAO
@@ -99,9 +99,9 @@ export const ShitstrapPaymentCard = ({
       // creating the token swap on.
       entity.data.chainId === chainId
       ? DaoDaoCoreSelectors.tryFetchGovernanceTokenAddressSelector({
-        chainId,
-        contractAddress: entity.data.address,
-      })
+          chainId,
+          contractAddress: entity.data.address,
+        })
       : constSelector(undefined)
   )
   // Load balances as loadables since they refresh automatically on a timer.
@@ -111,19 +111,19 @@ export const ShitstrapPaymentCard = ({
       entity.data &&
       currentEntityDAOTokenLoadable.state !== 'loading'
       ? genericTokenBalancesSelector({
-        chainId: entity.data.chainId,
-        address: entity.data.address,
-        cw20GovernanceTokenAddress:
-          currentEntityDAOTokenLoadable.state === 'hasValue'
-            ? currentEntityDAOTokenLoadable.contents
-            : undefined,
-        filter: {
-          account: {
-            chainId,
-            address: entity.data.address,
+          chainId: entity.data.chainId,
+          address: entity.data.address,
+          cw20GovernanceTokenAddress:
+            currentEntityDAOTokenLoadable.state === 'hasValue'
+              ? currentEntityDAOTokenLoadable.contents
+              : undefined,
+          filter: {
+            account: {
+              chainId,
+              address: entity.data.address,
+            },
           },
-        },
-      })
+        })
       : undefined,
     []
   )
@@ -170,17 +170,17 @@ export const ShitstrapPaymentCard = ({
 
   const eligibleAsset = watchShitToken
     ? shitstrapInfo.eligibleAssets.find((asset) => {
-      if (typeof asset.token === 'object') {
-        return (
-          ('native' in asset.token &&
-            asset.token.native === watchShitToken?.denomOrAddress) ||
-          ('cw20' in asset.token &&
-            asset.token.cw20 === watchShitToken?.denomOrAddress)
-        )
-      } else {
-        return asset.token === watchShitToken?.denomOrAddress
-      }
-    })
+        if (typeof asset.token === 'object') {
+          return (
+            ('native' in asset.token &&
+              asset.token.native === watchShitToken?.denomOrAddress) ||
+            ('cw20' in asset.token &&
+              asset.token.cw20 === watchShitToken?.denomOrAddress)
+          )
+        } else {
+          return asset.token === watchShitToken?.denomOrAddress
+        }
+      })
     : undefined
   // microdenom helpers
   const decimals = watchShitToken ? watchShitToken?.decimals ?? 0 : 0
@@ -196,8 +196,8 @@ export const ShitstrapPaymentCard = ({
 
   const estimatedToken = eligibleAsset
     ? HugeDecimal.from(eligibleAsset.shit_rate ?? 1)
-      .div(HugeDecimal.from(10).pow(6))
-      .toNumber() * parseInt(watchAmount)
+        .div(HugeDecimal.from(10).pow(6))
+        .toNumber() * parseInt(watchAmount)
     : 1
 
   const displayShitToken = shit
@@ -212,7 +212,7 @@ export const ShitstrapPaymentCard = ({
     console.log(watchAmount)
     console.log(watchShitToken)
     console.log(estimatedToken)
-  }, [watchAmount]);
+  }, [watchAmount])
 
   // if user wants to make payment with fund from account,
   // we make use of the recoilHook here that takes the props currently set
@@ -254,7 +254,10 @@ export const ShitstrapPaymentCard = ({
               ),
               funds: [
                 {
-                  amount: HugeDecimal.fromHumanReadable(watchAmount, 6).toString(),
+                  amount: HugeDecimal.fromHumanReadable(
+                    watchAmount,
+                    6
+                  ).toString(),
                   denom: watchShitToken?.denomOrAddress,
                 },
               ],
@@ -265,7 +268,7 @@ export const ShitstrapPaymentCard = ({
         console.log(debugActions)
         let debug = goToDaoProposal(entity.data.address, 'create', {
           prefill: getDaoProposalSinglePrefill({
-            actions: debugActions
+            actions: debugActions,
           }),
         })
         await debug
@@ -323,7 +326,7 @@ export const ShitstrapPaymentCard = ({
           <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
             <h4 className="text-lg font-bold">{t('eligibleTokens')}</h4>
             {shitstrapInfo.eligibleAssets &&
-              shitstrapInfo.eligibleAssets.length > 0 ? (
+            shitstrapInfo.eligibleAssets.length > 0 ? (
               shitstrapInfo.eligibleAssets.map((asset, index) => (
                 <div
                   key={index}
@@ -350,15 +353,15 @@ export const ShitstrapPaymentCard = ({
                               : asset.token.native.substring(52)
                             : asset.token.native
                           : asset.token.cw20.startsWith(`factory/osmo1`)
-                            ? !asset.token.cw20.substring(51).startsWith('/')
-                              ? asset.token.cw20.substring(71)
-                              : asset.token.cw20.substring(52)
-                            : asset.token.cw20
+                          ? !asset.token.cw20.substring(51).startsWith('/')
+                            ? asset.token.cw20.substring(71)
+                            : asset.token.cw20.substring(52)
+                          : asset.token.cw20
                         : asset.token.startsWith(`factory/osmo1`)
-                          ? !asset.token.substring(51).startsWith('/')
-                            ? asset.token.substring(71)
-                            : asset.token.substring(52)
-                          : asset.token
+                        ? !asset.token.substring(51).startsWith('/')
+                          ? asset.token.substring(71)
+                          : asset.token.substring(52)
+                        : asset.token
                     }
                   />
                 </div>
@@ -426,7 +429,7 @@ export const ShitstrapPaymentCard = ({
                     validations: [
                       (amount) =>
                         HugeDecimal.from(amount).toString() <=
-                        selectedBalance.toString() ||
+                          selectedBalance.toString() ||
                         t(insufficientBalanceI18nKey, {
                           amount: selectedBalance.toLocaleString(undefined, {
                             maximumFractionDigits: decimals,
@@ -451,37 +454,37 @@ export const ShitstrapPaymentCard = ({
                       data: currentEntityTokenBalances.loading
                         ? []
                         : currentEntityTokenBalances.data
-                          ?.filter(({ token }) =>
-                            shitstrapInfo.eligibleAssets.some((asset) => {
-                              if (typeof asset.token === 'object') {
-                                if ('native' in asset.token) {
-                                  return (
-                                    asset.token.native ===
-                                    token.denomOrAddress
-                                  )
-                                } else if ('cw20' in asset.token) {
-                                  return (
-                                    asset.token.cw20 === token.denomOrAddress
-                                  )
+                            ?.filter(({ token }) =>
+                              shitstrapInfo.eligibleAssets.some((asset) => {
+                                if (typeof asset.token === 'object') {
+                                  if ('native' in asset.token) {
+                                    return (
+                                      asset.token.native ===
+                                      token.denomOrAddress
+                                    )
+                                  } else if ('cw20' in asset.token) {
+                                    return (
+                                      asset.token.cw20 === token.denomOrAddress
+                                    )
+                                  } else {
+                                    return false
+                                  }
                                 } else {
-                                  return false
+                                  return asset.token === token.denomOrAddress
                                 }
-                              } else {
-                                return asset.token === token.denomOrAddress
-                              }
-                            })
-                          )
-                          ?.map(({ balance, token }) => ({
-                            ...token,
-                            description:
-                              t('title.balance') +
-                              ': ' +
-                              HugeDecimal.from(
-                                balance
-                              ).toInternationalizedHumanReadableString({
-                                decimals: 6,
-                              }),
-                          })) ?? [],
+                              })
+                            )
+                            ?.map(({ balance, token }) => ({
+                              ...token,
+                              description:
+                                t('title.balance') +
+                                ': ' +
+                                HugeDecimal.from(
+                                  balance
+                                ).toInternationalizedHumanReadableString({
+                                  decimals: 6,
+                                }),
+                            })) ?? [],
                     }
                     //  :
                     //     {
