@@ -1,0 +1,10 @@
+services:
+  my-service:
+    build:
+      context: .
+      dockerfile: apps/sda/Dockerfile
+      args:
+        - BUILDPLATFORM
+        - TARGETPLATFORM
+    image: discoverdefiteam/shitstrap-dao:v0.0.1
+    platform: linux/amd64
