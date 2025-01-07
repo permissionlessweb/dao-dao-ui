@@ -86,8 +86,8 @@ export const ShitstrapPaymentCard = ({
         ? address
         : ''
       : isValidBech32Address(walletAddress, bech32Prefix)
-      ? walletAddress
-      : ''
+        ? walletAddress
+        : ''
   )
 
   // DAO & balance of DAO
@@ -99,9 +99,9 @@ export const ShitstrapPaymentCard = ({
       // creating the token swap on.
       entity.data.chainId === chainId
       ? DaoDaoCoreSelectors.tryFetchGovernanceTokenAddressSelector({
-          chainId,
-          contractAddress: entity.data.address,
-        })
+        chainId,
+        contractAddress: entity.data.address,
+      })
       : constSelector(undefined)
   )
   // Load balances as loadables since they refresh automatically on a timer.
@@ -111,19 +111,19 @@ export const ShitstrapPaymentCard = ({
       entity.data &&
       currentEntityDAOTokenLoadable.state !== 'loading'
       ? genericTokenBalancesSelector({
-          chainId: entity.data.chainId,
-          address: entity.data.address,
-          cw20GovernanceTokenAddress:
-            currentEntityDAOTokenLoadable.state === 'hasValue'
-              ? currentEntityDAOTokenLoadable.contents
-              : undefined,
-          filter: {
-            account: {
-              chainId,
-              address: entity.data.address,
-            },
+        chainId: entity.data.chainId,
+        address: entity.data.address,
+        cw20GovernanceTokenAddress:
+          currentEntityDAOTokenLoadable.state === 'hasValue'
+            ? currentEntityDAOTokenLoadable.contents
+            : undefined,
+        filter: {
+          account: {
+            chainId,
+            address: entity.data.address,
           },
-        })
+        },
+      })
       : undefined,
     []
   )
@@ -170,17 +170,17 @@ export const ShitstrapPaymentCard = ({
 
   const eligibleAsset = watchShitToken
     ? shitstrapInfo.eligibleAssets.find((asset) => {
-        if (typeof asset.token === 'object') {
-          return (
-            ('native' in asset.token &&
-              asset.token.native === watchShitToken?.denomOrAddress) ||
-            ('cw20' in asset.token &&
-              asset.token.cw20 === watchShitToken?.denomOrAddress)
-          )
-        } else {
-          return asset.token === watchShitToken?.denomOrAddress
-        }
-      })
+      if (typeof asset.token === 'object') {
+        return (
+          ('native' in asset.token &&
+            asset.token.native === watchShitToken?.denomOrAddress) ||
+          ('cw20' in asset.token &&
+            asset.token.cw20 === watchShitToken?.denomOrAddress)
+        )
+      } else {
+        return asset.token === watchShitToken?.denomOrAddress
+      }
+    })
     : undefined
   // microdenom helpers
   const decimals = watchShitToken ? watchShitToken?.decimals ?? 0 : 0
@@ -196,17 +196,18 @@ export const ShitstrapPaymentCard = ({
 
   const estimatedToken = eligibleAsset
     ? HugeDecimal.from(eligibleAsset.shit_rate ?? 1)
-        .div(HugeDecimal.from(10).pow(6))
-        .toNumber() * parseInt(watchAmount)
+      .div(HugeDecimal.from(10).pow(18))
+      .toNumber() * parseInt(watchAmount)
     : 1
 
+    //  TODO: update workaround via prefix lens + chains account | contract lens
   const displayShitToken = shit
-    ? shit.denomOrAddress.startsWith(`factory/osmo1`)
+    ? shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`)
       ? !shit.denomOrAddress.substring(51).startsWith('/')
         ? shit.denomOrAddress.substring(71)
         : shit.denomOrAddress.substring(52)
       : shit.denomOrAddress
-    : 'hsh'
+    : ''
   useEffect(() => {
     console.log(eligibleAsset)
     console.log(watchAmount)
@@ -320,13 +321,19 @@ export const ShitstrapPaymentCard = ({
           <div className="flex flex-row items-start justify-between gap-8">
             <p className="link-text">{t('info.shitstrapPaymentTitle')}</p>
           </div>
-          <p className="link-text">{t('info.shitstrapPaymentDescription')}</p>
+            <p className="link-text">{t('info.shitstrapPaymentDescription')}</p>
+        </div>
+        <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
+          {shitstrapInfo.title}
+        <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
+          {shitstrapInfo.description}
+        </div>
         </div>
         <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-0">
           <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
-            <h4 className="text-lg font-bold">{t('eligibleTokens')}</h4>
+            <h4 className="text-lg font-bold">{t('info.eligibleTokens')}</h4>
             {shitstrapInfo.eligibleAssets &&
-            shitstrapInfo.eligibleAssets.length > 0 ? (
+              shitstrapInfo.eligibleAssets.length > 0 ? (
               shitstrapInfo.eligibleAssets.map((asset, index) => (
                 <div
                   key={index}
@@ -340,28 +347,28 @@ export const ShitstrapPaymentCard = ({
                     className="body-text truncate font-mono"
                     decimals={4}
                     // HugeDecimal.from(1).div(HugeDecimal.fromHumanReadable(eligibleAsset.shit_rate, 6)).times(watchAmount)
-                    prefix="For every  "
+                    prefix="For every"
                     suffix={`, recieve  ${HugeDecimal.from(asset.shit_rate ?? 1)
-                      .div(HugeDecimal.from(10).pow(6))
+                      .div(HugeDecimal.from(10).pow(18))
                       .toNumber()}  ${displayShitToken} `}
                     symbol={
                       typeof asset.token === 'object'
                         ? 'native' in asset.token
-                          ? asset.token.native.startsWith(`factory/osmo1`)
+                          ? asset.token.native.startsWith(`factory/'${bech32Prefix}'1`)
                             ? !asset.token.native.substring(51).startsWith('/')
                               ? asset.token.native.substring(71)
                               : asset.token.native.substring(52)
                             : asset.token.native
-                          : asset.token.cw20.startsWith(`factory/osmo1`)
-                          ? !asset.token.cw20.substring(51).startsWith('/')
-                            ? asset.token.cw20.substring(71)
-                            : asset.token.cw20.substring(52)
-                          : asset.token.cw20
-                        : asset.token.startsWith(`factory/osmo1`)
-                        ? !asset.token.substring(51).startsWith('/')
-                          ? asset.token.substring(71)
-                          : asset.token.substring(52)
-                        : asset.token
+                          : asset.token.cw20.startsWith(`factory/'${bech32Prefix}'1`)
+                            ? !asset.token.cw20.substring(51).startsWith('/')
+                              ? asset.token.cw20.substring(71)
+                              : asset.token.cw20.substring(52)
+                            : asset.token.cw20
+                        : asset.token.startsWith(`factory/'${bech32Prefix}'1`)
+                          ? !asset.token.substring(51).startsWith('/')
+                            ? asset.token.substring(71)
+                            : asset.token.substring(52)
+                          : asset.token
                     }
                   />
                 </div>
@@ -394,7 +401,7 @@ export const ShitstrapPaymentCard = ({
                 />
               </div>
             </Tooltip>
-
+            {t(`title.shitstrapActionPayment`)}
             {mode === ShitstrapPaymentMode.Payment ? (
               <>
                 <div className="mt-5 flex w-full flex-col gap-4">
@@ -429,7 +436,7 @@ export const ShitstrapPaymentCard = ({
                     validations: [
                       (amount) =>
                         HugeDecimal.from(amount).toString() <=
-                          selectedBalance.toString() ||
+                        selectedBalance.toString() ||
                         t(insufficientBalanceI18nKey, {
                           amount: selectedBalance.toLocaleString(undefined, {
                             maximumFractionDigits: decimals,
@@ -454,37 +461,37 @@ export const ShitstrapPaymentCard = ({
                       data: currentEntityTokenBalances.loading
                         ? []
                         : currentEntityTokenBalances.data
-                            ?.filter(({ token }) =>
-                              shitstrapInfo.eligibleAssets.some((asset) => {
-                                if (typeof asset.token === 'object') {
-                                  if ('native' in asset.token) {
-                                    return (
-                                      asset.token.native ===
-                                      token.denomOrAddress
-                                    )
-                                  } else if ('cw20' in asset.token) {
-                                    return (
-                                      asset.token.cw20 === token.denomOrAddress
-                                    )
-                                  } else {
-                                    return false
-                                  }
+                          ?.filter(({ token }) =>
+                            shitstrapInfo.eligibleAssets.some((asset) => {
+                              if (typeof asset.token === 'object') {
+                                if ('native' in asset.token) {
+                                  return (
+                                    asset.token.native ===
+                                    token.denomOrAddress
+                                  )
+                                } else if ('cw20' in asset.token) {
+                                  return (
+                                    asset.token.cw20 === token.denomOrAddress
+                                  )
                                 } else {
-                                  return asset.token === token.denomOrAddress
+                                  return false
                                 }
-                              })
-                            )
-                            ?.map(({ balance, token }) => ({
-                              ...token,
-                              description:
-                                t('title.balance') +
-                                ': ' +
-                                HugeDecimal.from(
-                                  balance
-                                ).toInternationalizedHumanReadableString({
-                                  decimals: 6,
-                                }),
-                            })) ?? [],
+                              } else {
+                                return asset.token === token.denomOrAddress
+                              }
+                            })
+                          )
+                          ?.map(({ balance, token }) => ({
+                            ...token,
+                            description:
+                              t('title.balance') +
+                              ': ' +
+                              HugeDecimal.from(
+                                balance
+                              ).toInternationalizedHumanReadableString({
+                                decimals: 6,
+                              }),
+                          })) ?? [],
                     }
                     //  :
                     //     {
@@ -538,7 +545,7 @@ export const ShitstrapPaymentCard = ({
                     decimals={6}
                     hideSymbol={false}
                     symbol={
-                      shit.denomOrAddress.startsWith(`factory/osmo1`)
+                      shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`)
                         ? !shit.denomOrAddress.substring(51).startsWith('/')
                           ? shit.denomOrAddress.substring(71)
                           : shit.denomOrAddress.substring(52)

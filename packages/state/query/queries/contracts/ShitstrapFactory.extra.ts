@@ -39,15 +39,13 @@ export const listAllShitstrapContracts = async (
   // }
 
   // If indexer query fails, fallback to contract queries.
-  const defaultSEZShitstrapFactoryContractAddress =
-    'osmo1dv9hjuxaxwzgj8m7memnvzu5t2tsnkuafqdjv3vl4g6snxefkwfqkt0gy3'
   const shistrapContracts: ArrayOfShitstrapContract = []
   const limit = 30
   while (true) {
     const response = await queryClient.fetchQuery(
       shitStrapFactoryQueries.listShitstrapContracts(queryClient, {
         chainId,
-        contractAddress: defaultSEZShitstrapFactoryContractAddress,
+        contractAddress: address,
         args: {
           startAfter: shistrapContracts[shistrapContracts.length - 1]?.contract,
           limit,
@@ -73,7 +71,7 @@ export const listAllShitstrapContracts = async (
   }
 }
 /**
- * List all vesting contracts by instanitater addr
+ * List all shistraps contracts by instanitater addr
  */
 export const listAllShitstrapContractsByInstantiator = async (
   queryClient: QueryClient,
@@ -112,14 +110,12 @@ export const listAllShitstrapContractsByInstantiator = async (
   const shistrapContracts: ArrayOfShitstrapContract = []
   const limit = 30
   while (true) {
-    const defaultSEZShitstrapFactoryContractAddress =
-      'osmo1dv9hjuxaxwzgj8m7memnvzu5t2tsnkuafqdjv3vl4g6snxefkwfqkt0gy3'
     const response = await queryClient.fetchQuery(
       shitStrapFactoryQueries.listShitstrapContractsByInstantiator(
         queryClient,
         {
           chainId,
-          contractAddress: defaultSEZShitstrapFactoryContractAddress,
+          contractAddress: address,
           args: {
             instantiator,
             startAfter:

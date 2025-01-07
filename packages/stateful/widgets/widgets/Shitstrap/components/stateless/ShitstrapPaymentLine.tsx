@@ -10,6 +10,7 @@ import {
 } from '@dao-dao/stateless'
 import { ShitStrapPaymentLineProps, TypedOption } from '@dao-dao/types'
 import { PossibleShit } from '@dao-dao/types/contracts/ShitStrap'
+import { getChainForChainId } from '@dao-dao/utils'
 
 export const ShitstrapPaymentLine = ({
   shitstrapInfo,
@@ -21,6 +22,7 @@ export const ShitstrapPaymentLine = ({
 
   const { chainId, eligibleAssets, shit, full, shitstrapContractAddr, owner } =
     shitstrapInfo
+  const { bech32_prefix: bech32Prefix } = getChainForChainId(chainId)
 
   const eligibleAssetsOptions: TypedOption<PossibleShit>[] = eligibleAssets.map(
     (asset) => {
@@ -31,7 +33,7 @@ export const ShitstrapPaymentLine = ({
             : asset.token.cw20
           : asset.token
 
-      const displayToken = tokenString.startsWith(`factory/osmo1`)
+      const displayToken = tokenString.startsWith(`factory/'${bech32Prefix}'1`)
         ? !tokenString.substring(51).startsWith('/')
           ? tokenString.substring(71)
           : tokenString.substring(52)
@@ -83,7 +85,7 @@ export const ShitstrapPaymentLine = ({
     <ChainProvider chainId={chainId}>
       <div
         className={clsx(
-          'box-content grid h-8 cursor-pointer grid-cols-5 items-center gap-1 rounded-lg py-2 px-3 transition hover:bg-background-interactive-hover active:bg-background-interactive-pressed md:gap-2 md:py-3 md:px-8',
+          'box-content grid h-8 cursor-pointer grid-cols-4 items-center gap-1 rounded-lg py-2 px-3 transition hover:bg-background-interactive-hover active:bg-background-interactive-pressed md:gap-2 md:py-9 md:px-8',
           !transparentBackground && 'bg-background-tertiary'
         )}
         onClick={(event) => {
@@ -93,7 +95,6 @@ export const ShitstrapPaymentLine = ({
         }}
       >
         {/* display owner of shitstrao */}
-        Shitstrap Owner:
         <EntityDisplay address={owner} noUnderline />
         {/* display shistrap state */}
         {full ? (
@@ -105,14 +106,13 @@ export const ShitstrapPaymentLine = ({
         ) : (
           <>
             {/* display map of eligible assets & their shit_rates */}
-            {/* todo: click to see map of all possible tokens */}
-            Eligible tokens
+            {/* todo: click to see map of all possible tokens, display verified or tokenfactory tokens */}
             <div onClick={(event) => event.stopPropagation()}>
               <Dropdown
-                containerClassName="your-container-class-name"
-                iconClassName="your-icon-class-name"
-                labelClassName="your-label-class-name"
-                labelContainerClassName="your-label-container-class-name"
+                containerClassName=""
+                iconClassName=""
+                labelClassName=""
+                labelContainerClassName=""
                 onSelect={handleSelect}
                 options={eligibleAssetsOptions}
                 placeholder={t('info.selectEligibleAsset', {
@@ -124,15 +124,18 @@ export const ShitstrapPaymentLine = ({
         )}
         <div className="hidden md:block">
           {/* Show Cutoff Token */}
-          total to shit:
+          Total Shit:
           <TokenAmountDisplay
             amount={HugeDecimal.from(shitstrapInfo.cutoff).times(
               HugeDecimal.from(10).pow(-6)
             )}
             className="body-text truncate font-mono"
             decimals={shit.decimals}
+            wrapperClassName={
+              shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`) ? 'color-warning' : shit.denomOrAddress.startsWith(`ibc/`) ? '' : ''
+            }
             symbol={
-              shit.denomOrAddress.startsWith(`factory/osmo1`)
+              shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`)
                 ? !shit.denomOrAddress.substring(51).startsWith('/')
                   ? shit.denomOrAddress.substring(71)
                   : shit.denomOrAddress.substring(52)

@@ -2069,7 +2069,7 @@
     "@keplr-wallet/crypto" "0.12.28"
     semver "^7.5.0"
 
-"@chain-registry/types@0.41.3", "@chain-registry/types@^0.41.3":
+"@chain-registry/types@^0.41.3":
   version "0.41.3"
   resolved "https://registry.yarnpkg.com/@chain-registry/types/-/types-0.41.3.tgz#67e32805a281161fe0f283aaabb5133822e1b146"
   integrity sha512-pmXgS9HJ1vEbZNdgsEMVEqxSki53e35gV+WHSMioXHnCz04tpyEGSa7CvE6mDY/J67NSpJvYr+So7pu27VH5FQ==
@@ -2082,16 +2082,6 @@
     "@chain-registry/types" "^0.41.3"
     bignumber.js "9.1.2"
     sha.js "^2.4.11"
-
-"@classic-terra/terra.proto@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@classic-terra/terra.proto/-/terra.proto-1.1.0.tgz#e314d89f59b49e79a04db25f66f658e5e5aa1890"
-  integrity sha512-bYhQG5LUaGF0KPRY9hYT/HEcd1QExZPQd6zLV/rQkCe/eDxfwFRLzZHpaaAdfWoAAZjsRWqJbUCqCg7gXBbJpw==
-  dependencies:
-    "@improbable-eng/grpc-web" "^0.14.1"
-    google-protobuf "^3.17.3"
-    long "^4.0.0"
-    protobufjs "~6.11.2"
 
 "@cnakazawa/watch@^1.0.3":
   version "1.0.4"
@@ -2511,23 +2501,6 @@
   integrity sha512-aSuEQ4V0EejdU2r50WE1gDt5XHZ44KFqtKGAsiiFtwFGN2NreLoTl8mhwtHQXa68mlR+MCyfeQ6VAU17NNyj5A==
   dependencies:
     "@cosmos-kit/frontier-extension" "^2.8.0"
-
-"@cosmos-kit/galaxy-station-extension@^2.9.0":
-  version "2.9.0"
-  resolved "https://registry.yarnpkg.com/@cosmos-kit/galaxy-station-extension/-/galaxy-station-extension-2.9.0.tgz#db0401dc4f2148aea13c3217e71f4ec8745f1048"
-  integrity sha512-L4q+6FnjQ4Udcn7T4fF06SAHjpGo0rMH0Uvnfyyavbvcq1qQVbrYVLeNDJK/81HBRgM303TLOZqu690YaOexpg==
-  dependencies:
-    "@chain-registry/types" "0.41.3"
-    "@cosmos-kit/core" "^2.11.0"
-    "@hexxagon/feather.js" "^1.0.9-beta.8"
-    "@hexxagon/station-connector" "^1.0.17"
-
-"@cosmos-kit/galaxy-station@^2.8.0":
-  version "2.8.0"
-  resolved "https://registry.yarnpkg.com/@cosmos-kit/galaxy-station/-/galaxy-station-2.8.0.tgz#28a638234ce300e1189929576d07d041c5ecb8c6"
-  integrity sha512-fEmUCbqXXqwDpo0yjqtRuPDC/Sgwja0RvPtcFeFu6TJQjHKOkk5FRF4R0ABZmFTt/UxPCL2IdXz02zyVxiE+2w==
-  dependencies:
-    "@cosmos-kit/galaxy-station-extension" "^2.9.0"
 
 "@cosmos-kit/keplr-extension@^2.10.0":
   version "2.10.0"
@@ -4053,34 +4026,6 @@
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/@graphql-typed-document-node/core/-/core-3.2.0.tgz#5f3d96ec6b2354ad6d8a28bf216a1d97b5426861"
   integrity sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==
-
-"@hexxagon/feather.js@^1.0.9-beta.8":
-  version "1.0.9-beta.8"
-  resolved "https://registry.yarnpkg.com/@hexxagon/feather.js/-/feather.js-1.0.9-beta.8.tgz#c0a67624f845a0da91232de2afe3c274b2a527e4"
-  integrity sha512-jkwwZOKGlEj72eAXO4dsLsMy8ySQJppnVMVIqyfFJuZ8w3uLe3yzS9cztv+A/pA8dcrrxf9ekXaFTA2J/FImxg==
-  dependencies:
-    "@classic-terra/terra.proto" "^1.1.0"
-    "@terra-money/legacy.proto" "npm:@terra-money/terra.proto@^0.1.7"
-    "@terra-money/terra.proto" "3.0.5"
-    axios "^0.27.2"
-    bech32 "^2.0.0"
-    bip32 "^2.0.6"
-    bip39 "^3.0.3"
-    bufferutil "^4.0.3"
-    decimal.js "^10.2.1"
-    jscrypto "^1.0.1"
-    readable-stream "^3.6.0"
-    secp256k1 "^4.0.2"
-    tmp "^0.2.1"
-    utf-8-validate "^5.0.5"
-    ws "^7.5.9"
-
-"@hexxagon/station-connector@^1.0.17":
-  version "1.0.17"
-  resolved "https://registry.yarnpkg.com/@hexxagon/station-connector/-/station-connector-1.0.17.tgz#59734345a2c84437622e6f100a9498f8d99bd470"
-  integrity sha512-VrwCSHUvLtJB93vyJeY1qI6zrDQC7RsxCylYMTU3QL7IJEAOVOdHkj29UmW+HdfrgiVnJhZx9yKuc/582DSZYw==
-  dependencies:
-    bech32 "^2.0.0"
 
 "@humanwhocodes/config-array@^0.10.4":
   version "0.10.4"
@@ -8487,16 +8432,6 @@
   integrity sha512-0xQ1haSJnY6ltjhptFoVa1yhNUIBsbCAEQCUukSY93GSo6tt+DN4RAku9i1ulfY/UizXnxH/mn+6aJyTCZGGcg==
   dependencies:
     bech32 "^2.0.0"
-
-"@terra-money/terra.proto@3.0.5":
-  version "3.0.5"
-  resolved "https://registry.yarnpkg.com/@terra-money/terra.proto/-/terra.proto-3.0.5.tgz#96f17410a044459412491959b615c52faa2eb338"
-  integrity sha512-8tvT41qte2mpiNoHq2dMmV7soMxwf4ckuJ+F2pMrb7iVcqaBo30/dIfyTdFm5mEH5i5P6cTJggm+UlIZBSPhwQ==
-  dependencies:
-    "@improbable-eng/grpc-web" "^0.14.1"
-    google-protobuf "^3.17.3"
-    long "^4.0.0"
-    protobufjs "~6.11.2"
 
 "@terra-money/terra.proto@^4.0.3":
   version "4.0.10"

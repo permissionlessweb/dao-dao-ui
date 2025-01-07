@@ -392,7 +392,9 @@
       "DaoVotingCw20Staked": 4514,
       "DaoVotingCw4": 4515,
       "DaoVotingCw721Staked": 4516,
-      "DaoVotingTokenStaked": 4517
+      "DaoVotingTokenStaked": 4517,
+      "ShitStrap": 4623,
+      "ShitStrapFactory": 4622
     }
   },
   "kaiyo-1": {
@@ -475,7 +477,9 @@
       "DaoRewardsDistributor": 695,
       "DaoVotingCw4": 696,
       "DaoVotingCw721Staked": 697,
-      "DaoVotingTokenStaked": 698
+      "DaoVotingTokenStaked": 698,
+      "ShitStrap": 764,
+      "ShitStrapFactory":763
     }
   },
   "narwhal-2": {
@@ -573,7 +577,9 @@
       "DaoVotingCw4": 1863,
       "DaoVotingCw721Staked": 1864,
       "DaoVotingTokenStaked": 1865,
-      "ValenceAccount": 1618
+      "ValenceAccount": 1618,
+      "ShitStrap": 2930,
+      "ShitStrapFactory": 2929
     }
   },
   "omniflixhub-1": {
@@ -630,8 +636,8 @@
       "DaoVotingCw4": 5853,
       "DaoVotingCw721Staked": 5854,
       "DaoVotingTokenStaked": 5855,
-      "Shitstrap": 11052,
-      "ShitstrapFactory": 11053
+      "ShitStrap": 11052,
+      "ShitStrapFactory": 11053
     },
     "2.5.0": {
       "Cw1Whitelist": 5839,
@@ -652,8 +658,8 @@
       "DaoVotingCw4": 10905,
       "DaoVotingCw721Staked": 10906,
       "DaoVotingTokenStaked": 10907,
-      "Shitstrap": 11052,
-      "ShitstrapFactory": 11053
+      "ShitStrap": 11052,
+      "ShitStrapFactory": 11053
     }
   },
   "osmosis-1": {
@@ -881,7 +887,9 @@
       "DaoProposalSingle": 159,
       "DaoVotingCw4": 160,
       "DaoVotingCw721Staked": 161,
-      "DaoVotingTokenStaked": 162
+      "DaoVotingTokenStaked": 162,
+      "ShitStrap": 4734,
+      "ShitStrapFactory": 4733
     },
     "2.5.0": {
       "Cw1Whitelist": 152,
@@ -901,7 +909,9 @@
       "DaoRewardsDistributor": 348,
       "DaoVotingCw4": 349,
       "DaoVotingCw721Staked": 350,
-      "DaoVotingTokenStaked": 351
+      "DaoVotingTokenStaked": 351,
+      "ShitStrap": 4734,
+      "ShitStrapFactory": 4733
     }
   },
   "theta-testnet-001": {
@@ -942,7 +952,9 @@
       "DaoVotingCw20Staked": 1263,
       "DaoVotingCw4": 1264,
       "DaoVotingCw721Staked": 1265,
-      "DaoVotingNativeStaked": 1266
+      "DaoVotingNativeStaked": 1266,
+      "ShitStrap": 4734,
+      "ShitStrapFactory": 4733
     },
     "2.3.0": {
       "Cw4Group": 178,
@@ -959,7 +971,9 @@
       "DaoProposalSingle": 3806,
       "DaoVotingCw4": 3807,
       "DaoVotingCw721Staked": 3808,
-      "DaoVotingTokenStaked": 3809
+      "DaoVotingTokenStaked": 3809,
+      "ShitStrap": 4734,
+      "ShitStrapFactory": 4733
     },
     "2.4.0": {
       "Cw1Whitelist": 4060,
@@ -979,7 +993,9 @@
       "DaoProposalSingle": 4074,
       "DaoVotingCw4": 4075,
       "DaoVotingCw721Staked": 4076,
-      "DaoVotingTokenStaked": 4077
+      "DaoVotingTokenStaked": 4077,
+      "ShitStrap": 4734,
+      "ShitStrapFactory": 4733
     },
     "2.5.0": {
       "Cw1Whitelist": 4060,
@@ -1002,7 +1018,37 @@
       "DaoVotingCw20Staked": 4613,
       "DaoVotingCw4": 4614,
       "DaoVotingCw721Staked": 4615,
-      "DaoVotingTokenStaked": 4616
+      "DaoVotingTokenStaked": 461,
+      "ShitStrap": 4734,
+      "ShitStrapFactory": 4733
+    },
+    "2.6.0": {
+      "Cw1Whitelist": 4060,
+      "Cw20Base": 177,
+      "Cw20Stake": 4665,
+      "Cw4Group": 178,
+      "Cw721Base": 179,
+      "CwAdminFactory": 4651,
+      "CwPayrollFactory": 4652,
+      "CwTokenSwap": 4653,
+      "CwTokenfactoryIssuer": 4668,
+      "CwVesting": 4664,
+      "DaoDaoCore": 4654,
+      "DaoMigrator": 4663,
+      "DaoPreProposeApprovalMultiple": 4670,
+      "DaoPreProposeApprovalSingle": 4655,
+      "DaoPreProposeApprover": 4656,
+      "DaoPreProposeMultiple": 4657,
+      "DaoPreProposeSingle": 4658,
+      "DaoProposalMultiple": 4659,
+      "DaoProposalSingle": 4660,
+      "DaoRewardsDistributor": 4661,
+      "DaoVotingCw20Staked": 4666,
+      "DaoVotingCw4": 4662,
+      "DaoVotingCw721Staked": 4667,
+      "DaoVotingTokenStaked": 4669,
+      "ShitStrap": 4734,
+      "ShitStrapFactory": 4733
     }
   }
 }

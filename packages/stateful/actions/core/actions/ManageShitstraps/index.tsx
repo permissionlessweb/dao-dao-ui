@@ -54,6 +54,7 @@ import {
   getNativeTokenForChainId,
   makeCombineQueryResultsIntoLoadingDataWithError,
   makeExecuteSmartContractMessage,
+  mapShitstrapManagers,
   maybeMakePolytoneExecuteMessages,
   objectMatchesStructure,
 } from '@dao-dao/utils'
@@ -109,28 +110,28 @@ const getShitstrapSourcesFromWidgetData = (
 ) =>
   widgetData.factories
     ? Object.fromEntries(
-        Object.entries(widgetData.factories).map(
-          ([chainId, { address: factory, version }]) => [
-            chainId,
-            {
-              owner: getChainAddressForActionOptions(options, chainId) || '',
-              factory,
-              version,
-            },
-          ]
-        )
+      Object.entries(widgetData.factories).map(
+        ([chainId, { address: factory, version }]) => [
+          chainId,
+          {
+            owner: getChainAddressForActionOptions(options, chainId) || '',
+            factory,
+            version,
+          },
+        ]
       )
+    )
     : // If the factories are undefined, this DAO is using an old version
-      // of the vesting widget which only allows a single factory on the
-      // same chain as the DAO. If widget data is undefined, this is being
-      // used by a wallet.
-      {
-        [options.chain.chain_id]: {
-          owner: options.address,
-          factory: widgetData.factory,
-          version: widgetData.version,
-        },
-      }
+    // of the vesting widget which only allows a single factory on the
+    // same chain as the DAO. If widget data is undefined, this is being
+    // used by a wallet.
+    {
+      [options.chain.chain_id]: {
+        owner: options.address,
+        factory: widgetData.factory,
+        version: widgetData.version,
+      },
+    }
 
 const getShitstrapContractsOwnedByEntityQueries = (
   options: ActionOptions,
@@ -138,32 +139,29 @@ const getShitstrapContractsOwnedByEntityQueries = (
 ) => {
   const sources =
     widgetData && getShitstrapSourcesFromWidgetData(options, widgetData)
-  return options.context.accounts.flatMap(({ chainId, address }) =>
-    chainIsIndexed(chainId)
-      ? options.context.type === ActionContextType.Dao
-        ? options.context.dao.accounts.map(({ chainId, address }) =>
-            cwShitstrapFactoriesExtraQuery.listAllShitstrapContractsByInstantiator(
-              options.queryClient,
-              {
-                chainId,
-                address,
-                instantiator: address,
-              }
-            )
-          )
-        : options.context.accounts.map(({ chainId, address }) =>
-            cwShitstrapFactoriesExtraQuery.listAllShitstrapContractsByInstantiator(
-              options.queryClient,
-              {
-                chainId,
-                address,
-                instantiator: address,
-              }
-            )
-          )
-      : []
+    console.log(sources!)
+  return options.context.accounts.flatMap(({ chainId, address: accountAddr }) =>
+    chainIsIndexed(chainId) ?
+      cwShitstrapFactoriesExtraQuery.listAllShitstrapContractsByInstantiator(
+        options.queryClient,
+        {
+          chainId,
+          address: mapShitstrapManagers(chainId)!,
+          instantiator: accountAddr,
+        }
+      )
+      : sources?.[chainId]?.factory ?
+        cwShitstrapFactoriesExtraQuery.listAllShitstrapContractsByInstantiator(
+          options.queryClient,
+          {
+            chainId,
+            address: mapShitstrapManagers(chainId)!,
+            instantiator: accountAddr,
+          })
+        : []
   )
 }
+
 
 /**
  * Get the shitstrap infos owned by the current
@@ -198,36 +196,36 @@ const Component: ComponentType<
     mode === 'create'
       ? watch((props.fieldNamePrefix + 'create.chainId') as 'create.chainId')
       : mode === 'payment'
-      ? watch((props.fieldNamePrefix + 'payment.chainId') as 'payment.chainId')
-      : mode === 'flush'
-      ? watch((props.fieldNamePrefix + 'flush.chainId') as 'flush.chainId')
-      : mode === 'overflow'
-      ? watch(
-          (props.fieldNamePrefix + 'overflow.chainId') as 'overflow.chainId'
-        )
-      : nativeChainId
+        ? watch((props.fieldNamePrefix + 'payment.chainId') as 'payment.chainId')
+        : mode === 'flush'
+          ? watch((props.fieldNamePrefix + 'flush.chainId') as 'flush.chainId')
+          : mode === 'overflow'
+            ? watch(
+              (props.fieldNamePrefix + 'overflow.chainId') as 'overflow.chainId'
+            )
+            : nativeChainId
 
   const tabs: SegmentedControlsProps<ManageShitStrapData['mode']>['tabs'] = [
     // Only allow beginning a vest if widget is setup.
     ...(widgetData
       ? ([
-          {
-            label: t('title.createShitstrap'),
-            value: 'create',
-          },
-          {
-            label: t('title.makeShitstrapPayment'),
-            value: 'payment',
-          },
-          {
-            label: t('title.flushShitstrap'),
-            value: 'flush',
-          },
-          {
-            label: t('title.refundShitstrapOverflow'),
-            value: 'refund',
-          },
-        ] as TypedOption<ManageShitStrapData['mode']>[])
+        {
+          label: t('title.createShitstrap'),
+          value: 'create',
+        },
+        {
+          label: t('title.makeShitstrapPayment'),
+          value: 'payment',
+        },
+        {
+          label: t('title.flushShitstrap'),
+          value: 'flush',
+        },
+        {
+          label: t('title.refundShitstrapOverflow'),
+          value: 'refund',
+        },
+      ] as TypedOption<ManageShitStrapData['mode']>[])
       : []),
   ]
   const selectedTab = tabs.find((tab) => tab.value === mode)
@@ -321,12 +319,12 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
     this.widgetData =
       options.context.type === ActionContextType.Dao
         ? getDaoWidgets(options.context.dao.info.items).find(
-            ({ id }) => id === WidgetId.ShitStrap
-          )?.values
+          ({ id }) => id === WidgetId.ShitStrap
+        )?.values
         : undefined
 
     // Fire async init immediately since we may hide this action.
-    this.init().catch(() => {})
+    this.init().catch(() => { })
   }
 
   async setup() {
@@ -441,7 +439,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
           return {
             token,
             shit_rate: HugeDecimal.from(asset.shit_rate)
-              .times(HugeDecimal.from(10).pow(6))
+              .times(HugeDecimal.from(10).pow(18))
               .toString(),
           }
         }),
@@ -453,11 +451,11 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
         shitmos:
           create.tokenToShit.type === TokenType.Native
             ? {
-                native: create.tokenToShit.denomOrAddress,
-              }
+              native: create.tokenToShit.denomOrAddress,
+            }
             : {
-                cw20: create.tokenToShit.denomOrAddress,
-              },
+              cw20: create.tokenToShit.denomOrAddress,
+            },
       }
 
       const msg: InstantiateNativeShitstrapContractMsg = {
@@ -528,20 +526,20 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
         msg:
           mode === 'overflow'
             ? {
-                overflow: {},
-              }
+              overflow: {},
+            }
             : {
-                shit_strap: {
-                  shit: {
-                    amount: total.toString(),
-                    denom:
-                      payment.shitToken &&
+              shit_strap: {
+                shit: {
+                  amount: total.toString(),
+                  denom:
+                    payment.shitToken &&
                       payment.shitToken.type === TokenType.Native
-                        ? { native: payment.shitToken?.denomOrAddress }
-                        : { native: payment.shitToken?.denomOrAddress },
-                  },
+                      ? { native: payment.shitToken?.denomOrAddress }
+                      : { native: payment.shitToken?.denomOrAddress },
                 },
               },
+            },
       })
     } else {
       throw new Error(this.options.t('error.unexpectedError'))
@@ -675,11 +673,11 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
     if (isNativeCreate || isCw20Create) {
       const instantiateMsg: ShitstrapInstantiateMsg = isNativeCreate
         ? decodedMessage.wasm.execute.msg.instantiate_native_shitstrap_contract
-            .instantiate_msg
+          .instantiate_msg
         : // Extract instantiate message from cw20 send message.
-          (decodeJsonFromBase64(decodedMessage.wasm.execute.msg.send.msg, true)
-            .instantiate_payroll_contract
-            ?.instantiate_msg as ShitstrapInstantiateMsg)
+        (decodeJsonFromBase64(decodedMessage.wasm.execute.msg.send.msg, true)
+          .instantiate_payroll_contract
+          ?.instantiate_msg as ShitstrapInstantiateMsg)
 
       const [token] = await Promise.all([
         this.options.queryClient.fetchQuery(
@@ -697,8 +695,8 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
         ? 'none'
         : instantiateMsg.owner ===
           getChainAddressForActionOptions(this.options, chainId)
-        ? 'me'
-        : 'other'
+          ? 'me'
+          : 'other'
 
       return {
         mode: ShitstrapPaymentMode.Create,
@@ -717,14 +715,14 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
               'cw20' in instantiateMsg.shitmos
                 ? instantiateMsg.shitmos.cw20
                 : 'native' in instantiateMsg.shitmos
-                ? instantiateMsg.shitmos.native
-                : '',
+                  ? instantiateMsg.shitmos.native
+                  : '',
             type:
               'cw20' in instantiateMsg.shitmos
                 ? TokenType.Cw20
                 : 'native' in instantiateMsg.shitmos
-                ? TokenType.Native
-                : TokenType.Native,
+                  ? TokenType.Native
+                  : TokenType.Native,
           },
         },
       }

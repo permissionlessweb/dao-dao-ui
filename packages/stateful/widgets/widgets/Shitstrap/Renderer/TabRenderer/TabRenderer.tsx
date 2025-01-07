@@ -6,6 +6,7 @@ import {
   ChainProvider,
   DropdownIconButton,
   ErrorPage,
+  LineLoaders,
   Loader,
   Modal,
   NoContent,
@@ -89,17 +90,17 @@ export const TabRenderer = ({
     !!openShitstrapContract
   )
 
-  const openShitstrapPayment =
+  const openShitstrapPayment = 
     shitStrapsLoading.loading ||
-    shitStrapsLoading.errored ||
-    !openShitstrapContract
+      shitStrapsLoading.errored ||
+      !openShitstrapContract
       ? undefined
       : isLoadingDataWithErrorLoaded(shitStrapsLoading)
-      ? shitStrapsLoading.data.find(
+        ? shitStrapsLoading.data.find(
           ({ shitstrapContractAddr }) =>
             shitstrapContractAddr === openShitstrapContract
         )
-      : undefined
+        : undefined
 
   // Wait for modal to close before clearing the open vesting payment to prevent
   // UI flicker.
@@ -147,7 +148,10 @@ export const TabRenderer = ({
       </div>
       <div className="mb-9">
         {shitStrapsLoading.loading ? (
-          <div className="border-t border-border-secondary pt-6"></div>
+          <div className="border-t border-border-secondary pt-6">
+            {/* <ActiveVestingPaymentLineHeader /> */}
+            <LineLoaders lines={20} type="shitstrap" />
+          </div>
         ) : shitStrapsLoading.errored ? (
           <ErrorPage error={shitStrapsLoading.error} />
         ) : shitStrapsLoading.data.length ? (

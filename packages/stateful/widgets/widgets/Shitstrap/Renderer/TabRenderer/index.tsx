@@ -15,6 +15,7 @@ import { ActionKey, WidgetRendererProps } from '@dao-dao/types'
 import {
   getDaoProposalSinglePrefill,
   makeCombineQueryResultsIntoLoadingDataWithError,
+  mapShitstrapManagers,
 } from '@dao-dao/utils'
 
 import {
@@ -24,11 +25,12 @@ import {
 import { useMembership } from '../../../../../hooks'
 import { ShitstrapPaymentWidgetData } from '../../types'
 import { TabRenderer as StatelessTabRenderer } from './TabRenderer'
+import uniqBy from 'lodash.uniqby'
 
 export const TabRenderer = ({
   variables: { factories },
 }: WidgetRendererProps<ShitstrapPaymentWidgetData>) => {
-  const { chainId: defaultChainId, coreAddress } = useDao()
+  const { coreAddress } = useDao()
   const { getDaoProposalPath } = useDaoNavHelpers()
   // if is member, lets allow to select to propose to use dao treasury as payment, or own wallet
   const { isMember = false } = useMembership()
@@ -40,9 +42,9 @@ export const TabRenderer = ({
       // Factory or factory list depending on version.
       ...(factories
         ? Object.entries(factories).map(([chainId, { address }]) => ({
-            chainId,
-            address,
-          }))
+          chainId,
+          address,
+        }))
         : []
       ).map(({ chainId, address }) =>
         cwShitstrapFactoriesExtraQuery.listAllShitstrapContracts(queryClient, {
@@ -62,51 +64,55 @@ export const TabRenderer = ({
       shitstrapsContractsLoading.loading || shitstrapsContractsLoading.errored
         ? []
         : shitstrapsContractsLoading.data.flatMap(({ chainId, contracts }) =>
-            contracts.map(({ contract }) =>
-              cwShitstrapExtraQueries.info(queryClient, {
-                chainId,
-                address: contract,
-              })
-            )
-          ),
+          contracts.map(({ contract }) =>
+            cwShitstrapExtraQueries.info(queryClient, {
+              chainId,
+              address: contract,
+            })
+          )
+        ),
     combine: makeCombineQueryResultsIntoLoadingDataWithError({
       firstLoad: 'one',
+      transform: (infos) =>
+        uniqBy(
+          infos,
+          (info) => info.chainId + ':' + info.shitstrapContractAddr
+        ),
     }),
   })
   const shitAction = useInitializedActionForKey(ActionKey.ManageShitstrap)
 
   // shitstrap payments that are full.
-  const vestingPaymentsNeedingSlashRegistration =
+  const shitstrapPaymentsFull =
     shitstrapInfosLoading.loading || shitstrapInfosLoading.errored
       ? []
       : shitstrapInfosLoading.data.filter((props) => props.full == true)
 
   return (
-    <>
-      {!shitAction.loading && !shitAction.errored && (
-        <StatelessTabRenderer
-          ButtonLink={ButtonLink}
-          ShitStrapCard={ShitstrapPaymentCard}
-          ShitStrapLine={ShitstrapPaymentLine}
-          Trans={Trans}
-          createShitStrapHref={
-            shitAction
-              ? getDaoProposalPath(coreAddress, 'create', {
-                  prefill: getDaoProposalSinglePrefill({
-                    actions: [
-                      {
-                        actionKey: shitAction.data.key, // defines the action key available
-                        data: shitAction.data.defaults, // sets the defaults to it
-                      },
-                    ],
-                  }),
-                })
-              : undefined
-          }
-          isMember={isMember}
-          shitStrapsLoading={shitstrapInfosLoading}
-        />
-      )}
-    </>
+    <StatelessTabRenderer
+      ButtonLink={ButtonLink}
+      ShitStrapCard={ShitstrapPaymentCard}
+      ShitStrapLine={ShitstrapPaymentLine}
+      Trans={Trans}
+      createShitStrapHref={
+        !shitAction.loading &&
+          !shitAction.errored &&
+          shitAction
+          ? getDaoProposalPath(coreAddress, 'create', {
+            prefill: getDaoProposalSinglePrefill({
+              actions: [
+                {
+                  actionKey: shitAction.data.key, // defines the action key available
+                  data: shitAction.data.defaults, // sets the defaults to it
+                },
+              ],
+            }),
+          })
+          : undefined
+      }
+      isMember={isMember}
+      shitStrapsLoading={shitstrapInfosLoading}
+    />
+
   )
 }

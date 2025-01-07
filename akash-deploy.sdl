@@ -1,0 +1,46 @@
+---
+version: "2.0"
+services:
+  shitstrap:
+    image: discoverdefiteam/shitstrap-dao:v0.0.3
+    env:
+      - NEXT_PUBLIC_JUNO_SHITSTRAP_MANAGER=
+      - NEXT_PUBLIC_OSMOSIS_SHITSTRAP_MANAGER=
+      - NEXT_PUBLIC_STARGAZE_SHITSTRAP_MANAGER=
+      - NEXT_PUBLIC_NEUTRON_SHITSTRAP_MANAGER=
+      - NEXT_PUBLIC_BITSONG_SHITSTRAP_MANAGER=
+      - NEXT_PUBLIC_OMNIFLIX_SHITSTRAP_MANAGER=
+      - NEXT_PUBLIC_TERP_SHITSTRAP_MANAGER=
+      - NEXT_PUBLIC_TERRA_SHITSTRAP_MANAGER=
+      - NEXT_PUBLIC_KUJIRA_SHITSTRAP_MANAGER=
+      - NEXT_PUBLIC_MIGALOO_SHITSTRAP_MANAGER=
+      - NEXT_PUBLIC_ORAICHAIN_SHITSTRAP_MANAGER=
+    expose:
+      - port: 3000
+        as: 80
+        accept:
+          - shitstrap.shitmos.wtf
+          - www.shitstrap.shitmos.wtf
+        to:
+          - global: true
+profiles:
+  compute:
+    shitstrap:
+      resources:
+        cpu:
+          units: 4
+        memory:
+          size: 16GB
+        storage:
+          - size: 120GB
+  placement:
+    dcloud:
+      pricing:
+        shitstrap:
+          denom: uakt
+          amount: 10000
+deployment:
+  shitstrap:
+    dcloud:
+      profile: shitstrap
+      count: 1

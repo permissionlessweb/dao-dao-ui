@@ -1,10 +1,10 @@
 services:
-  my-service:
+  sda:
     build:
       context: .
       dockerfile: apps/sda/Dockerfile
       args:
-        - BUILDPLATFORM
+        - BUILD_PLATFORM
         - TARGETPLATFORM
     image: ${IMAGE_NAME}
     platform: ${BUILD_PLATFORM}

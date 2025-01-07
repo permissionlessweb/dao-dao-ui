@@ -2,19 +2,27 @@
 
 ## SHITSTRAP TODO
 
-- Add payment suggestion for funding shitstrap if no balance
-- Add filtering support
-- use chain prefix to trunicate factorytoken labels.
+- [filter by chains shitstrap contracts are on](./packages/stateful/widgets/widgets/Shitstrap/ShitstrapEditor.tsx#L46-L47)
+- improve handling 
+- create: Choose any token when creating shitstrap (proposal deposit for reference)
+- payment: do not allow proposal form to begin if wallet or dao does not have token
+- payment: manually choose DAO to propose to pay for shitstrap  
+- payment: query maximum payment left for shitstrap
+- shitstraps: Add filtering support
+~~- use chain prefix to trunicate factorytoken labels.~~
 - Improve shitstrap line
+  - Display remaining to shit
+  - Display if funded or not
 - Improve shitstrap card
-- Improve shitstrap payment proposal form
+  - Same as shitstrap line 
+  - Add button to fund shitstrap
 
 ## Docker 
 
 set the image name & tag. build the image: 
 ```sh
 # Make sure to set BUILDPLATFORM is set to your machines platform, and TARGETPLATFORM to the platform you aim to run this image on:
-IMAGE_NAME=discoverdefiteam/shitstrap-dao:v0.0.2 docker-compose build --build-arg BUILDPLATFORM=linux/arm64 --build-arg TARGETPLATFORM=linux/amd64
+IMAGE_NAME=discoverdefiteam/shitstrap-dao:v0.0.3 BUILD_PLATFORM=linux/arm64 TARGETPLATFORM=linux/amd64 docker-compose build
 ```
 
 This project creates a web UI for the [DAO DAO smart

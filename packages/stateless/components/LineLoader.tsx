@@ -4,7 +4,7 @@ export type LineLoaderProps = {
   /**
    * The type of line loader.
    */
-  type: 'proposal' | 'token' | 'post' | 'retroactive' | 'vesting' | 'command'
+  type: 'proposal' | 'token' | 'post' | 'retroactive' | 'vesting' | 'command' | 'shitstrap'
   /**
    * Optional class name for the line.
    */
