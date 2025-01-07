@@ -4,6 +4,8 @@ services:
   shitstrap:
     image: discoverdefiteam/shitstrap-dao:v0.0.3
     env:
+      - NEXT_PUBLIC_SITE_URL=https://shitstrap.shitmos.wtf
+      - NEXT_PUBLIC_SDA_DEFAULT_DAO_ADDRESS=stars1r2s7nnymn2g5g5gsmj56cvwttuqs86ky763ue4xqxvdv6f5k8ewsar5kzp
       - NEXT_PUBLIC_JUNO_SHITSTRAP_MANAGER=
       - NEXT_PUBLIC_OSMOSIS_SHITSTRAP_MANAGER=
       - NEXT_PUBLIC_STARGAZE_SHITSTRAP_MANAGER=
@@ -19,8 +21,8 @@ services:
       - port: 3000
         as: 80
         accept:
-          - shitstrap.shitmos.wtf
-          - www.shitstrap.shitmos.wtf
+          - shitstrap.permissionless.money
+          - www.shitstrap.permissionless.money
         to:
           - global: true
 profiles:

@@ -22,7 +22,7 @@
 set the image name & tag. build the image: 
 ```sh
 # Make sure to set BUILDPLATFORM is set to your machines platform, and TARGETPLATFORM to the platform you aim to run this image on:
-IMAGE_NAME=discoverdefiteam/shitstrap-dao:v0.0.3 BUILD_PLATFORM=linux/arm64 TARGETPLATFORM=linux/amd64 docker-compose build
+IMAGE_NAME=discoverdefiteam/shitstrap-dao:v0.0.3 BUILDPLATFORM=linux/arm64 TARGETPLATFORM=linux/amd64 ENVIRONMENT=mainnet docker-compose build
 ```
 
 This project creates a web UI for the [DAO DAO smart

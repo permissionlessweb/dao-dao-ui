@@ -4,7 +4,8 @@ FROM node:18
 WORKDIR /app
 
 # Copy env variables
-COPY ./apps/sda/.env.testnet .env.local
+ARG ENVIRONMENT
+COPY ./apps/sda/.env.${ENVIRONMENT} .env
 
 # Copy the package.json and yarn.lock files
 COPY package*.json yarn.lock ./

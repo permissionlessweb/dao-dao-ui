@@ -4,7 +4,8 @@ services:
       context: .
       dockerfile: apps/sda/Dockerfile
       args:
-        - BUILD_PLATFORM
+        - BUILDPLATFORM
         - TARGETPLATFORM
+        - ENVIRONMENT=${ENVIRONMENT:-testnet}
     image: ${IMAGE_NAME}
-    platform: ${BUILD_PLATFORM}
+    platform: ${BUILDPLATFORM}
