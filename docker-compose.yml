@@ -6,6 +6,5 @@ services:
       args:
         - BUILDPLATFORM
         - TARGETPLATFORM
-        - ENVIRONMENT=${ENVIRONMENT:-testnet}
     image: ${IMAGE_NAME}
     platform: ${BUILDPLATFORM}

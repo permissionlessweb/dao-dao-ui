@@ -15,7 +15,6 @@ import { ActionKey, WidgetRendererProps } from '@dao-dao/types'
 import {
   getDaoProposalSinglePrefill,
   makeCombineQueryResultsIntoLoadingDataWithError,
-  mapShitstrapManagers,
 } from '@dao-dao/utils'
 
 import {

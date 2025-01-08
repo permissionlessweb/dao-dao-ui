@@ -155,7 +155,7 @@ const getShitstrapContractsOwnedByEntityQueries = (
           options.queryClient,
           {
             chainId,
-            address: mapShitstrapManagers(chainId)!,
+            address: sources?.[chainId]?.factory!,
             instantiator: accountAddr,
           })
         : []

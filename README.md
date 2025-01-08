@@ -18,11 +18,10 @@
   - Add button to fund shitstrap
 
 ## Docker 
-
-set the image name & tag. build the image: 
+set the image name, build-platform, target-platform, the environment (testnet or  mainnet):
 ```sh
 # Make sure to set BUILDPLATFORM is set to your machines platform, and TARGETPLATFORM to the platform you aim to run this image on:
-IMAGE_NAME=discoverdefiteam/shitstrap-dao:v0.0.3 BUILDPLATFORM=linux/arm64 TARGETPLATFORM=linux/amd64 ENVIRONMENT=mainnet docker-compose build
+IMAGE_NAME=discoverdefiteam/shitstrap-dao:v0.0.6 BUILDPLATFORM=linux/arm64 TARGETPLATFORM=linux/amd64 docker-compose build
 ```
 
 This project creates a web UI for the [DAO DAO smart
