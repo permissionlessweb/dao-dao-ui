@@ -4,6 +4,7 @@
 
 - [filter by chains shitstrap contracts are on](./packages/stateful/widgets/widgets/Shitstrap/ShitstrapEditor.tsx#L46-L47)
 - improve handling 
+- validate minimum shit rates and cutoffs with each other
 - create: Choose any token when creating shitstrap (proposal deposit for reference)
 - payment: do not allow proposal form to begin if wallet or dao does not have token
 - payment: manually choose DAO to propose to pay for shitstrap  

@@ -209,10 +209,10 @@ export const ShitstrapPaymentCard = ({
       : shit.denomOrAddress
     : ''
   useEffect(() => {
-    console.log(eligibleAsset)
-    console.log(watchAmount)
-    console.log(watchShitToken)
-    console.log(estimatedToken)
+    // console.log("eligibleAsset",eligibleAsset)
+    // console.log("watchAmount",watchAmount)
+    // console.log("watchShitToken",watchShitToken)
+    // console.log("estimatedToken",estimatedToken)
   }, [watchAmount])
 
   // if user wants to make payment with fund from account,
@@ -287,7 +287,7 @@ export const ShitstrapPaymentCard = ({
               denom:
                 watchShitToken.type == TokenType.Native
                   ? { native: watchShitToken?.denomOrAddress }
-                  : { native: watchShitToken?.denomOrAddress },
+                  : { cw20: watchShitToken?.denomOrAddress },  
             },
           },
           'auto',

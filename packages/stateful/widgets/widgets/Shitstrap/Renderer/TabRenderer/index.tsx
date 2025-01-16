@@ -27,15 +27,14 @@ import { TabRenderer as StatelessTabRenderer } from './TabRenderer'
 import uniqBy from 'lodash.uniqby'
 
 export const TabRenderer = ({
-  variables: { factories },
+  variables: { factories, factory },
 }: WidgetRendererProps<ShitstrapPaymentWidgetData>) => {
-  const { coreAddress } = useDao()
+  const { chainId: defaultChainId, coreAddress, accounts } = useDao()
   const { getDaoProposalPath } = useDaoNavHelpers()
   // if is member, lets allow to select to propose to use dao treasury as payment, or own wallet
   const { isMember = false } = useMembership()
 
   const queryClient = useQueryClient()
-
   const shitstrapsContractsLoading = useQueries({
     queries: [
       // Factory or factory list depending on version.
@@ -44,13 +43,31 @@ export const TabRenderer = ({
           chainId,
           address,
         }))
-        : []
+        : factory ?
+          [
+            {
+              chainId: defaultChainId,
+              address: factory,
+            }
+          ] : []
       ).map(({ chainId, address }) =>
         cwShitstrapFactoriesExtraQuery.listAllShitstrapContracts(queryClient, {
           chainId,
           address,
         })
       ),
+
+      // todo: implement with correct indexer query
+      // // Contracts owned by any of this DAO's accounts. This detects contracts
+      // // whose ownership was transferred to this DAO but that are still part of
+      // // a different factory.
+      // ...accounts.map(({ chainId, address }) =>
+      //   cwShitstrapFactoriesExtraQuery.listAllShitstrapContractsByInstantiator(queryClient, {
+      //     chainId,
+      //     address,
+      //   })
+      // ),
+
     ],
     combine: makeCombineQueryResultsIntoLoadingDataWithError({
       firstLoad: 'one',
@@ -78,6 +95,8 @@ export const TabRenderer = ({
           (info) => info.chainId + ':' + info.shitstrapContractAddr
         ),
     }),
+
+
   })
   const shitAction = useInitializedActionForKey(ActionKey.ManageShitstrap)
 
@@ -87,7 +106,8 @@ export const TabRenderer = ({
       ? []
       : shitstrapInfosLoading.data.filter((props) => props.full == true)
 
-  return (
+  return (<>
+
     <StatelessTabRenderer
       ButtonLink={ButtonLink}
       ShitStrapCard={ShitstrapPaymentCard}
@@ -95,9 +115,8 @@ export const TabRenderer = ({
       Trans={Trans}
       createShitStrapHref={
         !shitAction.loading &&
-          !shitAction.errored &&
-          shitAction
-          ? getDaoProposalPath(coreAddress, 'create', {
+          !shitAction.errored ?
+          getDaoProposalPath(coreAddress, 'create', {
             prefill: getDaoProposalSinglePrefill({
               actions: [
                 {
@@ -112,6 +131,6 @@ export const TabRenderer = ({
       isMember={isMember}
       shitStrapsLoading={shitstrapInfosLoading}
     />
-
+  </>
   )
 }

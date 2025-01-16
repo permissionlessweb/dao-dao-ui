@@ -54,7 +54,6 @@ import {
   getNativeTokenForChainId,
   makeCombineQueryResultsIntoLoadingDataWithError,
   makeExecuteSmartContractMessage,
-  mapShitstrapManagers,
   maybeMakePolytoneExecuteMessages,
   objectMatchesStructure,
 } from '@dao-dao/utils'
@@ -137,16 +136,19 @@ const getShitstrapContractsOwnedByEntityQueries = (
   options: ActionOptions,
   widgetData?: ShitstrapPaymentWidgetData
 ) => {
+  // console.log("widgetData", widgetData)
+  // console.log("options", options)
+  // retrieves shitstrap manager data from items saved in dao contract state.
   const sources =
     widgetData && getShitstrapSourcesFromWidgetData(options, widgetData)
-    console.log(sources!)
-  return options.context.accounts.flatMap(({ chainId, address: accountAddr }) =>
-    chainIsIndexed(chainId) ?
+
+  const thisthing = options.context.accounts.flatMap(({ chainId, address: accountAddr }) =>
+    chainIsIndexed(chainId) && sources?.[chainId]?.factory ?
       cwShitstrapFactoriesExtraQuery.listAllShitstrapContractsByInstantiator(
         options.queryClient,
         {
           chainId,
-          address: mapShitstrapManagers(chainId)!,
+          address: sources?.[chainId]?.factory!,
           instantiator: accountAddr,
         }
       )
@@ -160,6 +162,8 @@ const getShitstrapContractsOwnedByEntityQueries = (
           })
         : []
   )
+  // console.log("thisthing", thisthing)
+  return thisthing
 }
 
 
@@ -191,6 +195,7 @@ const Component: ComponentType<
   const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
 
   const shitstrapContracts = useShitstrapContractsOwnedByEntity()
+  // console.log(shitstrapContracts)
   const tokenBalances = useTokenBalances()
   const selectedChainId =
     mode === 'create'
@@ -316,20 +321,28 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
         ? DaoComponent
         : WalletComponent
 
+    // console.log('options.context.type:', options.context.type);
+    // console.log('options.context.dao.info.items:', options.context.type === ActionContextType.Dao ? options.context.dao.info.items : "");
+
     this.widgetData =
       options.context.type === ActionContextType.Dao
         ? getDaoWidgets(options.context.dao.info.items).find(
-          ({ id }) => id === WidgetId.ShitStrap
+          ({ id }) => {
+            return id === WidgetId.ShitStrap;
+          }
         )?.values
-        : undefined
+        : undefined;
 
     // Fire async init immediately since we may hide this action.
     this.init().catch(() => { })
   }
 
   async setup() {
+    // console.log("this.widgetData:", this.widgetData)
+    // console.log("this.options.context.type:", this.options.context.type)
+
     const contractsResults = await Promise.all(
-      getShitstrapContractsOwnedByEntityQueries(this.options).map((query) =>
+      getShitstrapContractsOwnedByEntityQueries(this.options, this.widgetData).map((query) =>
         this.options.queryClient.fetchQuery(query)
       )
     )
@@ -352,12 +365,10 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
       )
     ).flat()
 
-    // Don't show if vesting payment widget is not enabled (for DAOs) and this
-    // entity owns no vesting payments.
+    // Don't show if shitstrap payment widget is not enabled (for DAOs)  
     this.metadata.hideFromPicker =
       (this.options.context.type !== ActionContextType.Dao ||
-        !this.widgetData) &&
-      this.shitstrapInfosOwnedByEntity.length === 0
+        !this.widgetData)
 
     // Default start to 7 days from now.
     const start = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -421,6 +432,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
           })
         )
       }
+      // console.log("shitstrapSource:", shitstrapSource)
 
       const instantiateMsg: ShitstrapInstantiateMsg = {
         title: create.title,

@@ -90,7 +90,7 @@ export const TabRenderer = ({
     !!openShitstrapContract
   )
 
-  const openShitstrapPayment = 
+  const openShitstrapPayment =
     shitStrapsLoading.loading ||
       shitStrapsLoading.errored ||
       !openShitstrapContract
@@ -127,7 +127,7 @@ export const TabRenderer = ({
           <Tooltip
             title={
               !isMember
-                ? t('error.mustBeMemberToCreateVestingPayment')
+                ? t('error.mustBeMemberToCreateShitstrapPayment')
                 : undefined
             }
           >

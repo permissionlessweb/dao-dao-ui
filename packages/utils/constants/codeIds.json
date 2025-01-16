@@ -393,8 +393,8 @@
       "DaoVotingCw4": 4515,
       "DaoVotingCw721Staked": 4516,
       "DaoVotingTokenStaked": 4517,
-      "ShitStrap": 4623,
-      "ShitStrapFactory": 4622
+      "ShitStrap": 4636,
+      "ShitStrapFactory": 4635
     }
   },
   "kaiyo-1": {
@@ -479,7 +479,7 @@
       "DaoVotingCw721Staked": 697,
       "DaoVotingTokenStaked": 698,
       "ShitStrap": 764,
-      "ShitStrapFactory":763
+      "ShitStrapFactory": 763
     }
   },
   "narwhal-2": {
@@ -578,8 +578,8 @@
       "DaoVotingCw721Staked": 1864,
       "DaoVotingTokenStaked": 1865,
       "ValenceAccount": 1618,
-      "ShitStrap": 2930,
-      "ShitStrapFactory": 2929
+      "ShitStrap": 2986,
+      "ShitStrapFactory": 2985
     }
   },
   "omniflixhub-1": {
@@ -774,7 +774,9 @@
       "DaoVotingCw20Staked": 3219,
       "DaoVotingCw4": 3192,
       "DaoVotingCw721Staked": 3193,
-      "DaoVotingTokenStaked": 3194
+      "DaoVotingTokenStaked": 3194,
+      "ShitStrap": 3462,
+      "ShitStrapFactory": 3461
     }
   },
   "pion-1": {

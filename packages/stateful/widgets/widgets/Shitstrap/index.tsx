@@ -15,10 +15,10 @@ export const ShitstrapWidget: Widget<ShitstrapPaymentWidgetData> = {
   id: WidgetId.ShitStrap,
   Icon: PaidOutlined,
   IconFilled: PaidRounded,
-  location: WidgetLocation.Tab,
+  location: WidgetLocation.Home,
   visibilityContext: WidgetVisibilityContext.Always,
   defaultValues: {
-    factories: {},
+    factories: {}
   },
   Renderer,
   Editor,

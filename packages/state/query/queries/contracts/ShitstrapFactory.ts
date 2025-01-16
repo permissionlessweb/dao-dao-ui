@@ -233,7 +233,9 @@ export const shitStrapFactoryQueries = {
         limit: args.limit,
         startAfter: args.startAfter,
       })
-      console.log(contractQuery)
+      // console.log(chainId)
+      // console.log("contractAddress:",contractAddress)
+      // console.log("args.instantiator:",args.instantiator)
       return contractQuery
     },
     ...options,
