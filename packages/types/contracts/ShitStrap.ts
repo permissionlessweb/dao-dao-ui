@@ -3,7 +3,7 @@ import { GenericToken } from '../token'
 export type ShitstrapInfo = {
   chainId: string
   shitstrapContractAddr: string
-  eligibleAssets: PossibleShit[]
+  possibleShit: PossibleShit[]
   shit: GenericToken
   // Whether or not shitstrap is complete
   full: boolean

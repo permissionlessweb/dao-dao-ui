@@ -164,12 +164,12 @@ export const ShitstrapPaymentCard = ({
     owner,
     title,
     description,
-    eligibleAssets,
+    possibleShit,
     shitstrapContractAddr,
   } = shitstrapInfo
 
   const eligibleAsset = watchShitToken
-    ? shitstrapInfo.eligibleAssets.find((asset) => {
+    ? shitstrapInfo.possibleShit.find((asset) => {
       if (typeof asset.token === 'object') {
         return (
           ('native' in asset.token &&
@@ -332,9 +332,9 @@ export const ShitstrapPaymentCard = ({
         <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-0">
           <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
             <h4 className="text-lg font-bold">{t('info.eligibleTokens')}</h4>
-            {shitstrapInfo.eligibleAssets &&
-              shitstrapInfo.eligibleAssets.length > 0 ? (
-              shitstrapInfo.eligibleAssets.map((asset, index) => (
+            {shitstrapInfo.possibleShit &&
+              shitstrapInfo.possibleShit.length > 0 ? (
+              shitstrapInfo.possibleShit.map((asset, index) => (
                 <div
                   key={index}
                   className={clsx(
@@ -462,7 +462,7 @@ export const ShitstrapPaymentCard = ({
                         ? []
                         : currentEntityTokenBalances.data
                           ?.filter(({ token }) =>
-                            shitstrapInfo.eligibleAssets.some((asset) => {
+                            shitstrapInfo.possibleShit.some((asset) => {
                               if (typeof asset.token === 'object') {
                                 if ('native' in asset.token) {
                                   return (
@@ -500,7 +500,7 @@ export const ShitstrapPaymentCard = ({
                     //             ? []
                     //             : (currentDaoEntityTokenBalances.data
                     //                 ?.filter(({ token }) =>
-                    //                     shitstrapInfo.eligibleAssets.some((asset) => {
+                    //                     shitstrapInfo.possibleShit.some((asset) => {
                     //                         if (typeof asset.token === 'object') {
                     //                             if ('native' in asset.token) {
                     //                                 return asset.token.native === token.denomOrAddress;

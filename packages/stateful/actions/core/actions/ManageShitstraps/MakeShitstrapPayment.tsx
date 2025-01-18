@@ -30,7 +30,7 @@ export type MakeShitstrapPaymentData = {
   shitToken?: GenericToken
   // Amount of shitToken being sent in payment for shitstrap
   amount: string
-  eligibleAssets: PossibleShit[]
+  possibleShit: PossibleShit[]
   selfParty?: Omit<Counterparty, 'address'>
   ownerEntity?: Counterparty
 }

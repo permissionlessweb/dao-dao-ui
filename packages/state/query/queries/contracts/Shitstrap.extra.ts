@@ -60,7 +60,7 @@ export const fetchShitstrapInfo = async (
     owner: config.owner,
     chainId,
     shitstrapContractAddr: address,
-    eligibleAssets: config.accepted,
+    possibleShit: config.accepted,
     shit,
     full: config.full_of_shit,
     cutoff: config.cutoff,

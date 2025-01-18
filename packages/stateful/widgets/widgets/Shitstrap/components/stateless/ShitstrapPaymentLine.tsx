@@ -20,11 +20,11 @@ export const ShitstrapPaymentLine = ({
 }: ShitStrapPaymentLineProps) => {
   const { t } = useTranslation()
 
-  const { chainId, eligibleAssets, shit, full, shitstrapContractAddr, owner } =
+  const { chainId, possibleShit, shit, full, shitstrapContractAddr, owner } =
     shitstrapInfo
   const { bech32_prefix: bech32Prefix } = getChainForChainId(chainId)
 
-  const eligibleAssetsOptions: TypedOption<PossibleShit>[] = eligibleAssets.map(
+  const possibleShitOptions: TypedOption<PossibleShit>[] = possibleShit.map(
     (asset) => {
       const tokenString =
         typeof asset.token === 'object'
@@ -51,7 +51,7 @@ export const ShitstrapPaymentLine = ({
     }
   )
 
-  const options = eligibleAssets.map((asset, index) => ({
+  const options = possibleShit.map((asset, index) => ({
     value: asset,
     label: (
       <div
@@ -76,7 +76,7 @@ export const ShitstrapPaymentLine = ({
     ),
   }))
 
-  const handleSelect = (option: typeof eligibleAssets[0], index: number) => {
+  const handleSelect = (option: typeof possibleShit[0], index: number) => {
     // Handle the selection of an option
     console.log(option, index)
   }
@@ -114,9 +114,9 @@ export const ShitstrapPaymentLine = ({
                 labelClassName=""
                 labelContainerClassName=""
                 onSelect={handleSelect}
-                options={eligibleAssetsOptions}
+                options={possibleShitOptions}
                 placeholder={t('info.selectEligibleAsset', {
-                  number: eligibleAssets.length,
+                  number: possibleShit.length,
                 })}
               />
             </div>

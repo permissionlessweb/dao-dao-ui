@@ -256,16 +256,19 @@ const Component: ComponentType<
       )}
       ˝
       {mode === ShitstrapPaymentMode.Create ? (
-        <CreateShitstrap
-          {...props}
-          errors={props.errors?.create}
-          fieldNamePrefix={props.fieldNamePrefix + 'create.'}
-          options={{
-            widgetData,
-            tokens: tokenBalances.loading ? [] : tokenBalances.data,
-            AddressInput,
-          }}
-        />
+        <>
+          {console.log(widgetData)}
+          <CreateShitstrap
+            {...props}
+            errors={props.errors?.create}
+            fieldNamePrefix={props.fieldNamePrefix + 'create.'}
+            options={{
+              widgetData,
+              tokens: tokenBalances.loading ? [] : tokenBalances.data,
+              AddressInput,
+            }}
+          />
+        </>
       ) : null}
       {mode === ShitstrapPaymentMode.Payment ? (
         // <></>
@@ -385,7 +388,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
         title: '',
         description: '',
         startDate: `${start.toISOString().split('T')[0]} 12:00 AM`,
-        eligibleAssets: [],
+        possibleShit: [],
       },
       flush: {
         chainId: this.options.chain.chain_id,
@@ -397,7 +400,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
         shitstrapAddress: '',
         shitToken: undefined,
         amount: '0',
-        eligibleAssets: [],
+        possibleShit: [],
         contractChosen: false,
       },
       overflow: {
@@ -437,7 +440,10 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
       const instantiateMsg: ShitstrapInstantiateMsg = {
         title: create.title,
         description: create.description,
-        accepted: create.eligibleAssets.map((asset) => {
+        accepted: create.possibleShit.map((asset) => {
+          if (!asset.token) {
+            throw new Error(`Token is missing for asset: ${asset.token}`);
+          }
           let token: UncheckedDenom
           if (typeof asset.token === 'string') {
             token = { native: asset.token }
@@ -714,7 +720,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
         mode: ShitstrapPaymentMode.Create,
         create: {
           chainId,
-          eligibleAssets: instantiateMsg.accepted,
+          possibleShit: instantiateMsg.accepted,
           title: instantiateMsg.title,
           description:
             instantiateMsg.description ||
@@ -748,7 +754,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
           amount: HugeDecimal.from(
             decodedMessage.wasm.execute.msg.shit_strap.shit.amount
           ).toHumanReadableString(6),
-          eligibleAssets: [],
+          possibleShit: [],
         },
       }
     } else if (isOverflow) {
