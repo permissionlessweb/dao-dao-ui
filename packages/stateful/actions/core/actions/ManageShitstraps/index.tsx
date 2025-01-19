@@ -67,6 +67,7 @@ import {
 } from './MakeShitstrapPayment'
 import { ShitstrapOverFlowData } from './ShitstrapOverFlow'
 
+// data coming from action tabs content
 export type ManageShitStrapData = {
   mode: ShitstrapPaymentMode
   create: CreateShitstrapData
@@ -75,6 +76,7 @@ export type ManageShitStrapData = {
   overflow: ShitstrapOverFlowData
 }
 
+// poo
 export type TokenToShit = {
   denomOrAddress: string
   type: TokenType
@@ -82,6 +84,7 @@ export type TokenToShit = {
   decimals: number
 }
 
+// init shitstrap json object
 const instantiateStructure = {
   instantiate_msg: {
     cutoff: {},
@@ -91,6 +94,8 @@ const instantiateStructure = {
   },
   label: {},
 }
+
+// making shitstrap payment json object
 const shitStrapPaymentStrucutre = {
   shit_strap: {
     shit: {
@@ -443,6 +448,9 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
         accepted: create.possibleShit.map((asset) => {
           if (!asset.token) {
             throw new Error(`Token is missing for asset: ${asset.token}`);
+          } else if (!create.ownerEntity?.address) {
+            throw new Error(`ownerEntity missing: ${asset.token}`);
+
           }
           let token: UncheckedDenom
           if (typeof asset.token === 'string') {

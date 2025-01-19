@@ -95,6 +95,12 @@ export const CreateShitstrap: ComponentType<
   addAction,
   ...props
 }) => {
+    // If widget not set up, don't render anything because begin shitstrap cannot be
+    // used.
+    if (!widgetData) {
+      return null
+    }
+
     const { t } = useTranslation()
     const actionOptions = useActionOptions()
     const {
@@ -127,6 +133,8 @@ export const CreateShitstrap: ComponentType<
       resetField,
       clearErrors,
     } = useFormContext<CreateShitstrapData>()
+
+
     const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
     const watchCutoffAmount = watch((fieldNamePrefix + 'cutoff') as 'cutoff')
     const watchDescription = watch(
@@ -155,14 +163,9 @@ export const CreateShitstrap: ComponentType<
     )
     const selectedMicroBalance = selectedToken?.balance ?? 0
     const selectedBalance = HugeDecimal.from(selectedMicroBalance)
-    // If widget not set up, don't render anything because begin shitstrap cannot be
-    // used.
-    if (!widgetData) {
-      return null
-    }
-
 
     const nativeToken = getNativeTokenForChainId(watchChainId)
+    const currentChain = getChainForChainId(watchChainId)
 
     const chainAccounts = context.accounts.filter((a) => a.chainId === watchChainId)
     const chainAddressOwner = getChainAddressForActionOptions(
@@ -170,15 +173,14 @@ export const CreateShitstrap: ComponentType<
       watchChainId
     )
 
-    const shitstrapFactoryExists = !!widgetData?.factories?.[watchChainId]
-
     const crossChainAccountActionExists = allActionsWithData.some(
       (action) => action.actionKey === ActionKey.ManageShitstrap
     )
 
+    const shitstrapFactoryExists = !!widgetData?.factories?.[watchChainId]
     const shitstrapOwnerAddrValid =
       !!watchShitstrapOwner &&
-      isValidBech32Address(watchShitstrapOwner.address, bech32Prefix)
+      isValidBech32Address(watchShitstrapOwner.address, currentChain.bech32_prefix)
 
     // A DAO can create a shitstrap payment factory on the current chain and any
     // polytone connection that is also a supported chain (since the shitstrap
@@ -197,6 +199,7 @@ export const CreateShitstrap: ComponentType<
     const [defaultsSet, setDefaultsSet] = useState(
       !!watchSelfEntity && !!watchShitstrapOwner
     )
+
     useEffect(() => {
       if (defaultsSet) {
         return
@@ -227,6 +230,7 @@ export const CreateShitstrap: ComponentType<
         },
       })
 
+      // reset owner
       resetField((fieldNamePrefix + 'ownerEntity') as 'ownerEntity', {
         defaultValue: {
           address: '',
@@ -423,7 +427,7 @@ export const CreateShitstrap: ComponentType<
                   register={register}
                   validation={[
                     validateRequired,
-                    makeValidateAddress(bech32Prefix),
+                    makeValidateAddress(currentChain.bech32_prefix),
                   ]}
                 />
                 <div className="flex min-w-0 grow flex-row items-stretch gap-2 sm:gap-3">
