@@ -1,6 +1,6 @@
 import { ActionBase, AddressInput, BoxEmoji, useActionOptions, useCachedLoadingWithError } from "@dao-dao/stateless";
 import { ActionComponent, ActionContextType, ActionKey, ActionMatch, ActionOptions, Coin, LazyNftCardInfo, LoadingDataWithError, ProcessedMessage, TokenType, UnifiedCosmosMsg } from "@dao-dao/types";
-import { InfuseNftsComponent, InfuseNftsData } from "./component";
+import { InfuseNftsComponent, InfuseNftsData } from "./Component";
 import { chainIsIndexed, combineLoadingDataWithErrors, encodeJsonToBase64, getChainAddressForActionOptions, makeCombineQueryResultsIntoLoadingDataWithError, makeExecuteSmartContractMessage, maybeMakePolytoneExecuteMessages, objectMatchesStructure } from "@dao-dao/utils";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { lazyNftCardInfosForDaoSelector, nftCardInfoSelector, walletLazyNftCardInfosSelector } from "@dao-dao/state/recoil";
