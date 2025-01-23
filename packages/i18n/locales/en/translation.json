@@ -963,8 +963,8 @@
   },
   "info": {
     "eligibleTokens": "All conversion ratio's",
-    "shitstrapManagerNeeded" :"A Shitstrap Manager unique to this DAO is required to create a Shitstrap.", 
-    "shitstrapManagerDescription" :"A Shitstrap Manager creates and keeps effecient queries of shitstrap information for a DAO", 
+    "shitstrapManagerNeeded": "A Shitstrap Manager unique to this DAO is required to create a Shitstrap.",
+    "shitstrapManagerDescription": "A Shitstrap Manager creates and keeps effecient queries of shitstrap information for a DAO",
     "abstainVote": "Abstain",
     "acceptSubDaoActionDescription": "Accept a pending SubDAO's ownership transfer request. Be sure that the SubDAO-to-be has already requested to join your DAO through the \"Become SubDAO\" action.",
     "acceptSubDaoActionOtherActionsAdded": "Other actions that are required to register a new SubDAO have been added to the proposal automatically.",
@@ -1341,6 +1341,7 @@
     "proposalModuleInfoCardsTooltip": "Different proposal types are configured separately. This is the configuration for the {{type}} proposal type.",
     "proposalModuleInfoCardsTooltip_approval": "Different proposal types are configured separately. This is the configuration for proposals that approve proposals in the DAO shown.",
     "proposalQuorumTooltip": "This proportion of voting power must vote on a proposal for it to pass.",
+    "infuseNftsDescription": "Select various nfts to burn in order to mint a new collection.",
     "proposalStatus": {
       "canStillBeVetoed": "Although the vote is determined, it can still be vetoed. If the veto timelock period expires, then this proposal can be executed.",
       "completedAndOpen": "This proposal's outcome is determined. Votes may still be cast until expiration.",
@@ -1376,8 +1377,7 @@
       "willFailTiedVote": "If the current vote stands, this proposal will fail because the votes are tied.",
       "willPass": "If the current vote stands, this proposal will pass.",
       "willPass_vetoEnabled": "If the current vote stands and this proposal is not vetoed, it will pass.",
-      "willVeto": "If the current vote stands, this proposal will be vetoed.",
-      "infuseNftsDescription": "Select various nfts to burn in order to mint a new collection."
+      "willVeto": "If the current vote stands, this proposal will be vetoed."
     },
     "proposalThresholdTooltip": "A proposal must attain this proportion of 'Yes' votes to pass.",
     "proposeDeleteTooltip": "Propose deleting this post",
