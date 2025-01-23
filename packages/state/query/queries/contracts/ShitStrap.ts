@@ -91,6 +91,7 @@ export const shitStrapQueryKeys = {
       },
     ] as const,
 }
+
 export const shitStrapQueries = {
   config: <TData = Config>(
     queryClient: QueryClient,

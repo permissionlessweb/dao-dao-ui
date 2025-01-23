@@ -58,14 +58,14 @@ const Component: ActionComponent = (props) => {
     props.isCreating
       ? context.type === ActionContextType.Wallet
         ? walletLazyNftCardInfosSelector({
-            walletAddress: address,
-            chainId: currentChainId,
-          })
+          walletAddress: address,
+          chainId: currentChainId,
+        })
         : lazyNftCardInfosForDaoSelector({
-            chainId: currentChainId,
-            coreAddress: address,
-            governanceCollectionAddress,
-          })
+          chainId: currentChainId,
+          coreAddress: address,
+          governanceCollectionAddress,
+        })
       : undefined
   )
   const nftInfo = useCachedLoadingWithError(
@@ -78,10 +78,10 @@ const Component: ActionComponent = (props) => {
     options.loading || options.errored
       ? options
       : combineLoadingDataWithErrors(
-          ...Object.values(options.data).filter(
-            (data): data is LoadingDataWithError<LazyNftCardInfo[]> => !!data
-          )
+        ...Object.values(options.data).filter(
+          (data): data is LoadingDataWithError<LazyNftCardInfo[]> => !!data
         )
+      )
 
   return (
     <TransferNftComponent
@@ -142,18 +142,18 @@ export class TransferNftAction extends ActionBase<TransferNftData> {
         contractAddress: collection,
         msg: executeSmartContract
           ? {
-              send_nft: {
-                contract: recipient,
-                msg: encodeJsonToBase64(JSON5.parse(smartContractMsg)),
-                token_id: tokenId,
-              },
-            }
-          : {
-              transfer_nft: {
-                recipient,
-                token_id: tokenId,
-              },
+            send_nft: {
+              contract: recipient,
+              msg: encodeJsonToBase64(JSON5.parse(smartContractMsg)),
+              token_id: tokenId,
             },
+          }
+          : {
+            transfer_nft: {
+              recipient,
+              token_id: tokenId,
+            },
+          },
       })
     )
   }
@@ -208,28 +208,28 @@ export class TransferNftAction extends ActionBase<TransferNftData> {
       },
     })
       ? {
-          chainId,
-          collection: decodedMessage.wasm.execute.contract_addr,
-          tokenId: decodedMessage.wasm.execute.msg.transfer_nft.token_id,
-          recipient: decodedMessage.wasm.execute.msg.transfer_nft.recipient,
-          executeSmartContract: false,
-          smartContractMsg: '{}',
-        }
+        chainId,
+        collection: decodedMessage.wasm.execute.contract_addr,
+        tokenId: decodedMessage.wasm.execute.msg.transfer_nft.token_id,
+        recipient: decodedMessage.wasm.execute.msg.transfer_nft.recipient,
+        executeSmartContract: false,
+        smartContractMsg: '{}',
+      }
       : // send_nft
-        {
-          chainId,
-          collection: decodedMessage.wasm.execute.contract_addr,
-          tokenId: decodedMessage.wasm.execute.msg.send_nft.token_id,
-          recipient: decodedMessage.wasm.execute.msg.send_nft.contract,
-          executeSmartContract: true,
-          smartContractMsg: JSON.stringify(
-            decodeJsonFromBase64(
-              decodedMessage.wasm.execute.msg.send_nft.msg,
-              true
-            ),
-            null,
-            2
+      {
+        chainId,
+        collection: decodedMessage.wasm.execute.contract_addr,
+        tokenId: decodedMessage.wasm.execute.msg.send_nft.token_id,
+        recipient: decodedMessage.wasm.execute.msg.send_nft.contract,
+        executeSmartContract: true,
+        smartContractMsg: JSON.stringify(
+          decodeJsonFromBase64(
+            decodedMessage.wasm.execute.msg.send_nft.msg,
+            true
           ),
-        }
+          null,
+          2
+        ),
+      }
   }
 }

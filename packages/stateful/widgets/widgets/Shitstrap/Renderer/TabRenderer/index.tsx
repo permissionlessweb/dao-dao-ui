@@ -95,9 +95,8 @@ export const TabRenderer = ({
           (info) => info.chainId + ':' + info.shitstrapContractAddr
         ),
     }),
-
-
   })
+  
   const shitAction = useInitializedActionForKey(ActionKey.ManageShitstrap)
 
   // shitstrap payments that are full.

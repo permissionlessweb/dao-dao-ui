@@ -890,6 +890,9 @@
     "whatSendCounterpartyQuestion": "What do you need to <2>send</2> to the counterparty for the token swap to complete?",
     "whoAreYouQuestion": "Who are you?",
     "whoCanCancelPayment": "Who can cancel this payment?",
+    "whichInfusionMinter": "What Infusion Minter is being used?",
+    "infusionMinter": "Infusion Minter",
+    "whichInfusionId": "Which Infusion Id is this for?",
     "whoCanMint": "Who can mint an NFT?",
     "whoCanUseContract": "Who can use this contract?",
     "whoCanVetoProposals": "Who can veto proposals?",
@@ -1373,7 +1376,8 @@
       "willFailTiedVote": "If the current vote stands, this proposal will fail because the votes are tied.",
       "willPass": "If the current vote stands, this proposal will pass.",
       "willPass_vetoEnabled": "If the current vote stands and this proposal is not vetoed, it will pass.",
-      "willVeto": "If the current vote stands, this proposal will be vetoed."
+      "willVeto": "If the current vote stands, this proposal will be vetoed.",
+      "infuseNftsDescription": "Select various nfts to burn in order to mint a new collection."
     },
     "proposalThresholdTooltip": "A proposal must attain this proportion of 'Yes' votes to pass.",
     "proposeDeleteTooltip": "Propose deleting this post",
@@ -1855,6 +1859,8 @@
     "fundRebalancer": "Fund Rebalancer",
     "fundRewardDistribution": "Fund Reward Distribution",
     "github": "GitHub",
+    "infuseNfts": "NFT Infusions",
+    "selectNftsToInfuse": "Select which NFTs you want to infuse!",
     "governance": "Governance",
     "governanceConfiguration": "Governance configuration",
     "governanceDaos": "Governance DAOs",

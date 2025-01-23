@@ -1,7 +1,13 @@
 ## DAO DAO UI
 
-## SHITSTRAP TODO
+## INFUSIONS TODO
+- create infusions 
+- infusion action: add token payment modal if avialable
+- infusion action: include approval msg for each nft in bundle that does not have infusion minter approved.
 
+## SHITSTRAP TODO
+- ibc deposit modal 
+- improved  conversion ratio view
 - [filter by chains shitstrap contracts are on](./packages/stateful/widgets/widgets/Shitstrap/ShitstrapEditor.tsx#L46-L47)
 - improve handling 
 - validate minimum shit rates and cutoffs with each other

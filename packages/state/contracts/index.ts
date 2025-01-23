@@ -157,3 +157,4 @@ export {
   SecretCw4GroupQueryClient,
 } from './SecretCw4Group'
 export { ShitStrapClient, ShitStrapQueryClient } from './ShitStrap'
+export { CwInfuserClient, CwInfuserQueryClient } from './CwInfuser'
