@@ -1,5 +1,5 @@
-import { ActionBase, Button, ChainProvider, ErrorPage, HorizontalNftCard, HorizontalNftCardLoader, InputErrorMessage, NumericInput } from "@dao-dao/stateless";
-import { ActionComponent, ActionOptions, AddressInputProps, LazyNftCardInfo, LoadingDataWithError, NftCardInfo, NftSelectionModalProps } from "@dao-dao/types";
+import { ActionBase, Button, ChainProvider, ErrorPage, HorizontalNftCard, HorizontalNftCardLoader, InputErrorMessage, NativeCoinSelector, NumericInput } from "@dao-dao/stateless";
+import { ActionComponent, ActionOptions, AddressInputProps, GenericTokenBalance, LazyNftCardInfo, LoadingData, LoadingDataWithError, NftCardInfo, NftSelectionModalProps } from "@dao-dao/types";
 import { Bundle, Infusion, NFT } from "@dao-dao/types/contracts/CwInfuser";
 import { TransferNftData } from "../TransferNft/Component";
 import { ComponentType, useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import { getChainForChainId, getNftKey, isValidBech32Address, makeValidateAddres
 import clsx from "clsx"
 import { useQueryClient } from "@tanstack/react-query";
 import { cw721BaseQueries, nftQueries } from "@dao-dao/state/query";
+import { Approval } from "@dao-dao/types/contracts/Sg721Base";
 
 
 export type InfuseNftsData = {
@@ -19,6 +20,12 @@ export type InfuseNftsData = {
     infusionBundles: Bundle[]
     collection: string
     tokenId: string
+    funds: {
+        denom: string
+        amount: string
+        // Will multiply `amount` by 10^decimals when generating the message.
+        decimals: number
+    }[]
 }
 
 export interface InfuseNftsOptions {
@@ -26,8 +33,12 @@ export interface InfuseNftsOptions {
     options: LoadingDataWithError<LazyNftCardInfo[]>
     // Information about the NFT currently selected.
     nftInfo: LoadingDataWithError<NftCardInfo | undefined>
+    // Information from the Infusion currently selected.
     infusionInfo: LoadingDataWithError<Infusion[] | undefined>
+    // // Information about the approval status of NFTs selected to be infused.
+    // approvalInfo: LoadingDataWithError<Approval[] | undefined>
 
+    tokens: LoadingData<GenericTokenBalance[]>
     AddressInput: ComponentType<AddressInputProps<InfuseNftsData>>
     NftSelectionModal: ComponentType<NftSelectionModalProps>
 }
@@ -36,14 +47,13 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     fieldNamePrefix,
     isCreating,
     errors,
-    options: { options, nftInfo, infusionInfo, AddressInput, NftSelectionModal },
+    options: { options, nftInfo, tokens, infusionInfo, AddressInput, NftSelectionModal },
 }) => {
     const { t } = useTranslation()
     const { control, watch, setValue, setError, register, clearErrors, } =
         useFormContext<InfuseNftsData>()
 
     const queryClient = useQueryClient();
-
     const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
     const chain = getChainForChainId(watchChainId)
 
@@ -65,10 +75,20 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
         control,
         name: (fieldNamePrefix + 'infusionBundles') as 'infusionBundles',
     })
+    // funds 
+    const {
+        fields: coins,
+        append: appendCoin,
+        remove: removeCoin,
+    } = useFieldArray({
+        control,
+        name: fieldNamePrefix + 'funds' as 'funds',
+    })
+
 
     const selectedKey = getNftKey(watchChainId, watchCollection, watchTokenId)
 
-
+    const infusion = !infusionInfo.errored && !infusionInfo.loading ? infusionInfo.data : null
 
     // Filter through bundles
     // if we are removing a nft, filter through each bundle and search for the nfts with the exact collection and id as the nft, and remove it.
@@ -112,7 +132,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
             // Add NFT to bundles
             let targetBundleIndex = -1
             let canAddToExisting = false
- 
+
             // Check existing bundles for same collection
             infusionBundleFields.forEach((bundle, index) => {
                 const sameCollectionCount = bundle.nfts.filter(
@@ -239,6 +259,23 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
             </div>
             <div className="flex flex-col gap-1">
 
+                {
+                    infusion && infusion[0].infusion_params.mint_fee && (
+                        <>
+                            {coins.map(({ id }, index) => (
+                                <NativeCoinSelector
+                                    key={id + index}
+                                    errors={errors?.funds?.[index]}
+                                    fieldNamePrefix={fieldNamePrefix + `funds.${index}.`}
+                                    isCreating={isCreating}
+                                    onRemove={isCreating ? () => removeCoin(index) : undefined}
+                                    tokens={tokens}
+                                />
+                            ))}
+
+                        </>
+                    )
+                }
 
             </div>
             {isCreating && (
@@ -248,7 +285,6 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                         label: t('button.save'),
                         onClick: () => {
                             setShowModal(false)
-                            // on action, query selected nfts if current infusion minter is operator for nfts 
                         },
                     }}
                     header={{

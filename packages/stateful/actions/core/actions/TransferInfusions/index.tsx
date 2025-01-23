@@ -1,5 +1,5 @@
 import { ActionBase, AddressInput, BoxEmoji, useActionOptions, useCachedLoadingWithError } from "@dao-dao/stateless";
-import { ActionComponent, ActionContextType, ActionKey, ActionMatch, ActionOptions, LazyNftCardInfo, LoadingDataWithError, ProcessedMessage, UnifiedCosmosMsg } from "@dao-dao/types";
+import { ActionComponent, ActionContextType, ActionKey, ActionMatch, ActionOptions, Coin, LazyNftCardInfo, LoadingDataWithError, ProcessedMessage, TokenType, UnifiedCosmosMsg } from "@dao-dao/types";
 import { InfuseNftsComponent, InfuseNftsData } from "./component";
 import { chainIsIndexed, combineLoadingDataWithErrors, encodeJsonToBase64, getChainAddressForActionOptions, makeCombineQueryResultsIntoLoadingDataWithError, makeExecuteSmartContractMessage, maybeMakePolytoneExecuteMessages, objectMatchesStructure } from "@dao-dao/utils";
 import { useFieldArray, useFormContext } from "react-hook-form";
@@ -10,6 +10,8 @@ import { NftSelectionModal } from "../../../../components";
 import { useQueries } from "@tanstack/react-query";
 import { cw721BaseQueries, cwInfuserExtraQueries, cwInfuserQueries } from "@dao-dao/state/query";
 import { NFT } from "@dao-dao/types/contracts/CwInfuser";
+import { useTokenBalances } from "../../../hooks";
+import { HugeDecimal } from "@dao-dao/math";
 
 // Check if infuser is approved for this token id 
 const getIsInfuserApproved = (options: ActionOptions, nftAddr: string, spender: string, tokenId: string) => {
@@ -55,6 +57,7 @@ const useInfusionContractFromForm = (options: ActionOptions, infusionMinter: str
         }),
     })
 }
+
 const useAppendAnyBundleNftApproveMsgs = (options: ActionOptions, infusionMinter: string, nfts: NFT[]) => {
     const nftApprovalQueries = nfts.map((n) => getIsInfuserApproved(options, n.addr, infusionMinter, n.token_id.toString()))
     return useQueries({
@@ -78,11 +81,27 @@ const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
     const watchInfusionMinter = watch((props.fieldNamePrefix + 'infusionMinter') as 'infusionMinter')
     const watchInfusionId = watch((props.fieldNamePrefix + 'infusionId') as 'infusionId')
     const watchInfusionBundles = watch((props.fieldNamePrefix + 'infusionBundles') as 'infusionBundles')
-
+    const watchFunds = watch((props.fieldNamePrefix + 'funds') as 'funds')
     const watchTokenId = watch((props.fieldNamePrefix + 'tokenId') as 'tokenId')
     const watchCollection = watch(
         (props.fieldNamePrefix + 'collection') as 'collection'
     )
+
+    const cw20 = false
+
+    const tokens = useTokenBalances({
+        // Load selected tokens when not creating in case they are no longer
+        // returned in the list of all tokens for the given DAO/wallet after the
+        // proposal is made.
+        additionalTokens: props.isCreating
+            ? undefined
+            : watchFunds.map(({ denom }) => ({
+                chainId: watchChainId,
+                type: cw20 ? TokenType.Cw20 : TokenType.Native,
+                denomOrAddress: denom,
+            })),
+    })
+
 
     // gets the nfts owned by wallet or dao
     const nftOptions = useCachedLoadingWithError(
@@ -140,6 +159,7 @@ const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
                 infusionInfo: infusionInfoLDWE,
                 options: availableToInfuse,
                 nftInfo,
+                tokens,
                 AddressInput,
                 NftSelectionModal,
             }}
@@ -166,6 +186,7 @@ export class InfusedNftAction extends ActionBase<InfuseNftsData> {
             infusionBundles: [],
             collection: '',
             tokenId: '',
+            funds: []
         }
 
 
@@ -175,27 +196,55 @@ export class InfusedNftAction extends ActionBase<InfuseNftsData> {
         chainId,
         infusionMinter,
         infusionId,
-        infusionBundles
+        infusionBundles,
+        funds,
     }: InfuseNftsData): UnifiedCosmosMsg[] {
         const sender = getChainAddressForActionOptions(this.options, chainId)
         if (!sender) {
             throw new Error('No sender found for chain.')
         }
 
+        // for each nft in infusion Bundles, create the approve msgs
+        const approveNftsMsgs = infusionBundles.flatMap((ib) => {
+            return ib.nfts.map((bnfts) => {
+                return makeExecuteSmartContractMessage({
+                    chainId,
+                    sender,
+                    contractAddress: bnfts.addr,
+                    msg: {
+                        approve: {
+                            token_id: bnfts.token_id,
+                            spender: sender,
+                            //todo: add expiration
+                        },
+                    },
+                });
+            })
+        })
+
+        const infusionMsg = makeExecuteSmartContractMessage({
+            chainId,
+            sender,
+            contractAddress: infusionMinter,
+            msg: {
+                infuse: {
+                    infusion_id: infusionId,
+                    bundle: infusionBundles,
+                },
+            },
+            funds: funds
+                .map(({ denom, amount, decimals }) =>
+                    HugeDecimal.fromHumanReadable(amount, decimals).toCoin(denom)
+                )
+                // Neutron errors with `invalid coins` if the funds list is not
+                // alphabetized.
+                .sort((a, b) => a.denom.localeCompare(b.denom)),
+
+        });
         return maybeMakePolytoneExecuteMessages(
             this.options.chain.chain_id,
             chainId,
-            makeExecuteSmartContractMessage({
-                chainId,
-                sender,
-                contractAddress: infusionMinter,
-                msg: {
-                    infuse: {
-                        infusion_id: infusionId,
-                        bundle: infusionBundles,
-                    },
-                },
-            })
+            approveNftsMsgs.concat([infusionMsg]),
         )
     }
 
@@ -224,13 +273,15 @@ export class InfusedNftAction extends ActionBase<InfuseNftsData> {
             account: { chainId },
         },
     ]: ProcessedMessage[]): InfuseNftsData {
+
         return {
             chainId,
             infusionMinter: decodedMessage.wasm.execute.contract_addr,
             infusionId: decodedMessage.wasm.execute.msg.infuse.infusion_id,
             infusionBundles: decodedMessage.wasm.execute.msg.infuse.bundle,
             collection: '',
-            tokenId: ''
+            tokenId: '',
+            funds: decodedMessage.wasm.execute.funds,
         }
     }
 
