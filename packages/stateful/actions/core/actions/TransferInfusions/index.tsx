@@ -213,7 +213,7 @@ export class InfusedNftAction extends ActionBase<InfuseNftsData> {
                     contractAddress: bnfts.addr,
                     msg: {
                         approve: {
-                            token_id: bnfts.token_id,
+                            token_id: bnfts.token_id.toString(),
                             spender: sender,
                             //todo: add expiration
                         },

@@ -16,18 +16,26 @@ import {
 } from '@dao-dao/stateless'
 import {
   ButtonLinkProps,
+  GenericToken,
+  GenericTokenSource,
   LoadingDataWithError,
   StatefulShitStrapPaymentCardProps,
   StatefulShitStrapPaymentLineProps,
+  TokenType,
   TransProps,
   WidgetId,
 } from '@dao-dao/types'
-import { ShitstrapInfo } from '@dao-dao/types/contracts/ShitStrap'
+import { ShitstrapInfo, ShitstrapInfoGeneric } from '@dao-dao/types/contracts/ShitStrap'
 
 import { useWallet } from '../../../../../hooks'
+import { QueryClient, useQueries, useQueryClient } from '@tanstack/react-query'
+import { makeCombineQueryResultsIntoLoadingDataWithError } from '@dao-dao/utils'
+import { tokenQueries } from '@dao-dao/state/query'
+import uniqBy from 'lodash.uniqby'
 
 export interface TabRendererProps {
-  shitStrapsLoading: LoadingDataWithError<ShitstrapInfo[]>
+  shitStrapsLoading: LoadingDataWithError<ShitstrapInfoGeneric[]>
+  queryClient: QueryClient,
   isMember: boolean
   createShitStrapHref: string | undefined
   ButtonLink: ComponentType<ButtonLinkProps>
@@ -38,6 +46,7 @@ export interface TabRendererProps {
 
 export const TabRenderer = ({
   shitStrapsLoading,
+  queryClient,
   isMember,
   createShitStrapHref,
   ButtonLink,
@@ -51,70 +60,65 @@ export const TabRenderer = ({
   const { coreAddress } = useDao()
   const { daoSubpathComponents, goToDao } = useDaoNavHelpers()
   // get connected wallet details
-  const { address: walletAddress } = useWallet()
+  // const { address: walletAddress } = useWallet()
 
-  const openShitstrapContract =
-    daoSubpathComponents[0] === WidgetId.ShitStrap
-      ? daoSubpathComponents[1]
-      : undefined
+  const openShitstrapContract = daoSubpathComponents[0] === WidgetId.ShitStrap ? daoSubpathComponents[1] : undefined
 
   const setOpenShitStrapContract = useCallback(
-    (contract?: string) =>
-      goToDao(
-        coreAddress,
-        WidgetId.ShitStrap + (contract ? `/${contract}` : ''),
-        undefined,
-        {
-          shallow: true,
-        }
-      ),
+    (contract?: string) => goToDao(
+      coreAddress,
+      WidgetId.ShitStrap + (contract ? `/${contract}` : ''),
+      undefined,
+      { shallow: true }
+    ),
     [coreAddress, goToDao]
   )
 
   // type gaurd function guarantees data property exists if true
-  function isLoadingDataWithErrorLoaded<D>(
-    data: LoadingDataWithError<D>
-  ): data is { loading: false; errored: false; data: D } {
+  function isLoadingDataWithErrorLoaded<D>(data: LoadingDataWithError<D>):
+    data is { loading: false; errored: false; data: D } {
     return !data.loading && !data.errored
   }
 
-  const activeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading)
-    ? shitStrapsLoading.data
-    : []
-  const completeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading)
-    ? shitStrapsLoading.data.filter(({ full }) => full)
-    : []
+
+  const activeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading) ? shitStrapsLoading.data.filter(({ full }) => !full) : []
+  const completeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading) ? shitStrapsLoading.data.filter(({ full }) => full) : []
+
+  const shitstrapEligibleAssetsGenericTokenLoading = useQueries({
+    queries: activeShitstraps.flatMap(({ chainId, possibleShit }) =>
+      possibleShit.map(( ps) => {
+        const options = {
+          chainId,
+          type: ps.type,
+          denomOrAddress: ps.denomOrAddress,
+        }
+        return tokenQueries.info(queryClient, options)
+      })
+    ),
+    combine: makeCombineQueryResultsIntoLoadingDataWithError({
+      firstLoad: 'one',
+      // transform: (infos) => uniqBy(infos, (info) => info.chainId + ':' + info.denomOrAddress),
+    }),
+  })
+
+
+
 
   const [showingCompleted, setShowingCompleted] = useState(false)
-  const [shitstrapPaymentModalOpen, setShitstrapPaymentModalOpen] = useState(
-    !!openShitstrapContract
-  )
+  const [shitstrapPaymentModalOpen, setShitstrapPaymentModalOpen] = useState(!!openShitstrapContract)
 
-  const openShitstrapPayment =
-    shitStrapsLoading.loading ||
-      shitStrapsLoading.errored ||
-      !openShitstrapContract
-      ? undefined
-      : isLoadingDataWithErrorLoaded(shitStrapsLoading)
-        ? shitStrapsLoading.data.find(
-          ({ shitstrapContractAddr }) =>
-            shitstrapContractAddr === openShitstrapContract
-        )
-        : undefined
+  const openShitstrapPayment = activeShitstraps.find(({ shitstrapContractAddr }) => shitstrapContractAddr === openShitstrapContract)
 
-  // Wait for modal to close before clearing the open vesting payment to prevent
+  // Wait for modal to close before clearing the open shitstrap payment modal to prevent
   // UI flicker.
   useEffect(() => {
     if (!shitstrapPaymentModalOpen && openShitstrapPayment) {
       const timeout = setTimeout(() => setOpenShitStrapContract(undefined), 200)
+      // console.log("shitstrapShitGenericTokenLoading", shitstrapShitGenericTokenLoading)
       return () => clearTimeout(timeout)
     }
-  }, [
-    openShitstrapContract,
-    openShitstrapPayment,
-    setOpenShitStrapContract,
-    shitstrapPaymentModalOpen,
-  ])
+
+  }, [openShitstrapContract, openShitstrapPayment, setOpenShitStrapContract, shitstrapPaymentModalOpen])
 
   return (
     <div className="flex flex-col gap-6">
@@ -124,13 +128,7 @@ export const TabRenderer = ({
           <p className="secondary-text">{t('info.shitstrapSecondaryText')}</p>
         </div>
         {createShitStrapHref && (
-          <Tooltip
-            title={
-              !isMember
-                ? t('error.mustBeMemberToCreateShitstrapPayment')
-                : undefined
-            }
-          >
+          <Tooltip title={!isMember ? t('error.mustBeMemberToCreateShitstrapPayment') : undefined}>
             <ButtonLink
               className="shrink-0"
               disabled={!isMember}
@@ -138,9 +136,7 @@ export const TabRenderer = ({
               variant="primary"
             >
               <Add className="!h-4 !w-4" />
-              <span className="hidden md:inline">
-                {t('button.newShitstrap')}
-              </span>
+              <span className="hidden md:inline">{t('button.newShitstrap')}</span>
               <span className="md:hidden">{t('button.new')}</span>
             </ButtonLink>
           </Tooltip>
@@ -160,22 +156,17 @@ export const TabRenderer = ({
               <div className="space-y-1">
                 {/* <ActiveShitStrapLineHeader /> */}
                 {activeShitstraps.map((shitstrapInfo, index) => (
-                  <>
-                    <ShitStrapLine
-                      key={
-                        shitstrapInfo.chainId +
-                        shitstrapInfo.shitstrapContractAddr
-                      }
-                      onClick={() => {
-                        setShitstrapPaymentModalOpen(true)
-                        setOpenShitStrapContract(
-                          shitstrapInfo.shitstrapContractAddr
-                        )
-                      }}
-                      shitstrapInfo={shitstrapInfo}
-                      transparentBackground={index % 2 !== 0}
-                    />
-                  </>
+                  <ShitStrapLine
+                    key={shitstrapInfo.chainId +
+                      shitstrapInfo.shitstrapContractAddr}
+                    onClick={() => {
+                      setShitstrapPaymentModalOpen(true)
+                      setOpenShitStrapContract(shitstrapInfo.shitstrapContractAddr)
+                    }}
+                    shitstrapInfo={shitstrapInfo}
+                    transparentBackground={index % 2 !== 0}
+                    eligibleShit={shitstrapEligibleAssetsGenericTokenLoading} 
+                    queryClient={queryClient} />
                 ))}
               </div>
             )}
@@ -211,18 +202,15 @@ export const TabRenderer = ({
 
                       {completeShitstraps.map((shitstrapInfo, index) => (
                         <ShitStrapLine
-                          key={
-                            shitstrapInfo.chainId +
-                            shitstrapInfo.shitstrapContractAddr
-                          }
+                          key={shitstrapInfo.chainId + shitstrapInfo.shitstrapContractAddr}
                           onClick={() => {
                             setShitstrapPaymentModalOpen(true)
-                            setOpenShitStrapContract(
-                              shitstrapInfo.shitstrapContractAddr
-                            )
+                            setOpenShitStrapContract(shitstrapInfo.shitstrapContractAddr)
                           }}
+                          queryClient={queryClient}
                           shitstrapInfo={shitstrapInfo}
                           transparentBackground={index % 2 !== 0}
+                          eligibleShit={shitstrapEligibleAssetsGenericTokenLoading}
                         />
                       ))}
                     </div>
@@ -251,10 +239,7 @@ export const TabRenderer = ({
       >
         {openShitstrapPayment ? (
           <ChainProvider chainId={openShitstrapPayment.chainId}>
-            <ShitStrapCard
-              shitstrapInfo={openShitstrapPayment}
-              usingPersonalShit={false}
-            />
+            <ShitStrapCard shitstrapInfo={openShitstrapPayment} usingPersonalShit={false} />
           </ChainProvider>
         ) : (
           <Loader />

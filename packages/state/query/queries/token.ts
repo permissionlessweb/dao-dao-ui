@@ -76,11 +76,11 @@ export const fetchTokenInfo = async (
       snip20CodeHash:
         isSecretNetwork(asset.chain_id) && asset.is_cw20 && asset.token_contract
           ? await queryClient.fetchQuery(
-              contractQueries.secretCodeHash({
-                chainId: asset.chain_id,
-                address: asset.token_contract,
-              })
-            )
+            contractQueries.secretCodeHash({
+              chainId: asset.chain_id,
+              address: asset.token_contract,
+            })
+          )
           : null,
     }
   } else if (source.chainId !== chainId) {
@@ -106,11 +106,11 @@ export const fetchTokenInfo = async (
         snip20CodeHash:
           isSecretNetwork(chainId) && type === TokenType.Cw20
             ? await queryClient.fetchQuery(
-                contractQueries.secretCodeHash({
-                  chainId,
-                  address: denomOrAddress,
-                })
-              )
+              contractQueries.secretCodeHash({
+                chainId,
+                address: denomOrAddress,
+              })
+            )
             : null,
       }
     }
@@ -142,11 +142,11 @@ export const fetchTokenInfo = async (
       source,
       snip20CodeHash: isSecretNetwork(chainId)
         ? await queryClient.fetchQuery(
-            contractQueries.secretCodeHash({
-              chainId,
-              address: denomOrAddress,
-            })
-          )
+          contractQueries.secretCodeHash({
+            chainId,
+            address: denomOrAddress,
+          })
+        )
         : null,
     }
   }
@@ -160,11 +160,11 @@ export const fetchTokenInfo = async (
       snip20CodeHash:
         isSecretNetwork(chainId) && token.type === TokenType.Cw20
           ? await queryClient.fetchQuery(
-              contractQueries.secretCodeHash({
-                chainId,
-                address: denomOrAddress,
-              })
-            )
+            contractQueries.secretCodeHash({
+              chainId,
+              address: denomOrAddress,
+            })
+          )
           : null,
     }
   } catch (err) {
@@ -271,6 +271,7 @@ export const fetchTokenSource = async (
       denomOrAddress,
     })
   )
+  console.log("skipAsset:", skipAsset)
 
   if (skipAsset) {
     const sourceType = skipAsset.origin_denom.startsWith('cw20:')
@@ -291,14 +292,14 @@ export const fetchTokenSource = async (
 
   // Try to reverse engineer IBC denom.
   if (denomOrAddress.startsWith('ibc/')) {
+    // If trace exists, resolve IBC denom.
     const ibc = await ibcProtoRpcClientRouter.connect(chainId)
-
     try {
       const { denomTrace } = await ibc.applications.transfer.v1.denomTrace({
         hash: denomOrAddress,
       })
+      // console.log("denomTrace", denomTrace)
 
-      // If trace exists, resolve IBC denom.
       if (denomTrace) {
         let channels = denomTrace.path.split('transfer/').slice(1)
         // Trim trailing slash from all but last channel.
@@ -550,7 +551,7 @@ export const fetchUsdPrice = async (
         }
 
         // Return a never-resolving promise to keep the race going.
-        return new Promise<GenericTokenWithUsdPrice>(() => {})
+        return new Promise<GenericTokenWithUsdPrice>(() => { })
       })
     )
   )

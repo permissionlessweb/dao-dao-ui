@@ -8,75 +8,70 @@ import {
   TokenAmountDisplay,
   Tooltip,
 } from '@dao-dao/stateless'
-import { ShitStrapPaymentLineProps, TypedOption } from '@dao-dao/types'
+import { GenericToken, ShitStrapPaymentLineProps, TypedOption, Uint128 } from '@dao-dao/types'
 import { PossibleShit } from '@dao-dao/types/contracts/ShitStrap'
 import { getChainForChainId } from '@dao-dao/utils'
+import { useQueryLoadingDataWithError } from '../../../../../hooks'
+import { tokenQueries } from '@dao-dao/state/query'
+import { contractVersionSelector } from '@dao-dao/state/recoil'
 
 export const ShitstrapPaymentLine = ({
   shitstrapInfo,
   onClick,
   transparentBackground,
   EntityDisplay,
+  eligibleShit,
+  queryClient,
 }: ShitStrapPaymentLineProps) => {
   const { t } = useTranslation()
 
-  const { chainId, possibleShit, shit, full, shitstrapContractAddr, owner } =
+  const { chainId, possibleShit: somePossibleshit, shit, full, shitstrapContractAddr, owner } =
     shitstrapInfo
   const { bech32_prefix: bech32Prefix } = getChainForChainId(chainId)
 
-  const possibleShitOptions: TypedOption<PossibleShit>[] = possibleShit.map(
-    (asset) => {
-      const tokenString =
-        typeof asset.token === 'object'
-          ? 'native' in asset.token
-            ? asset.token.native
-            : asset.token.cw20
-          : asset.token
+  const freshShitTokenQuery = useQueryLoadingDataWithError(
+    tokenQueries.info(queryClient, {
+      chainId,
+      type: shitstrapInfo.shit.type,
+      denomOrAddress: shitstrapInfo.shit.denomOrAddress,
 
-      const displayToken = tokenString.startsWith(`factory/'${bech32Prefix}'1`)
-        ? !tokenString.substring(51).startsWith('/')
-          ? tokenString.substring(71)
-          : tokenString.substring(52)
-        : tokenString
-
-      return {
-        label: `${displayToken}: ${HugeDecimal.from(
-          asset.shit_rate
-        ).toInternationalizedHumanReadableString({
-          decimals: 6,
-          minDecimals: 2,
-        })}`,
-        value: asset,
-      }
-    }
+    })
   )
 
-  const options = possibleShit.map((asset, index) => ({
-    value: asset,
-    label: (
-      <div
-        className={clsx(
-          'b h-8 cursor-pointer grid-cols-2 items-center gap-2 rounded-lg py-2 px-3 transition hover:bg-background-interactive-hover active:bg-background-interactive-pressed',
-          !transparentBackground && 'bg-background-tertiary'
-        )}
-      >
-        <TokenAmountDisplay
-          amount={HugeDecimal.from(asset.shit_rate)}
-          className="body-text truncate font-mono"
-          decimals={6}
-          symbol={
-            typeof asset.token === 'object'
-              ? 'native' in asset.token
-                ? asset.token.native.substring(0, 15)
-                : asset.token.cw20.substring(0, 15)
-              : asset.token.substring(0, 9)
-          }
-        />
-      </div>
-    ),
+  const freshShit = freshShitTokenQuery.errored || freshShitTokenQuery.loading ? shit.denomOrAddress :
+    freshShitTokenQuery.data.source.denomOrAddress != freshShitTokenQuery.data.denomOrAddress ?
+      freshShitTokenQuery.data.source.denomOrAddress : freshShitTokenQuery.data.denomOrAddress
+
+  interface PossibleShitWithGenericToken {
+    shit_rate: Uint128
+    token: GenericToken
+  }
+
+
+
+  // Create GenericToken with shitstrap ratio extended
+  const possibleShitOptions: TypedOption<PossibleShitWithGenericToken>[] =
+    eligibleShit.errored || eligibleShit.loading ? [] :
+      eligibleShit.data.map((asset, index) => {
+        const displayToken = asset.source.chainId != asset.chainId ? asset.source.denomOrAddress : asset.denomOrAddress
+        const shitrate = somePossibleshit.map((a) => {
+          if (a.denomOrAddress == asset.denomOrAddress) { return a }
+        })
+
+        console.log("shitstrapLine Display:", displayToken)
+        return {
+          label: `${displayToken}: ${HugeDecimal.from(shitrate[index]?.shit_rate!).toInternationalizedHumanReadableString({ decimals: 18, minDecimals: 3, })}`,
+          value: { shit_rate: shitrate[index]?.shit_rate!, token: asset },
+        }
+      }
+      )
+
+  const options = possibleShitOptions.map((asset, index) => ({
+    value: [asset],
+    label: asset.label
   }))
 
-  const handleSelect = (option: typeof possibleShit[0], index: number) => {
+  const handleSelect = (option: typeof possibleShitOptions, index: number) => {
     // Handle the selection of an option
     console.log(option, index)
   }
@@ -94,7 +89,7 @@ export const ShitstrapPaymentLine = ({
           }
         }}
       >
-        {/* display owner of shitstrao */}
+        {/* display owner of shitstrap */}
         <EntityDisplay address={owner} noUnderline />
         {/* display shistrap state */}
         {full ? (
@@ -109,15 +104,12 @@ export const ShitstrapPaymentLine = ({
             {/* todo: click to see map of all possible tokens, display verified or tokenfactory tokens */}
             <div onClick={(event) => event.stopPropagation()}>
               <Dropdown
-                containerClassName=""
-                iconClassName=""
-                labelClassName=""
-                labelContainerClassName=""
                 onSelect={handleSelect}
-                options={possibleShitOptions}
+                options={options}
                 placeholder={t('info.selectEligibleAsset', {
-                  number: possibleShit.length,
+                  number: possibleShitOptions.length,
                 })}
+              // selected={}
               />
             </div>
           </>
@@ -131,16 +123,9 @@ export const ShitstrapPaymentLine = ({
             )}
             className="body-text truncate font-mono"
             decimals={shit.decimals}
-            wrapperClassName={
-              shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`) ? 'color-warning' : shit.denomOrAddress.startsWith(`ibc/`) ? '' : ''
+            wrapperClassName={''// shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`) ? 'color-warning' : shit.denomOrAddress.startsWith(`ibc/`) ? '' : ''
             }
-            symbol={
-              shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`)
-                ? !shit.denomOrAddress.substring(51).startsWith('/')
-                  ? shit.denomOrAddress.substring(71)
-                  : shit.denomOrAddress.substring(52)
-                : shit.denomOrAddress
-            }
+            symbol={freshShit}
           />
         </div>
       </div>

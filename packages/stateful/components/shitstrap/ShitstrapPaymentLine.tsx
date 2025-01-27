@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 
-import { cwShitstrapExtraQueries } from '@dao-dao/state/query'
+import { cwShitstrapExtraQueries, tokenQueries } from '@dao-dao/state/query'
 import { EntityDisplay, useQueryLoadingDataWithError } from '@dao-dao/stateful'
-import { StatefulShitStrapPaymentLineProps } from '@dao-dao/types'
+import { StatefulShitStrapPaymentLineProps, TokenType } from '@dao-dao/types'
 
 import { ShitstrapPaymentLine as StatelessShitstrapPaymentLine } from '../../widgets/widgets/Shitstrap/components/stateless'
 

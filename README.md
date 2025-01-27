@@ -6,17 +6,19 @@
 - infusion action: include approval msg for each nft in bundle that does not have infusion minter approved.
 
 ## SHITSTRAP TODO
+- [// indexer:  listAllShitstrapContractsByInstantiator](https://github.com/hard-nett/dao-dao-ui/blob/baf82f008d52446ccfa31bc9bc6deeb593435146/packages/stateful/widgets/widgets/Shitstrap/Renderer/TabRenderer/index.tsx#L52) (not created by DAO)
 - ibc deposit modal 
 - improved  conversion ratio view
-- [filter by chains shitstrap contracts are on](./packages/stateful/widgets/widgets/Shitstrap/ShitstrapEditor.tsx#L46-L47)
-- improve handling 
+- filters:
+  - by chain 
+  - by accepted tokens 
+  - by shitstrap recipient
 - validate minimum shit rates and cutoffs with each other
 - create: Choose any token when creating shitstrap (proposal deposit for reference)
 - payment: do not allow proposal form to begin if wallet or dao does not have token
 - payment: manually choose DAO to propose to pay for shitstrap  
 - payment: query maximum payment left for shitstrap
 - shitstraps: Add filtering support
-~~- use chain prefix to trunicate factorytoken labels.~~
 - Improve shitstrap line
   - Display remaining to shit
   - Display if funded or not
@@ -24,6 +26,7 @@
   - Same as shitstrap line 
   - Add button to fund shitstrap
 
+~~- use chain prefix to trunicate factorytoken labels.~~
 ## Docker 
 set the image name, build-platform, target-platform, the environment (testnet or  mainnet):
 ```sh

@@ -156,6 +156,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                 ]
                 updateEligibleAsset(targetBundleIndex, { nfts: updatedNfts })
                 console.log("after-updated-added:", watchInfuionBundles)
+                console.log("after-updated-added:", infusion)
             } else {
                 // Create new bundle
                 appendEligibleAsset({
@@ -188,11 +189,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                 <div className="flex grow flex-col gap-4">
                     <div className="flex flex-col gap-1">
 
-                        <p className="primary-text mb-3">
-                            {isCreating
-                                ? t('form.whichInfusionMinter')
-                                : t('form.infusionMinter')}
-                        </p>
+                        <p className="primary-text mb-3">{isCreating ? t('form.whichInfusionMinter') : t('form.infusionMinter')}</p>
 
                         <ChainProvider chainId={watchChainId}>
                             <AddressInput
@@ -258,7 +255,16 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                 </div>
             </div>
             <div className="flex flex-col gap-1">
+                {infusion && (<>
+                    <p className="primary-text mb-3">Infusion Info</p>
+                    {infusion.map((ii, index) => {
+                        ii.collections
+                    })}
 
+
+                </>)}
+            </div>
+            <div className="flex flex-col gap-1">
                 {
                     infusion && infusion[0].infusion_params.mint_fee && (
                         <>

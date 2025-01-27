@@ -21,6 +21,7 @@ import {
   SupportedFeatureMap,
   TokenType,
   Validator,
+  GenericTokenSource
 } from '@dao-dao/types'
 import {
   Validator as RpcValidator,
@@ -38,7 +39,6 @@ import {
   ibc,
 } from './constants'
 import { getFallbackImage } from './getFallbackImage'
-
 /**
  * Get the RPC for the given chain.
  *
@@ -173,9 +173,9 @@ export const getImageUrlForChainId = (chainId: string): string => {
   // Some chain logos are not square, so use the coin instead.
   const image =
     (chainId === ChainId.OsmosisMainnet ||
-    chainId === ChainId.OsmosisTestnet ||
-    chainId === ChainId.NeutronMainnet ||
-    chainId === ChainId.NeutronTestnet
+      chainId === ChainId.OsmosisTestnet ||
+      chainId === ChainId.NeutronMainnet ||
+      chainId === ChainId.NeutronTestnet
       ? nativeTokenImageUrl
       : chainImageUrl) ||
     nativeTokenImageUrl ||
@@ -337,6 +337,10 @@ export const getTokenForChainIdAndDenom = (
   placeholder = true
 ): GenericToken => {
   try {
+    const patchToken = lastDitchEffortFetchShitTokenSource(chainId, denom)
+    if (patchToken) {
+      return patchToken
+    }
     // If native token, return it.
     const nativeToken = getNativeTokenForChainId(chainId)
     if (denom === nativeToken.denomOrAddress) {
@@ -359,6 +363,7 @@ export const getTokenForChainIdAndDenom = (
 
     return cachedTokens[key]!
   } catch (err) {
+
     if (placeholder) {
       return Object.freeze({
         chainId,
@@ -416,7 +421,7 @@ export const getIbcTransferInfoBetweenChains = (
     ({
       [`chain_${srcChainNumber}` as `chain_${typeof srcChainNumber}`]: srcChain,
       [`chain_${destChainNumber}` as `chain_${typeof srcChainNumber}`]:
-        destChain,
+      destChain,
       version,
     }) =>
       version === 'ics20-1' &&
@@ -775,3 +780,36 @@ export const getPublicKeyTypeForChain = (chainId: string): string => {
       return '/cosmos.crypto.secp256k1.PubKey'
   }
 }
+
+/**for a given chain-id and denom address, get the Generic token source
+ */
+export const lastDitchEffortFetchShitTokenSource = (
+  chainId: string,
+  denomOrAddress: string
+): GenericToken | undefined => {
+
+  const patchedIbcShitToken = TokenSourcesIndex[chainId]?.[denomOrAddress]
+  console.log("patchedIbcShitToken", patchedIbcShitToken)
+  return patchedIbcShitToken;
+};
+
+
+export const TokenSourcesIndex: { [chainId: string]: { [denomOrAddress: string]: GenericToken } } = {
+  'juno-1': {
+    // STARS from home
+    'ibc/F6B367385300865F654E110976B838502504231705BAC0849B0651C226385885':
+    {
+      chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/F6B367385300865F654E110976B838502504231705BAC0849B0651C226385885", symbol: "junoSTARS", decimals: 6, imageUrl: getImageUrlForChainId("stargaze-1"),
+      source: { denomOrAddress: "ustars", type: TokenType.Native, chainId: "stargaze-1" }
+    },
+    // AKT from home
+    'ibc/DFC6F33796D5D0075C5FB54A4D7B8E76915ACF434CB1EE2A1BA0BB8334E17C3A':
+    {
+      chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/DFC6F33796D5D0075C5FB54A4D7B8E76915ACF434CB1EE2A1BA0BB8334E17C3A", symbol: "junoAKT", decimals: 6, imageUrl: getImageUrlForChainId("akash-1"),
+      source: { denomOrAddress: "uakt", type: TokenType.Native, chainId: "akash-1" }
+    },
+  },
+  // 'bitsong-2b': {
+  //   // Add more denom/address mappings for chains
+  // },
+};

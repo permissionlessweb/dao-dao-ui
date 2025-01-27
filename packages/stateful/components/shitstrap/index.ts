@@ -1,2 +1,2 @@
-export * from './ShitstrapPaymentCard'
+// export * from './ShitstrapPaymentCard'
 export * from './ShitstrapPaymentLine'

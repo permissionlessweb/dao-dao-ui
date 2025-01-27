@@ -8,6 +8,7 @@ import { SuspenseLoader } from '../../../../components'
 import { useWidget } from '../../../../widgets'
 import {
   ShitstrapInfo,
+  ShitstrapInfoGeneric,
   UncheckedDenom,
 } from '@dao-dao/types/contracts/ShitStrap'
 import { HugeDecimal } from '@dao-dao/math'
@@ -312,7 +313,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
   public readonly key = ActionKey.ManageShitstrap
   public readonly Component: ActionComponent<undefined, ManageShitStrapData>
 
-  private shitstrapInfosOwnedByEntity: ShitstrapInfo[] = []
+  private shitstrapInfosOwnedByEntity: ShitstrapInfoGeneric[] = []
   private widgetData?: ShitstrapPaymentWidgetData
 
   constructor(options: ActionOptions) {

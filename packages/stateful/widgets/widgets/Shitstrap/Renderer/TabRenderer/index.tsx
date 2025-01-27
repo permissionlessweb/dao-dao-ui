@@ -4,6 +4,7 @@ import { Trans } from 'next-i18next'
 import {
   cwShitstrapExtraQueries,
   cwShitstrapFactoriesExtraQuery,
+  tokenQueries,
 } from '@dao-dao/state/query'
 import {
   ButtonLink,
@@ -11,53 +12,47 @@ import {
   useDaoNavHelpers,
   useInitializedActionForKey,
 } from '@dao-dao/stateless'
-import { ActionKey, WidgetRendererProps } from '@dao-dao/types'
+import { ActionKey, TokenType, WidgetRendererProps } from '@dao-dao/types'
 import {
   getDaoProposalSinglePrefill,
   makeCombineQueryResultsIntoLoadingDataWithError,
 } from '@dao-dao/utils'
 
 import {
-  ShitstrapPaymentCard,
   ShitstrapPaymentLine,
 } from '../../../../../components/shitstrap'
-import { useMembership } from '../../../../../hooks'
+import { useMembership, useQueryLoadingDataWithError } from '../../../../../hooks'
 import { ShitstrapPaymentWidgetData } from '../../types'
 import { TabRenderer as StatelessTabRenderer } from './TabRenderer'
 import uniqBy from 'lodash.uniqby'
+import { ShitstrapPaymentCard } from '../../components/stateless/ShitstrapPaymentCard'
 
 export const TabRenderer = ({
   variables: { factories, factory },
 }: WidgetRendererProps<ShitstrapPaymentWidgetData>) => {
+  const shitAction = useInitializedActionForKey(ActionKey.ManageShitstrap)
+
+  // if is member, lets allow to select to propose to use dao treasury as payment, or own wallet
   const { chainId: defaultChainId, coreAddress, accounts } = useDao()
   const { getDaoProposalPath } = useDaoNavHelpers()
-  // if is member, lets allow to select to propose to use dao treasury as payment, or own wallet
   const { isMember = false } = useMembership()
 
   const queryClient = useQueryClient()
+
+  // Grabs all shitstraps created from the factory saved in daos widget items
   const shitstrapsContractsLoading = useQueries({
     queries: [
       // Factory or factory list depending on version.
       ...(factories
-        ? Object.entries(factories).map(([chainId, { address }]) => ({
-          chainId,
-          address,
-        }))
-        : factory ?
-          [
-            {
-              chainId: defaultChainId,
-              address: factory,
-            }
-          ] : []
-      ).map(({ chainId, address }) =>
-        cwShitstrapFactoriesExtraQuery.listAllShitstrapContracts(queryClient, {
-          chainId,
-          address,
-        })
-      ),
+        ? Object.entries(factories).map(([chainId, { address }]) => ({ chainId, address })) :
+        factory ? [{ chainId: defaultChainId, address: factory }] : []).map(({ chainId, address }) =>
+          cwShitstrapFactoriesExtraQuery.listAllShitstrapContracts(queryClient, {
+            chainId,
+            address,
+          })
+        ),
 
-      // todo: implement with correct indexer query
+      // TODO: implement with correct indexer query
       // // Contracts owned by any of this DAO's accounts. This detects contracts
       // // whose ownership was transferred to this DAO but that are still part of
       // // a different factory.
@@ -96,39 +91,41 @@ export const TabRenderer = ({
         ),
     }),
   })
-  
-  const shitAction = useInitializedActionForKey(ActionKey.ManageShitstrap)
 
-  // shitstrap payments that are full.
-  const shitstrapPaymentsFull =
-    shitstrapInfosLoading.loading || shitstrapInfosLoading.errored
-      ? []
-      : shitstrapInfosLoading.data.filter((props) => props.full == true)
+
+  // shitstrap payments that are not full.
+  const shitstrapPaymentsNotFull = shitstrapInfosLoading.loading || shitstrapInfosLoading.errored ?
+    [] : shitstrapInfosLoading.data.filter((props) => props.full != true)
+
+  // shitstrap payments that are  full.
+  const shitstrapPaymentsFull = shitstrapInfosLoading.loading || shitstrapInfosLoading.errored ?
+    [] : shitstrapInfosLoading.data.filter((props) => props.full == true)
+
+
 
   return (<>
-
     <StatelessTabRenderer
       ButtonLink={ButtonLink}
       ShitStrapCard={ShitstrapPaymentCard}
       ShitStrapLine={ShitstrapPaymentLine}
       Trans={Trans}
-      createShitStrapHref={
-        !shitAction.loading &&
-          !shitAction.errored ?
-          getDaoProposalPath(coreAddress, 'create', {
-            prefill: getDaoProposalSinglePrefill({
-              actions: [
-                {
-                  actionKey: shitAction.data.key, // defines the action key available
-                  data: shitAction.data.defaults, // sets the defaults to it
-                },
-              ],
-            }),
-          })
-          : undefined
-      }
+      createShitStrapHref={!shitAction.loading &&
+        !shitAction.errored ?
+        getDaoProposalPath(coreAddress, 'create', {
+          prefill: getDaoProposalSinglePrefill({
+            actions: [
+              {
+                actionKey: shitAction.data.key, // defines the action key available
+                data: shitAction.data.defaults, // sets the defaults to it
+              },
+            ],
+          }),
+        })
+        : undefined}
       isMember={isMember}
-      shitStrapsLoading={shitstrapInfosLoading}
+      shitStrapsLoading={{ loading: false, errored: false, data: shitstrapPaymentsNotFull }}
+      queryClient={queryClient}   // shitstrapTokenLoading={shitstrapTokenGenericInfoLoading}
+    // shitstrapEligibleAssetLoading={eligibleAssetsLoading}
     />
   </>
   )
