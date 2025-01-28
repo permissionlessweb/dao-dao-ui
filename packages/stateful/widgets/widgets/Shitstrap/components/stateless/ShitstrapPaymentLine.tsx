@@ -27,7 +27,7 @@ export const ShitstrapPaymentLine = ({
 
   const { chainId, possibleShit: somePossibleshit, shit, full, shitstrapContractAddr, owner } =
     shitstrapInfo
-  const { bech32_prefix: bech32Prefix } = getChainForChainId(chainId)
+  const {  bech32Prefix } = getChainForChainId(chainId)
 
   // const freshShitTokenQuery = useQueryLoadingDataWithError(
   //   tokenQueries.info(queryClient, {

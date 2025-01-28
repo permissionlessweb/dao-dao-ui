@@ -3,19 +3,19 @@ import { ActionComponent, ActionContextType, ActionKey, ActionMatch, ActionOptio
 import { InfuseNftsComponent, InfuseNftsData } from "./Component";
 import { chainIsIndexed, combineLoadingDataWithErrors, encodeJsonToBase64, getChainAddressForActionOptions, makeCombineQueryResultsIntoLoadingDataWithError, makeExecuteSmartContractMessage, maybeMakePolytoneExecuteMessages, objectMatchesStructure } from "@dao-dao/utils";
 import { useFieldArray, useFormContext } from "react-hook-form";
-import { lazyNftCardInfosForDaoSelector, nftCardInfoSelector, walletLazyNftCardInfosSelector } from "@dao-dao/state/recoil";
+import { lazyNftCardInfosForDaoSelector, walletLazyNftCardInfosSelector } from "@dao-dao/state/recoil";
 import { useCw721CommonGovernanceTokenInfoIfExists } from "../../../../voting-module-adapter";
 import { constSelector } from "recoil";
 import { NftSelectionModal } from "../../../../components";
-import { useQueries } from "@tanstack/react-query";
-import { cw721BaseQueries, cwInfuserExtraQueries, cwInfuserQueries } from "@dao-dao/state/query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { cw721BaseQueries, cwInfuserExtraQueries, cwInfuserQueries, nftQueries } from "@dao-dao/state/query";
 import { NFT } from "@dao-dao/types/contracts/CwInfuser";
 import { useTokenBalances } from "../../../hooks";
 import { HugeDecimal } from "@dao-dao/math";
 
 // Check if infuser is approved for this token id 
 const getIsInfuserApproved = (options: ActionOptions, nftAddr: string, spender: string, tokenId: string) => {
-    const infusionInfo = cw721BaseQueries.approval({ chainId: options.chain.chain_id, contractAddress: nftAddr, args: { spender, tokenId } })
+    const infusionInfo = cw721BaseQueries.approval({ chainId: options.chain.chainId, contractAddress: nftAddr, args: { spender, tokenId } })
     return infusionInfo
 }
 
@@ -26,8 +26,8 @@ const getInfusionConfig = (
     options: ActionOptions,
     infuserAddr: string,
 ) => {
-    const infusionConfig = chainIsIndexed(options.chain.chain_id) ? cwInfuserExtraQueries.config(options.queryClient, {
-        chainId: options.chain.chain_id,
+    const infusionConfig = chainIsIndexed(options.chain.chainId) ? cwInfuserExtraQueries.config(options.queryClient, {
+        chainId: options.chain.chainId,
         address: infuserAddr,
     }) : []
     return infusionConfig
@@ -42,7 +42,7 @@ const getInfusionById = (
     infusionId: number
 ) => {
     const infusionInfo = cwInfuserExtraQueries.infusionById(options.queryClient, {
-        chainId: options.chain.chain_id,
+        chainId: options.chain.chainId,
         address: infuserAddr,
         id: infusionId,
     })
@@ -69,9 +69,9 @@ const useAppendAnyBundleNftApproveMsgs = (options: ActionOptions, infusionMinter
 }
 
 const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
-
+    const queryClient = useQueryClient()
     const options = useActionOptions()
-    const currentChainId = options.chain.chain_id
+    const currentChainId = options.chain.chainId
 
     const { watch, control, } = useFormContext<InfuseNftsData>()
     const { denomOrAddress: governanceCollectionAddress } =
@@ -120,10 +120,19 @@ const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
     )
 
     // gets the nfts info for the selected nft.
-    const nftInfo = useCachedLoadingWithError(
-        watchChainId && watchInfusionMinter && watchInfusionId && watchCollection && watchTokenId
-            ? nftCardInfoSelector({ chainId: watchChainId, collection: watchCollection, tokenId: watchTokenId })
-            : constSelector(undefined))
+    const nftInfos = useQueries({
+        queries:
+            watchChainId && watchInfusionMinter && watchInfusionId && watchCollection && watchTokenId
+                ? watchInfusionBundles.flatMap((infuse) =>
+                    infuse.nfts.map((nft) => nftQueries.cardInfo(
+                        queryClient,
+                        { chainId: watchChainId, collection: nft.addr, tokenId: nft.token_id.toString() }
+                    ))
+                )
+                : [],
+        combine: makeCombineQueryResultsIntoLoadingDataWithError(),
+    })
+
 
     const allChainOptions =
         nftOptions.loading || nftOptions.errored
@@ -158,7 +167,7 @@ const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
             options={{
                 infusionInfo: infusionInfoLDWE,
                 options: availableToInfuse,
-                nftInfo,
+                nftInfos: watchChainId && watchInfusionBundles ? nftInfos : undefined,
                 tokens,
                 AddressInput,
                 NftSelectionModal,
@@ -180,7 +189,7 @@ export class InfusedNftAction extends ActionBase<InfuseNftsData> {
         })
 
         this.defaults = {
-            chainId: options.chain.chain_id,
+            chainId: options.chain.chainId,
             infusionMinter: '',
             infusionId: '0',
             infusionBundles: [],
@@ -242,7 +251,7 @@ export class InfusedNftAction extends ActionBase<InfuseNftsData> {
 
         });
         return maybeMakePolytoneExecuteMessages(
-            this.options.chain.chain_id,
+            this.options.chain.chainId,
             chainId,
             approveNftsMsgs.concat([infusionMsg]),
         )

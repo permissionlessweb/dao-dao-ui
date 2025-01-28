@@ -1404,7 +1404,6 @@ export const SelfRelayExecuteModal = ({
                           <div className="flex items-center justify-end gap-2">
                             <TokenAmountDisplay
                               amount={empty ? refunded : funds}
-                              amount={empty ? refunded : funds}
                               decimals={feeToken.decimals}
                               symbol={feeToken.symbol}
                             />

@@ -1,4 +1,4 @@
-import { ActionBase, Button, ChainProvider, ErrorPage, HorizontalNftCard, HorizontalNftCardLoader, InputErrorMessage, NativeCoinSelector, NumericInput } from "@dao-dao/stateless";
+import { ActionBase, Button, ChainProvider, ErrorPage, HorizontalNftCard, HorizontalNftCardLoader, InputErrorMessage, InputLabel, NativeCoinSelector, NumericInput } from "@dao-dao/stateless";
 import { ActionComponent, ActionOptions, AddressInputProps, GenericTokenBalance, LazyNftCardInfo, LoadingData, LoadingDataWithError, NftCardInfo, NftSelectionModalProps } from "@dao-dao/types";
 import { Bundle, Infusion, NFT } from "@dao-dao/types/contracts/CwInfuser";
 import { TransferNftData } from "../TransferNft/Component";
@@ -32,7 +32,7 @@ export interface InfuseNftsOptions {
     // The set of NFTs that may be infused as part of this action.
     options: LoadingDataWithError<LazyNftCardInfo[]>
     // Information about the NFT currently selected.
-    nftInfo: LoadingDataWithError<NftCardInfo | undefined>
+    nftInfos: LoadingDataWithError<NftCardInfo[]> | undefined
     // Information from the Infusion currently selected.
     infusionInfo: LoadingDataWithError<Infusion[] | undefined>
     // // Information about the approval status of NFTs selected to be infused.
@@ -47,7 +47,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     fieldNamePrefix,
     isCreating,
     errors,
-    options: { options, nftInfo, tokens, infusionInfo, AddressInput, NftSelectionModal },
+    options: { options, nftInfos, tokens, infusionInfo, AddressInput, NftSelectionModal },
 }) => {
     const { t } = useTranslation()
     const { control, watch, setValue, setError, register, clearErrors, } =
@@ -204,7 +204,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                                     // (executeSmartContract
                                     //     ? makeValidateAddress
                                     //     : makeValidateAddress)(chain.bech32_prefix),
-                                    makeValidateAddress(chain.bech32_prefix)
+                                    makeValidateAddress(chain.bech32Prefix)
                                 ]}
                             />
                             <p className="primary-text mb-3">
@@ -231,26 +231,37 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                 </div>
 
                 <div className="flex grow flex-col gap-2">
-                    {nftInfo.loading ? (
-                        <HorizontalNftCardLoader />
-                    ) : nftInfo.errored ? (
-                        <ErrorPage error={nftInfo.error} />
-                    ) : (
-                        nftInfo.data && <HorizontalNftCard {...nftInfo.data} />
+                    {isCreating && (
+                        <InputLabel name={t('title.numNfts', { count: watchInfuionBundles.length, })} />
                     )}
+
+                    {nftInfos &&
+                        (nftInfos.loading ? (
+                            <HorizontalNftCardLoader />
+                        ) : nftInfos.errored ? (
+                            <ErrorPage error={nftInfos.error} />
+                        ) : (
+                            <div className="flex flex-col gap-1">
+                                {nftInfos.data.map(({ key, ...nftInfo }) => (
+                                    <HorizontalNftCard key={key} {...nftInfo} />
+                                ))}
+                            </div>
+                        ))}
 
                     {isCreating && (
                         <Button
                             className={clsx(
-                                'text-text-tertiary',
-                                nftInfo ? 'self-end' : 'self-start'
+                                nftInfos && !nftInfos.loading && !nftInfos.errored
+                                    ? 'self-end'
+                                    : 'self-start'
                             )}
                             onClick={() => setShowModal(true)}
-                            variant="secondary"
+                            variant={watchInfuionBundles.length ? 'secondary' : 'primary'}
                         >
-                            {t('button.selectNft')}
+                            {t('button.selectNfts')}
                         </Button>
                     )}
+
                     <InputErrorMessage error={errors?.collection} />
                 </div>
             </div>

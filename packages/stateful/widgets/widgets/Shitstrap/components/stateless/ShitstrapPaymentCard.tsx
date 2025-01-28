@@ -52,13 +52,13 @@ import { entityQueries } from '../../../../../queries'
 export const ShitstrapPaymentCard = (
     { shitstrapInfo: fallbackInfo, shitting, }: StatefulShitStrapPaymentCardProps) => {
     const { t } = useTranslation()
-    const { chain_id: chainId } = useChain()
-    const { bech32_prefix: bech32Prefix, } = getChainForChainId(chainId)
+    const { chainId } = useChain()
+    const { bech32Prefix, } = getChainForChainId(chainId)
 
 
     const { goToDaoProposal } = useDaoNavHelpers()
     const [mode, setMode] = useState(ShitstrapPaymentMode.Payment)
-    const { context, address, chain: { chain_id: daoChainID } } = useActionOptions()
+    const { context, address, chain: { chainId: daoChainID } } = useActionOptions()
 
     // create form for selecting token and amount
     const { register, control, watch, setValue, setError, getValues, clearErrors, } = useForm()
