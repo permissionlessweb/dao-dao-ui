@@ -131,7 +131,7 @@ const getShitstrapSourcesFromWidgetData = (
     // same chain as the DAO. If widget data is undefined, this is being
     // used by a wallet.
     {
-      [options.chain.chain_id]: {
+      [options.chain.chainId]: {
         owner: options.address,
         factory: widgetData.factory,
         version: widgetData.version,
@@ -194,7 +194,7 @@ const Component: ComponentType<
 > = ({ widgetData, ...props }) => {
   const { t } = useTranslation()
   const {
-    chain: { chain_id: nativeChainId },
+    chain: { chainId: nativeChainId },
   } = useActionOptions()
   const { setValue, watch, register } = useFormContext<ManageShitStrapData>()
 
@@ -388,21 +388,21 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
         ? ShitstrapPaymentMode.Create
         : ShitstrapPaymentMode.Payment,
       create: {
-        chainId: this.options.chain.chain_id,
+        chainId: this.options.chain.chainId,
         cutoff: '1',
-        tokenToShit: getNativeTokenForChainId(this.options.chain.chain_id),
+        tokenToShit: getNativeTokenForChainId(this.options.chain.chainId),
         title: '',
         description: '',
         startDate: `${start.toISOString().split('T')[0]} 12:00 AM`,
         possibleShit: [],
       },
       flush: {
-        chainId: this.options.chain.chain_id,
+        chainId: this.options.chain.chainId,
         shitstrap: '', // or some default value
         owner: '',
       },
       payment: {
-        chainId: this.options.chain.chain_id,
+        chainId: this.options.chain.chainId,
         shitstrapAddress: '',
         shitToken: undefined,
         amount: '0',
@@ -410,7 +410,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
         contractChosen: false,
       },
       overflow: {
-        chainId: this.options.chain.chain_id,
+        chainId: this.options.chain.chainId,
         shitstrapAddress: '',
       },
     }
@@ -573,7 +573,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
     }
 
     return maybeMakePolytoneExecuteMessages(
-      this.options.chain.chain_id,
+      this.options.chain.chainId,
       chainId,
       cosmosMsg
     )

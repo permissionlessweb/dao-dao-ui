@@ -1,7 +1,6 @@
 import { TFunction } from 'react-i18next'
 
 import { HugeDecimal } from '@dao-dao/math'
-import { HugeDecimal } from '@dao-dao/math'
 import {
   AccountType,
   BreadcrumbCrumb,
