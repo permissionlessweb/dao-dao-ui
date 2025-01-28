@@ -29,18 +29,18 @@ export const ShitstrapPaymentLine = ({
     shitstrapInfo
   const { bech32_prefix: bech32Prefix } = getChainForChainId(chainId)
 
-  const freshShitTokenQuery = useQueryLoadingDataWithError(
-    tokenQueries.info(queryClient, {
-      chainId,
-      type: shitstrapInfo.shit.type,
-      denomOrAddress: shitstrapInfo.shit.denomOrAddress,
+  // const freshShitTokenQuery = useQueryLoadingDataWithError(
+  //   tokenQueries.info(queryClient, {
+  //     chainId,
+  //     type: shitstrapInfo.shit.type,
+  //     denomOrAddress: shitstrapInfo.shit.denomOrAddress,
 
-    })
-  )
+  //   })
+  // )
 
-  const freshShit = freshShitTokenQuery.errored || freshShitTokenQuery.loading ? shit.denomOrAddress :
-    freshShitTokenQuery.data.source.denomOrAddress != freshShitTokenQuery.data.denomOrAddress ?
-      freshShitTokenQuery.data.source.denomOrAddress : freshShitTokenQuery.data.denomOrAddress
+  // const freshShit = freshShitTokenQuery.errored || freshShitTokenQuery.loading ? shit.denomOrAddress :
+  //   freshShitTokenQuery.data.source.denomOrAddress != freshShitTokenQuery.data.denomOrAddress ?
+  //     freshShitTokenQuery.data.source.denomOrAddress : freshShitTokenQuery.data.denomOrAddress
 
   interface PossibleShitWithGenericToken {
     shit_rate: Uint128
@@ -50,21 +50,18 @@ export const ShitstrapPaymentLine = ({
 
 
   // Create GenericToken with shitstrap ratio extended
-  const possibleShitOptions: TypedOption<PossibleShitWithGenericToken>[] =
-    eligibleShit.errored || eligibleShit.loading ? [] :
-      eligibleShit.data.map((asset, index) => {
-        const displayToken = asset.source.chainId != asset.chainId ? asset.source.denomOrAddress : asset.denomOrAddress
-        const shitrate = somePossibleshit.map((a) => {
-          if (a.denomOrAddress == asset.denomOrAddress) { return a }
-        })
+  const possibleShitOptions: TypedOption<PossibleShitWithGenericToken>[] = eligibleShit.errored || eligibleShit.loading ? [] :
+    shitstrapInfo.possibleShit.flatMap((asset, index) => {
+      console.log(index, asset, somePossibleshit)
+      const displayToken = asset.source.chainId != asset.chainId ? asset.symbol : asset.symbol
 
-        console.log("shitstrapLine Display:", displayToken)
-        return {
-          label: `${displayToken}: ${HugeDecimal.from(shitrate[index]?.shit_rate!).toInternationalizedHumanReadableString({ decimals: 18, minDecimals: 3, })}`,
-          value: { shit_rate: shitrate[index]?.shit_rate!, token: asset },
-        }
+
+      return {
+        label: `${displayToken}: ${HugeDecimal.from(asset.shit_rate).toInternationalizedHumanReadableString({ decimals: 18, minDecimals: 3, })}`,
+        value: { shit_rate: asset.shit_rate, token: asset },
       }
-      )
+    }
+    )
 
   const options = possibleShitOptions.map((asset, index) => ({
     value: [asset],
@@ -119,13 +116,13 @@ export const ShitstrapPaymentLine = ({
           Total Shit:
           <TokenAmountDisplay
             amount={HugeDecimal.from(shitstrapInfo.cutoff).times(
-              HugeDecimal.from(10).pow(-6)
+              HugeDecimal.from(10).pow(0)
             )}
             className="body-text truncate font-mono"
             decimals={shit.decimals}
             wrapperClassName={''// shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`) ? 'color-warning' : shit.denomOrAddress.startsWith(`ibc/`) ? '' : ''
             }
-            symbol={freshShit}
+            symbol={shitstrapInfo.shit.symbol}
           />
         </div>
       </div>
