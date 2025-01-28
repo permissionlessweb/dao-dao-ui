@@ -57,27 +57,52 @@ export type WidgetEditorProps<Variables extends Record<string, unknown> = any> =
   }
 
 export type Widget<Variables extends Record<string, unknown> = any> = {
-  // A unique identifier for the widget.
+  /**
+   * A unique identifier for the widget.
+   */
   id: WidgetId
-  // An icon for the widget. Used for display in the editor and when `location`
-  // is `WidgetLocation.Tab`.
+  /**
+   * An icon for the widget. Used for display in the editor and when `location`
+   * is `WidgetLocation.Tab`.
+   */
   Icon: ComponentType<{ className: string }>
-  // A filled icon for the widget. Used for display in the editor and when
-  // `location` is `WidgetLocation.Home`.
+  /**
+   * A filled icon for the widget. Used for display in the editor and when
+   * `location` is `WidgetLocation.Home`.
+   */
   IconFilled: ComponentType<{ className: string }>
-  // The location where the widget is displayed.
+  /**
+   * The location where the widget is displayed.
+   */
   location: WidgetLocation
-  // The context in which the widget is visible.
+  /**
+   * The context in which the widget is visible.
+   */
   visibilityContext: WidgetVisibilityContext
-  // If defined, the widget is only available if this returns true for a chain.
+  /**
+   * If defined, the widget is only available if this returns true for a chain.
+   */
   isChainSupported?: (chainId: string) => boolean
-  // The default values for the widget's variables.
+  /**
+   * Whether or not the widget can be enabled on DAO creation. Defaults to
+   * false.
+   */
+  supportsDaoCreation?: boolean
+  /**
+   * The default values for the widget's variables.
+   */
   defaultValues?: Variables
-  // Component that renders the widget.
+  /**
+   * Component that renders the widget.
+   */
   Renderer: ComponentType<WidgetRendererProps<Variables>>
-  // Component that allows the user to edit the widget's variables in an action.
+  /**
+   * Component that allows the user to edit the widget's variables in an action.
+   */
   Editor?: ComponentType<WidgetEditorProps<Variables>>
-  // Actions that are available in proposals when this widget is enabled.
+  /**
+   * Actions that are available in proposals when this widget is enabled.
+   */
   getActions?: (variables: Variables) => {
     actions?: ImplementedAction<any>[]
     actionMakers?: ActionMaker<any>[]

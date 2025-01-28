@@ -144,10 +144,12 @@ const Component: ActionComponent<undefined, MintNftData> = (props) => {
         )}
       </ChainProvider>
 
-      <div className="flex flex-col items-end gap-2 self-end text-right">
-        <InputErrorMessage error={props.errors?.contractChosen} />
-        <InputErrorMessage error={props.errors?.mintMsg?.token_uri} />
-      </div>
+      {!!(props.errors?.contractChosen || props.errors?.mintMsg?.token_uri) && (
+        <div className="flex flex-col items-end gap-2 self-end text-right">
+          <InputErrorMessage error={props.errors?.contractChosen} />
+          <InputErrorMessage error={props.errors?.mintMsg?.token_uri} />
+        </div>
+      )}
     </>
   )
 }
@@ -166,12 +168,12 @@ export class MintNftAction extends ActionBase<MintNftData> {
     })
 
     this.defaults = {
-      chainId: options.chain.chain_id,
+      chainId: options.chain.chainId,
       contractChosen: false,
       collectionAddress: undefined,
 
       instantiateData: {
-        chainId: options.chain.chain_id,
+        chainId: options.chain.chainId,
         name: '',
         symbol: '',
       },
@@ -203,7 +205,7 @@ export class MintNftAction extends ActionBase<MintNftData> {
     }
 
     return maybeMakePolytoneExecuteMessages(
-      this.options.chain.chain_id,
+      this.options.chain.chainId,
       chainId,
       makeExecuteSmartContractMessage({
         chainId,

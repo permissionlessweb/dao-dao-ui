@@ -18,6 +18,7 @@ export const VestingPaymentsWidget: Widget<VestingPaymentsWidgetData> = {
   IconFilled: PaidRounded,
   location: WidgetLocation.Tab,
   visibilityContext: WidgetVisibilityContext.Always,
+  supportsDaoCreation: true,
   defaultValues: {
     factories: {},
     version: LATEST_VESTING_CONTRACT_VERSION,

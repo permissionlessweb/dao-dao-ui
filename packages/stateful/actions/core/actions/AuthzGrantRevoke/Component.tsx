@@ -67,7 +67,7 @@ export const AuthzGrantRevokeComponent: ActionComponent<
   options: { AddressInput, balances },
 }) => {
   const { t } = useTranslation()
-  const { chain_id: chainId, bech32_prefix: bech32Prefix } = useChain()
+  const { chainId, bech32Prefix } = useChain()
 
   const { control, register, setValue, getValues, watch } =
     useFormContext<AuthzGrantRevokeData>()
@@ -222,51 +222,52 @@ export const AuthzGrantRevokeComponent: ActionComponent<
         </>
       )}
 
-      {authorizationTypeUrl === SendAuthorization.typeUrl && mode === 'grant' && (
-        <div className="flex flex-col gap-1">
-          <InputLabel
-            name={t('form.spendingAllowance')}
-            tooltip={t('form.spendingAllowanceDescription')}
-          />
+      {authorizationTypeUrl === SendAuthorization.typeUrl &&
+        mode === 'grant' && (
+          <div className="flex flex-col gap-1">
+            <InputLabel
+              name={t('form.spendingAllowance')}
+              tooltip={t('form.spendingAllowanceDescription')}
+            />
 
-          {isCreating || coins.length > 0 ? (
-            <div className="flex flex-col items-stretch gap-1">
-              {coins.map(({ id }, index) => (
-                <NativeCoinSelector
-                  key={id + index}
-                  chainId={chainId}
-                  errors={errors?.funds?.[index]}
-                  fieldNamePrefix={fieldNamePrefix + `funds.${index}.`}
-                  isCreating={isCreating}
-                  noBalanceWarning
-                  onRemove={isCreating ? () => removeCoin(index) : undefined}
-                  tokens={balances}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs italic text-text-tertiary">
-              {t('info.none')}
-            </p>
-          )}
+            {isCreating || coins.length > 0 ? (
+              <div className="flex flex-col items-stretch gap-1">
+                {coins.map(({ id }, index) => (
+                  <NativeCoinSelector
+                    key={id + index}
+                    chainId={chainId}
+                    errors={errors?.funds?.[index]}
+                    fieldNamePrefix={fieldNamePrefix + `funds.${index}.`}
+                    isCreating={isCreating}
+                    noBalanceWarning
+                    onRemove={isCreating ? () => removeCoin(index) : undefined}
+                    tokens={balances}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs italic text-text-tertiary">
+                {t('info.none')}
+              </p>
+            )}
 
-          {isCreating && (
-            <Button
-              className="mt-2 self-start"
-              onClick={() =>
-                appendCoin({
-                  amount: '1',
-                  denom: nativeToken.denomOrAddress,
-                  decimals: nativeToken.decimals,
-                })
-              }
-              variant="secondary"
-            >
-              {t('button.addAllowance')}
-            </Button>
-          )}
-        </div>
-      )}
+            {isCreating && (
+              <Button
+                className="mt-2 self-start"
+                onClick={() =>
+                  appendCoin({
+                    amount: '1',
+                    denom: nativeToken.denomOrAddress,
+                    decimals: nativeToken.decimals,
+                  })
+                }
+                variant="secondary"
+              >
+                {t('button.addAllowance')}
+              </Button>
+            )}
+          </div>
+        )}
 
       {(authorizationTypeUrl === ContractExecutionAuthorization.typeUrl ||
         authorizationTypeUrl === ContractMigrationAuthorization.typeUrl) &&

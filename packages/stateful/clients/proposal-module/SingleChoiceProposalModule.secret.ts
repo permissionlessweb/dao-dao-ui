@@ -12,6 +12,7 @@ import {
   CheckedDepositInfo,
   Coin,
   Duration,
+  Feature,
   SecretModuleInstantiateInfo,
 } from '@dao-dao/types'
 import { InstantiateMsg as SecretDaoPreProposeApprovalSingleInstantiateMsg } from '@dao-dao/types/contracts/SecretDaoPreProposeApprovalSingle'
@@ -130,7 +131,7 @@ export class SecretSingleChoiceProposalModule extends ProposalModuleBase<
         allow_revoting: config.allowRevoting,
         close_proposal_on_execution_failure:
           config.closeProposalOnExecutionFailure ?? true,
-        dao_code_hash: codeHashes.DaoCore,
+        dao_code_hash: codeHashes.DaoDaoCore,
         max_voting_period: config.maxVotingPeriod,
         min_voting_period: config.minVotingPeriod,
         only_members_execute: config.onlyMembersExecute ?? true,
@@ -156,12 +157,14 @@ export class SecretSingleChoiceProposalModule extends ProposalModuleBase<
   }
 
   async propose({
-    data,
+    data: _data,
+    vote,
     getSigningClient,
     sender,
     funds,
   }: {
     data: NewProposalData
+    vote?: Vote
     getSigningClient: () => Promise<SupportedSigningCosmWasmClient>
     sender: string
     funds?: Coin[]
@@ -169,6 +172,21 @@ export class SecretSingleChoiceProposalModule extends ProposalModuleBase<
     proposalNumber: number
     proposalId: string
   }> {
+    if (vote && !this.supports(Feature.CastVoteOnProposalCreation)) {
+      throw new Error(
+        `Casting vote on proposal creation is not supported by version ${this.version}`
+      )
+    }
+
+    const data = {
+      ..._data,
+      ...(vote && {
+        vote: {
+          vote,
+        },
+      }),
+    }
+
     const client = await getSigningClient()
     const permit = await this.dao.getPermit(sender)
 

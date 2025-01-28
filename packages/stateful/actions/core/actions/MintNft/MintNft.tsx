@@ -1,14 +1,11 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { constSelector, useRecoilValueLoadable } from 'recoil'
 
-import {
-  CommonNftSelectors,
-  DaoDaoCoreSelectors,
-  nftCardInfoWithUriSelector,
-  nftUriDataSelector,
-} from '@dao-dao/state/recoil'
-import { Loader, useActionOptions, useCachedLoading } from '@dao-dao/stateless'
+import { cw721BaseQueries, nftQueries } from '@dao-dao/state/query'
+import { DaoDaoCoreSelectors } from '@dao-dao/state/recoil'
+import { Loader, useActionOptions } from '@dao-dao/stateless'
 import {
   ActionComponent,
   ActionContextType,
@@ -18,6 +15,7 @@ import {
 import { getChainForChainId, isValidBech32Address } from '@dao-dao/utils'
 
 import { AddressInput } from '../../../../components'
+import { useQueryLoadingDataWithError } from '../../../../hooks'
 import { MintNft as StatelessMintNft } from './stateless/MintNft'
 import { MintNftData } from './types'
 
@@ -25,9 +23,10 @@ export const MintNft: ActionComponent = (props) => {
   const {
     context,
     address,
-    chain: { chain_id: currentChainId },
+    chain: { chainId: currentChainId },
   } = useActionOptions()
   const { watch } = useFormContext()
+  const queryClient = useQueryClient()
 
   const {
     chainId,
@@ -35,63 +34,63 @@ export const MintNft: ActionComponent = (props) => {
     collectionAddress = '',
     mintMsg,
   }: MintNftData = watch(props.fieldNamePrefix)
-  const { bech32_prefix: bech32Prefix } = getChainForChainId(chainId)
+  const { bech32Prefix } = getChainForChainId(chainId)
 
-  const nftInfoLoading = useCachedLoading<NftCardInfo | undefined>(
+  const nftInfoLoading = useQueryLoadingDataWithError(
     // Nothing to load if creating.
     props.isCreating
       ? undefined
       : // If viewing, get info from token URI.
-        nftCardInfoWithUriSelector({
+        nftQueries.cardInfoFromUri(queryClient, {
           collection: collectionAddress,
           tokenId: mintMsg.token_id,
           tokenUri: mintMsg.token_uri,
           chainId,
-        }),
-    undefined
+        })
   )
 
-  const creatingNftTokenUriDataLoading = useCachedLoading(
+  const creatingNftTokenUriData = useQueryLoadingDataWithError(
     props.isCreating && mintMsg.token_uri
-      ? nftUriDataSelector(mintMsg.token_uri)
-      : undefined,
-    undefined
+      ? nftQueries.metadataFromUri({ tokenUri: mintMsg.token_uri })
+      : undefined
   )
 
-  const creatingCollectionInfoLoading = useCachedLoading(
+  const creatingCollectionInfo = useQueryLoadingDataWithError(
     props.isCreating &&
       contractChosen &&
       isValidBech32Address(collectionAddress, bech32Prefix)
-      ? CommonNftSelectors.contractInfoSelector({
+      ? cw721BaseQueries.contractInfo({
           contractAddress: collectionAddress,
           chainId,
-          params: [],
         })
-      : undefined,
-    undefined
+      : undefined
   )
 
   // If creating, use the data from the form. Otherwise, use the data loading.
   // Undefined when loading.
   const nftInfo: NftCardInfo | undefined = props.isCreating
-    ? creatingNftTokenUriDataLoading.loading ||
-      !creatingNftTokenUriDataLoading.data ||
-      creatingCollectionInfoLoading.loading
+    ? creatingNftTokenUriData.loading ||
+      creatingNftTokenUriData.errored ||
+      creatingCollectionInfo.loading
       ? undefined
       : {
-          key: chainId + collectionAddress + mintMsg.token_id,
+          key:
+            mintMsg.token_uri || chainId + collectionAddress + mintMsg.token_id,
           collectionAddress,
-          collectionName: creatingCollectionInfoLoading.data?.name ?? '',
+          collectionName:
+            (!creatingCollectionInfo.errored &&
+              creatingCollectionInfo.data.name) ||
+            '',
           tokenId: mintMsg.token_id,
-          imageUrl: creatingNftTokenUriDataLoading.data.imageUrl,
-          name: creatingNftTokenUriDataLoading.data.name ?? '',
-          description: creatingNftTokenUriDataLoading.data.description ?? '',
-          metadata: creatingNftTokenUriDataLoading.data,
+          imageUrl: creatingNftTokenUriData.data.imageUrl,
+          name: creatingNftTokenUriData.data.name ?? '',
+          description: creatingNftTokenUriData.data.description ?? '',
+          metadata: creatingNftTokenUriData.data,
           chainId,
         }
-    : nftInfoLoading.loading || !nftInfoLoading.data
-    ? undefined
-    : nftInfoLoading.data
+    : nftInfoLoading.loading || nftInfoLoading.errored
+      ? undefined
+      : nftInfoLoading.data
 
   // Get all collections in DAO.
   const daoCollections = useRecoilValueLoadable(

@@ -1,0 +1,18 @@
+syntax = "proto3";
+package Switcheo.carbon.cdp;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/Switcheo/carbon/x/cdp/types";
+option (gogoproto.goproto_getters_all) = false;
+
+message EModeCategory {
+  string name = 1;
+  repeated string denoms = 2;
+  string loan_to_value = 3 [ (gogoproto.customtype) = "cosmossdk.io/math.Int" ];
+  string liquidation_threshold = 4
+      [ (gogoproto.customtype) = "cosmossdk.io/math.Int" ];
+  string liquidation_discount = 5
+      [ (gogoproto.customtype) = "cosmossdk.io/math.Int" ];
+  bool is_active = 6;
+}

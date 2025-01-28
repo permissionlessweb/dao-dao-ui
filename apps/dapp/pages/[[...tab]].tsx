@@ -7,20 +7,20 @@ import { serverSideTranslations } from '@dao-dao/i18n/serverSideTranslations'
 import {
   daoQueries,
   dehydrateSerializable,
-  indexerQueries,
   makeReactQueryClient,
+  miscQueries,
 } from '@dao-dao/state'
 import {
   Home,
   StatefulHomeProps,
   daoQueries as statefulDaoQueries,
 } from '@dao-dao/stateful'
-import { AccountTabId, DaoDaoIndexerChainStats } from '@dao-dao/types'
+import { AccountTabId } from '@dao-dao/types'
 import {
   MAINNET,
-  chainIsIndexed,
   getDaoInfoForChainId,
   getSupportedChains,
+  retry,
 } from '@dao-dao/utils'
 
 export default Home
@@ -64,62 +64,28 @@ export const getStaticProps: GetStaticProps<StatefulHomeProps> = async ({
           : []),
       ].map((chainId) => getDaoInfoForChainId(chainId, []))
 
-  const [i18nProps, tvl, allStats, monthStats, weekStats] = await Promise.all([
+  const [i18nProps, stats] = await Promise.all([
     // Get i18n translations props.
     serverSideTranslations(locale, ['translation']),
 
-    // Get all or chain-specific stats and TVL.
-    !chainId || chainIsIndexed(chainId)
-      ? queryClient
-          .fetchQuery(
-            indexerQueries.snapper<number>({
-              query: chainId ? 'daodao-chain-tvl' : 'daodao-all-tvl',
-              parameters: chainId ? { chainId } : undefined,
-            })
-          )
-          .catch(() => 0)
-      : null,
-    !chainId || chainIsIndexed(chainId)
-      ? queryClient.fetchQuery(
-          indexerQueries.snapper<DaoDaoIndexerChainStats>({
-            query: chainId ? 'daodao-chain-stats' : 'daodao-all-stats',
-            parameters: chainId ? { chainId } : undefined,
-          })
-        )
-      : null,
-    !chainId || chainIsIndexed(chainId)
-      ? queryClient.fetchQuery(
-          indexerQueries.snapper<DaoDaoIndexerChainStats>({
-            query: chainId ? 'daodao-chain-stats' : 'daodao-all-stats',
-            parameters: {
-              ...(chainId ? { chainId } : undefined),
-              daysAgo: 30,
-            },
-          })
-        )
-      : null,
-    !chainId || chainIsIndexed(chainId)
-      ? queryClient.fetchQuery(
-          indexerQueries.snapper<DaoDaoIndexerChainStats>({
-            query: chainId ? 'daodao-chain-stats' : 'daodao-all-stats',
-            parameters: {
-              ...(chainId ? { chainId } : undefined),
-              daysAgo: 7,
-            },
-          })
-        )
-      : null,
+    // Get home page stats.
+    queryClient.fetchQuery(
+      miscQueries.homePageStats(queryClient, {
+        chainId,
+      })
+    ),
 
     // Pre-fetch featured DAOs.
-    queryClient
-      .fetchQuery(daoQueries.listFeatured())
-      .then((featured) =>
+    retry(5, () => queryClient.fetchQuery(daoQueries.listFeatured())).then(
+      (featured) =>
         Promise.all(
           featured?.map((dao) =>
-            queryClient.fetchQuery(statefulDaoQueries.info(queryClient, dao))
+            retry(5, () =>
+              queryClient.fetchQuery(statefulDaoQueries.info(queryClient, dao))
+            )
           ) || []
         )
-      ),
+    ),
   ])
 
   return {
@@ -128,14 +94,7 @@ export const getStaticProps: GetStaticProps<StatefulHomeProps> = async ({
       // Chain-specific home page.
       ...(chainId && { chainId }),
       // All or chain-specific stats.
-      stats: {
-        all: allStats,
-        month: monthStats,
-        week: weekStats,
-        tvl,
-        // If chain is 1, it will not be shown.
-        chains: chainId ? 1 : getSupportedChains().length,
-      },
+      stats,
       // Chain x/gov DAOs.
       ...(chainGovDaos && { chainGovDaos }),
       // Dehydrate react-query state with featured DAOs preloaded.

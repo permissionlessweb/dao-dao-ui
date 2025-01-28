@@ -1,6 +1,7 @@
 import { ArrowOutward, Dangerous, HowToVote } from '@mui/icons-material'
 import { useQueries, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
+import { usePlausible } from 'next-plausible'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +15,7 @@ import { Button, useDao } from '@dao-dao/stateless'
 import {
   BaseProfileCardMemberInfoProps,
   LoadingDataWithError,
+  PlausibleEvents,
 } from '@dao-dao/types'
 import {
   CHAIN_GAS_MULTIPLIER,
@@ -35,17 +37,18 @@ export const ProfileCardMemberInfo = ({
   const { t } = useTranslation()
   const dao = useDao()
   const {
-    address: walletAddress,
+    address: walletAddress = '',
     isWalletConnected,
     getSigningClient,
   } = useWallet()
   const queryClient = useQueryClient()
+  const plausible = usePlausible<PlausibleEvents>()
 
   const loadingWalletHasNft = useQueryLoadingDataWithError({
     ...daoVotingSgCommunityNftExtraQueries.walletHasNft(queryClient, {
       chainId: dao.chainId,
       votingModuleAddress: dao.votingModule.address,
-      walletAddress: walletAddress || '',
+      walletAddress,
     }),
     enabled: !!walletAddress,
   })
@@ -54,7 +57,7 @@ export const ProfileCardMemberInfo = ({
       chainId: dao.chainId,
       contractAddress: dao.votingModule.address,
       args: {
-        address: walletAddress || '',
+        address: walletAddress,
       },
     }),
     enabled: !!walletAddress,
@@ -198,6 +201,16 @@ export const ProfileCardMemberInfo = ({
         CHAIN_GAS_MULTIPLIER
       )
 
+      plausible('daoVotingStake', {
+        props: {
+          chainId: dao.chainId,
+          dao: dao.coreAddress,
+          walletAddress,
+          votingModule: dao.votingModule.address,
+          votingModuleType: dao.votingModule.contractName,
+        },
+      })
+
       // Voting power will not appear until the next block.
       await awaitNextBlock()
 
@@ -217,6 +230,10 @@ export const ProfileCardMemberInfo = ({
     t,
     getSigningClient,
     dao.votingModule.address,
+    dao.votingModule.contractName,
+    dao.chainId,
+    dao.coreAddress,
+    plausible,
     awaitNextBlock,
     refreshState,
   ])
@@ -239,6 +256,16 @@ export const ProfileCardMemberInfo = ({
         CHAIN_GAS_MULTIPLIER
       )
 
+      plausible('daoVotingUnstake', {
+        props: {
+          chainId: dao.chainId,
+          dao: dao.coreAddress,
+          walletAddress,
+          votingModule: dao.votingModule.address,
+          votingModuleType: dao.votingModule.contractName,
+        },
+      })
+
       // Voting power will not appear until the next block.
       await awaitNextBlock()
 
@@ -258,6 +285,10 @@ export const ProfileCardMemberInfo = ({
     t,
     getSigningClient,
     dao.votingModule.address,
+    dao.votingModule.contractName,
+    dao.chainId,
+    dao.coreAddress,
+    plausible,
     awaitNextBlock,
     refreshState,
   ])
@@ -341,9 +372,9 @@ export const ProfileCardMemberInfo = ({
           {votingPowerPercent.loading
             ? '...'
             : votingPowerPercent.errored
-            ? // eslint-disable-next-line i18next/no-literal-string
-              '<error>'
-            : formatPercentOf100(votingPowerPercent.data)}
+              ? // eslint-disable-next-line i18next/no-literal-string
+                '<error>'
+              : formatPercentOf100(votingPowerPercent.data)}
         </p>
       </div>
 

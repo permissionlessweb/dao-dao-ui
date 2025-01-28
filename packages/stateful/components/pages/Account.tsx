@@ -6,16 +6,12 @@ import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { profileQueries } from '@dao-dao/state/query'
-import {
-  averageColorSelector,
-  walletHexPublicKeySelector,
-} from '@dao-dao/state/recoil'
+import { chainQueries, profileQueries } from '@dao-dao/state/query'
+import { averageColorSelector } from '@dao-dao/state/recoil'
 import {
   ChainProvider,
   Account as StatelessAccount,
   useCachedLoadable,
-  useCachedLoadingWithError,
   useThemeContext,
 } from '@dao-dao/stateless'
 import { Theme } from '@dao-dao/types'
@@ -29,7 +25,7 @@ import {
   transformBech32Address,
 } from '@dao-dao/utils'
 
-import { useQueryLoadingData } from '../../hooks'
+import { useQueryLoadingData, useQueryLoadingDataWithError } from '../../hooks'
 import { ButtonLink } from '../ButtonLink'
 import { PageHeaderContent } from '../PageHeaderContent'
 import { SuspenseLoader } from '../SuspenseLoader'
@@ -54,7 +50,7 @@ export const Account: NextPage = () => {
   const { prefix } = fromBech32(address as string)
   // Choose first chain matching bech32 prefix.
   const configuredChain =
-    getConfiguredChains().find(({ chain }) => chain.bech32_prefix === prefix) ||
+    getConfiguredChains().find(({ chain }) => chain.bech32Prefix === prefix) ||
     getConfiguredChains()[0]
   // Transform just in case there was no chain found and we defaulted to the
   // first configured chain.
@@ -63,10 +59,10 @@ export const Account: NextPage = () => {
     configuredChain.chainId
   )
 
-  const hexPublicKey = useCachedLoadingWithError(
-    walletHexPublicKeySelector({
+  const hexPublicKey = useQueryLoadingDataWithError(
+    chainQueries.walletHexPublicKey({
       chainId: configuredChain.chainId,
-      walletAddress: accountAddress,
+      address: accountAddress,
     })
   )
 

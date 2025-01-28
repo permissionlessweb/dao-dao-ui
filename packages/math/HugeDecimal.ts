@@ -1,15 +1,17 @@
 import { BigNumber } from 'bignumber.js'
 
 const valueToBigNumber = (n: HugeDecimal.Value): BigNumber =>
-  n instanceof BigNumber
-    ? n
-    : n instanceof HugeDecimal
-    ? n['value']
-    : typeof n === 'bigint'
-    ? new BigNumber(n.toString())
-    : typeof n === 'object' && 'amount' in n
-    ? valueToBigNumber(n.amount)
-    : new BigNumber(n)
+  n === null || n === undefined
+    ? new BigNumber(NaN)
+    : n instanceof BigNumber
+      ? n
+      : n instanceof HugeDecimal
+        ? n['value']
+        : typeof n === 'bigint'
+          ? new BigNumber(n.toString())
+          : typeof n === 'object' && 'amount' in n
+            ? valueToBigNumber(n.amount)
+            : new BigNumber(n)
 
 interface AmountWrapper {
   amount: string
@@ -63,7 +65,7 @@ export class HugeDecimal {
    * example: `1.000000 $NTRN`.
    *
    * This will convert the value to its raw integer representation by
-   * multiplying by 10^decimals and truncating any remaining decimal places.
+   * multiplying by 10^decimals.
    *
    * @param n the value
    * @param decimals the number of decimals
@@ -71,7 +73,7 @@ export class HugeDecimal {
    */
   static fromHumanReadable(n: HugeDecimal.Value, decimals: number) {
     // Multiply by 10^decimals to convert to the integer representation.
-    return HugeDecimal.from(n).times(BigNumber(10).pow(decimals)).trunc()
+    return HugeDecimal.from(n).times(BigNumber(10).pow(decimals))
   }
 
   /**
@@ -285,12 +287,12 @@ export class HugeDecimal {
     // Get the decimal separator for the current locale.
     const decimalSeparator = (1.1).toLocaleString()[1]
 
+    const human = this.toHumanReadable(decimals)
+
     // Use BigInt for integer part of the number, and add the decimals manually.
     // If the number is too large to fit within the size of Number, must use
     // this BigInt approach even when not showing the full amount.
-    if (showFullAmount || this.gte(Number.MAX_SAFE_INTEGER)) {
-      const human = this.toHumanReadable(decimals)
-
+    if (showFullAmount || human.gte(Number.MAX_SAFE_INTEGER)) {
       const int = human.trunc()
       const dec = human.minus(int)
 

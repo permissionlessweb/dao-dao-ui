@@ -23,6 +23,7 @@ export const PressWidget: Widget<PressData> = {
   IconFilled: ArticleRounded,
   location: WidgetLocation.Tab,
   visibilityContext: WidgetVisibilityContext.Always,
+  supportsDaoCreation: true,
   Renderer,
   Editor,
   // Must have cw721 base to mint NFTs.

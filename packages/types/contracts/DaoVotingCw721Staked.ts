@@ -57,7 +57,10 @@ export type ExecuteMsg =
       }
     }
   | {
-      claim_nfts: {}
+      claim_nfts: {
+        // v2.6.0 and above.
+        type?: ClaimType
+      }
     }
   | {
       update_config: {
@@ -78,6 +81,12 @@ export type ExecuteMsg =
       update_active_threshold: {
         new_threshold?: ActiveThreshold | null
       }
+    }
+export type ClaimType =
+  | 'legacy'
+  | 'all'
+  | {
+      specific: string[]
     }
 export interface Cw721ReceiveMsg {
   msg: Binary
@@ -163,6 +172,8 @@ export interface NftClaimsResponse {
 export interface NftClaim {
   release_at: Expiration
   token_id: string
+  // v2.6.0 and above.
+  legacy?: boolean
 }
 export type ArrayOfString = string[]
 export interface TotalPowerAtHeightResponse {

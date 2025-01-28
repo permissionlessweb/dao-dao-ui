@@ -34,7 +34,7 @@ export const ImportMultisigModal = ({
   } = useFormContext<ImportMultisigForm>()
   const address = watch('address')
 
-  const { chain_id: chainId, bech32_prefix: bech32Prefix } = useChain()
+  const { chainId, bech32Prefix } = useChain()
 
   const processTQ = useProcessTQ()
   const processedMultisigTQ =
@@ -46,17 +46,17 @@ export const ImportMultisigModal = ({
     loadingMultisig.loading || loadingMultisig.errored || !processedMultisigTQ
       ? 'unknown'
       : 'absolute_count' in loadingMultisig.data.config.threshold
-      ? t('info.xOfYMultisig', {
-          x: processedMultisigTQ.threshold.display,
-          y: loadingMultisig.data.config.totalWeight,
-        })
-      : [
-          t('title.threshold') + ': ' + processedMultisigTQ.threshold.display,
-          processedMultisigTQ.quorum &&
-            t('info.quorum') + ': ' + processedMultisigTQ.quorum.display,
-        ]
-          .filter(Boolean)
-          .join(', ')
+        ? t('info.xOfYMultisig', {
+            x: processedMultisigTQ.threshold.display,
+            y: loadingMultisig.data.config.totalWeight,
+          })
+        : [
+            t('title.threshold') + ': ' + processedMultisigTQ.threshold.display,
+            processedMultisigTQ.quorum &&
+              t('info.quorum') + ': ' + processedMultisigTQ.quorum.display,
+          ]
+            .filter(Boolean)
+            .join(', ')
 
   return (
     <Modal
@@ -104,7 +104,7 @@ export const ImportMultisigModal = ({
               try {
                 const { prefix } = fromBech32(newAddress)
                 const matchingChainId = getConfiguredChains().find(
-                  ({ chain }) => chain.bech32_prefix === prefix
+                  ({ chain }) => chain.bech32Prefix === prefix
                 )?.chainId
                 if (matchingChainId && matchingChainId !== chainId) {
                   setValue('chainId', matchingChainId)

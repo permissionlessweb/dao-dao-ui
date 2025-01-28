@@ -1,3 +1,4 @@
+import { EncodeObject } from '@cosmjs/proto-signing'
 import { FetchQueryOptions, QueryClient } from '@tanstack/react-query'
 
 import {
@@ -195,12 +196,14 @@ export class MultipleChoiceProposalModule extends ProposalModuleBase<
   }
 
   async propose({
-    data,
+    data: _data,
+    vote,
     getSigningClient,
     sender,
     funds,
   }: {
     data: NewProposalData
+    vote?: MultipleChoiceVote
     getSigningClient: () => Promise<SupportedSigningCosmWasmClient>
     sender: string
     funds?: Coin[]
@@ -208,6 +211,21 @@ export class MultipleChoiceProposalModule extends ProposalModuleBase<
     proposalNumber: number
     proposalId: string
   }> {
+    if (vote && !this.supports(Feature.CastVoteOnProposalCreation)) {
+      throw new Error(
+        `Casting vote on proposal creation is not supported by version ${this.version}`
+      )
+    }
+
+    const data = {
+      ..._data,
+      ...(vote && {
+        vote: {
+          vote,
+        },
+      }),
+    }
+
     const client = await getSigningClient()
 
     let proposalNumber: number
@@ -308,11 +326,13 @@ export class MultipleChoiceProposalModule extends ProposalModuleBase<
     getSigningClient,
     sender,
     memo,
+    nonCriticalExtensionOptions,
   }: {
     proposalId: number
     getSigningClient: () => Promise<SupportedSigningCosmWasmClient>
     sender: string
     memo?: string
+    nonCriticalExtensionOptions?: EncodeObject[]
   }): Promise<void> {
     const client = await getSigningClient()
     await new DaoProposalMultipleClient(client, sender, this.address).execute(
@@ -320,7 +340,9 @@ export class MultipleChoiceProposalModule extends ProposalModuleBase<
         proposalId,
       },
       undefined,
-      memo
+      memo,
+      undefined,
+      nonCriticalExtensionOptions
     )
   }
 

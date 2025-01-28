@@ -4,11 +4,10 @@ import { CommonNftSelectors } from '@dao-dao/state/recoil'
 import {
   NftsTab,
   PAGINATION_MIN_PAGE,
-  useCachedLoading,
+  useCachedLoadingWithError,
   useChain,
   useQuerySyncedState,
 } from '@dao-dao/stateless'
-import { LazyNftCardInfo } from '@dao-dao/types'
 import { getNftKey } from '@dao-dao/utils'
 
 import { LazyNftCard } from '../../../../components'
@@ -18,7 +17,7 @@ const NFTS_PER_PAGE = 30
 
 export const NftCollectionTab = () => {
   const { t } = useTranslation()
-  const { chain_id: chainId } = useChain()
+  const { chainId } = useChain()
   const { collectionAddress, stakingContractAddress } =
     useGovernanceCollectionInfo()
 
@@ -27,51 +26,39 @@ export const NftCollectionTab = () => {
     defaultValue: PAGINATION_MIN_PAGE,
   })
 
-  const numNfts = useCachedLoading(
+  const numNfts = useCachedLoadingWithError(
     CommonNftSelectors.numTokensSelector({
       chainId,
       contractAddress: collectionAddress,
       params: [],
     }),
-    { count: 0 }
+    ({ count }) => count
   )
 
-  const allTokens = useCachedLoading(
+  const nfts = useCachedLoadingWithError(
     CommonNftSelectors.paginatedAllTokensSelector({
       chainId,
       contractAddress: collectionAddress,
       page,
       pageSize: NFTS_PER_PAGE,
     }),
-    []
+    (data) =>
+      data.map((tokenId) => ({
+        key: getNftKey(chainId, collectionAddress, tokenId),
+        chainId,
+        collectionAddress,
+        tokenId,
+        stakingContractAddress,
+        type: 'owner' as const,
+      }))
   )
 
   return (
     <NftsTab
       NftCard={LazyNftCard}
       description={t('info.nftCollectionExplanation', { context: 'all' })}
-      nfts={
-        allTokens.loading
-          ? { loading: true }
-          : {
-              loading: false,
-              data: allTokens.data.map(
-                (tokenId): LazyNftCardInfo => ({
-                  key: getNftKey(chainId, collectionAddress, tokenId),
-                  chainId,
-                  collectionAddress,
-                  tokenId,
-                  stakingContractAddress,
-                  type: 'owner',
-                })
-              ),
-            }
-      }
-      numNfts={
-        numNfts.loading
-          ? { loading: true }
-          : { loading: false, data: numNfts.data.count }
-      }
+      nfts={nfts}
+      numNfts={numNfts}
       page={page}
       pageSize={NFTS_PER_PAGE}
       setPage={setPage}

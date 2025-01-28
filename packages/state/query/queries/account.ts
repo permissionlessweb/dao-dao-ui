@@ -241,7 +241,7 @@ export const fetchCryptographicMultisigAccount = async ({
   chainId: string
   address: string
 }): Promise<CryptographicMultisigAccount> => {
-  const { bech32_prefix: bech32Prefix } = getChainForChainId(chainId)
+  const { bech32Prefix } = getChainForChainId(chainId)
   const client = await cosmosProtoRpcClientRouter.connect(chainId)
 
   const { account } = await client.auth.v1beta1.account({
@@ -345,25 +345,25 @@ export const fetchCw3MultisigAccount = async (
           },
         }
       : 'absolute_percentage' in _threshold
-      ? {
-          absolute_percentage: {
-            percentage: {
-              percent: _threshold.absolute_percentage.percentage,
+        ? {
+            absolute_percentage: {
+              percentage: {
+                percent: _threshold.absolute_percentage.percentage,
+              },
             },
-          },
-        }
-      : 'threshold_quorum' in _threshold
-      ? {
-          threshold_quorum: {
-            quorum: {
-              percent: _threshold.threshold_quorum.quorum,
-            },
-            threshold: {
-              percent: _threshold.threshold_quorum.threshold,
-            },
-          },
-        }
-      : undefined
+          }
+        : 'threshold_quorum' in _threshold
+          ? {
+              threshold_quorum: {
+                quorum: {
+                  percent: _threshold.threshold_quorum.quorum,
+                },
+                threshold: {
+                  percent: _threshold.threshold_quorum.threshold,
+                },
+              },
+            }
+          : undefined
 
   if (!threshold) {
     throw new Error('Unsupported cw3 multisig.')

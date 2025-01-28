@@ -66,6 +66,11 @@ export interface ConsumerParams {
   providerRewardDenoms: string[];
   /** The period after which a consumer can retry sending a throttled packet. */
   retryDelayPeriod: Duration | undefined;
+  /**
+   * The consumer ID of this consumer chain. Used by the consumer module to send
+   * ICS rewards.
+   */
+  consumerId: string;
 }
 export interface ConsumerParamsProtoMsg {
   typeUrl: "/interchain_security.ccv.v1.ConsumerParams";
@@ -135,6 +140,11 @@ export interface ConsumerParamsAmino {
   provider_reward_denoms?: string[];
   /** The period after which a consumer can retry sending a throttled packet. */
   retry_delay_period?: DurationAmino | undefined;
+  /**
+   * The consumer ID of this consumer chain. Used by the consumer module to send
+   * ICS rewards.
+   */
+  consumer_id?: string;
 }
 export interface ConsumerParamsAminoMsg {
   type: "/interchain_security.ccv.v1.ConsumerParams";
@@ -162,6 +172,7 @@ export interface ConsumerParamsSDKType {
   reward_denoms: string[];
   provider_reward_denoms: string[];
   retry_delay_period: DurationSDKType | undefined;
+  consumer_id: string;
 }
 /**
  * ConsumerGenesisState defines shared genesis information between provider and
@@ -255,7 +266,8 @@ function createBaseConsumerParams(): ConsumerParams {
     softOptOutThreshold: "",
     rewardDenoms: [],
     providerRewardDenoms: [],
-    retryDelayPeriod: Duration.fromPartial({})
+    retryDelayPeriod: Duration.fromPartial({}),
+    consumerId: ""
   };
 }
 export const ConsumerParams = {
@@ -299,6 +311,9 @@ export const ConsumerParams = {
     }
     if (message.retryDelayPeriod !== undefined) {
       Duration.encode(message.retryDelayPeriod, writer.uint32(106).fork()).ldelim();
+    }
+    if (message.consumerId !== "") {
+      writer.uint32(114).string(message.consumerId);
     }
     return writer;
   },
@@ -348,6 +363,9 @@ export const ConsumerParams = {
         case 13:
           message.retryDelayPeriod = Duration.decode(reader, reader.uint32(), useInterfaces);
           break;
+        case 14:
+          message.consumerId = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -370,6 +388,7 @@ export const ConsumerParams = {
     message.rewardDenoms = object.rewardDenoms?.map(e => e) || [];
     message.providerRewardDenoms = object.providerRewardDenoms?.map(e => e) || [];
     message.retryDelayPeriod = object.retryDelayPeriod !== undefined && object.retryDelayPeriod !== null ? Duration.fromPartial(object.retryDelayPeriod) : undefined;
+    message.consumerId = object.consumerId ?? "";
     return message;
   },
   fromAmino(object: ConsumerParamsAmino): ConsumerParams {
@@ -409,6 +428,9 @@ export const ConsumerParams = {
     if (object.retry_delay_period !== undefined && object.retry_delay_period !== null) {
       message.retryDelayPeriod = Duration.fromAmino(object.retry_delay_period);
     }
+    if (object.consumer_id !== undefined && object.consumer_id !== null) {
+      message.consumerId = object.consumer_id;
+    }
     return message;
   },
   toAmino(message: ConsumerParams, useInterfaces: boolean = false): ConsumerParamsAmino {
@@ -434,6 +456,7 @@ export const ConsumerParams = {
       obj.provider_reward_denoms = message.providerRewardDenoms;
     }
     obj.retry_delay_period = message.retryDelayPeriod ? Duration.toAmino(message.retryDelayPeriod, useInterfaces) : undefined;
+    obj.consumer_id = message.consumerId === "" ? undefined : message.consumerId;
     return obj;
   },
   fromAminoMsg(object: ConsumerParamsAminoMsg): ConsumerParams {

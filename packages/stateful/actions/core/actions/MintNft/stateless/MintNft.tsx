@@ -3,10 +3,12 @@ import {
   SubdirectoryArrowRightRounded,
 } from '@mui/icons-material'
 import clsx from 'clsx'
+import cloneDeep from 'lodash.clonedeep'
 import { useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 
 import {
+  Button,
   HorizontalNftCard,
   InputErrorMessage,
   InputLabel,
@@ -14,10 +16,10 @@ import {
   useChain,
   useDetectWrap,
 } from '@dao-dao/stateless'
-import { ActionComponent } from '@dao-dao/types'
+import { ActionComponent, ActionKey } from '@dao-dao/types'
 import { makeValidateAddress, validateRequired } from '@dao-dao/utils'
 
-import { MintNftOptions } from '../types'
+import { MintNftData, MintNftOptions } from '../types'
 
 // Form displayed when the user is minting a new NFT.
 export const MintNft: ActionComponent<MintNftOptions> = ({
@@ -25,11 +27,13 @@ export const MintNft: ActionComponent<MintNftOptions> = ({
   errors,
   isCreating,
   options: { nftInfo, AddressInput },
+  addAction,
+  index,
 }) => {
   const { t } = useTranslation()
-  const { bech32_prefix: bech32Prefix } = useChain()
+  const { bech32Prefix } = useChain()
 
-  const { register } = useFormContext()
+  const { getValues, register } = useFormContext<MintNftData>()
 
   const { containerRef, childRef, wrapped } = useDetectWrap()
   const Icon = wrapped ? SubdirectoryArrowRightRounded : ArrowRightAltRounded
@@ -51,7 +55,9 @@ export const MintNft: ActionComponent<MintNftOptions> = ({
           className="w-auto"
           disabled={!isCreating}
           error={errors?.mintMsg?.token_id}
-          fieldName={fieldNamePrefix + 'mintMsg.token_id'}
+          fieldName={
+            (fieldNamePrefix + 'mintMsg.token_id') as 'mintMsg.token_id'
+          }
           register={register}
           validation={[validateRequired]}
         />
@@ -70,12 +76,33 @@ export const MintNft: ActionComponent<MintNftOptions> = ({
             containerClassName="grow"
             disabled={!isCreating}
             error={errors?.mintMsg?.owner}
-            fieldName={fieldNamePrefix + 'mintMsg.owner'}
+            fieldName={(fieldNamePrefix + 'mintMsg.owner') as 'mintMsg.owner'}
             register={register}
             validation={[validateRequired, makeValidateAddress(bech32Prefix)]}
           />
         </div>
       </div>
+
+      {isCreating && addAction && (
+        <Button
+          className="self-start"
+          onClick={() =>
+            addAction(
+              {
+                actionKey: ActionKey.MintNft,
+                data: cloneDeep(
+                  // Remove trailing dot from prefix to get all data.
+                  getValues(fieldNamePrefix.slice(0, -1) as any) as MintNftData
+                ),
+              },
+              index + 1
+            )
+          }
+          variant="secondary"
+        >
+          {t('button.duplicate')}
+        </Button>
+      )}
 
       <InputErrorMessage error={errors?.mintMsg?.token_id} />
       <InputErrorMessage error={errors?.mintMsg?.owner} />

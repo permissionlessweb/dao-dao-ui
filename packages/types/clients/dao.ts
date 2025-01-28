@@ -1,14 +1,14 @@
-import { Chain } from '@chain-registry/types'
 import { FetchQueryOptions } from '@tanstack/react-query'
 
 import { Account } from '../account'
+import { AnyChain } from '../chain'
 import { DaoCardLazyData } from '../components'
 import {
   TotalPowerAtHeightResponse,
   VotingPowerAtHeightResponse,
 } from '../contracts/DaoDaoCore'
 import { DaoInfo, DaoSource } from '../dao'
-import { ContractVersion } from '../features'
+import { ContractVersion, Feature } from '../features'
 import { AmountWithTimestamp } from '../token'
 import { IProposalModuleBase } from './proposal-module'
 import { IVotingModuleBase } from './voting-module'
@@ -27,7 +27,7 @@ export interface IDaoBase {
   /**
    * Chain of the DAO.
    */
-  chain: Chain
+  chain: AnyChain
 
   /**
    * Core address of the DAO.
@@ -80,6 +80,11 @@ export interface IDaoBase {
   imageUrl: string
 
   /**
+   * DAO banner image URL.
+   */
+  bannerImageUrl: string | undefined
+
+  /**
    * Whether or not the client has been initialized. This only matters for some
    * functions, depending on the implementation.
    */
@@ -90,6 +95,11 @@ export interface IDaoBase {
    * the implementation.
    */
   init(): Promise<void>
+
+  /**
+   * Check whether or not the DAO supports a given feature.
+   */
+  supports(feature: Feature): boolean
 
   /**
    * Get the proposal module with the given address.

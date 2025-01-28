@@ -79,7 +79,7 @@ export const GovernanceConfigurationInput = ({
   const { address: walletAddress } = useWallet()
 
   const {
-    chain: { chain_id: chainId, bech32_prefix: bech32Prefix },
+    chain: { chainId, bech32Prefix },
     config,
   } = useSupportedChainContext()
 
@@ -426,8 +426,8 @@ export const GovernanceConfigurationInput = ({
             tooltip: config.tokenCreationUnderDevelopment
               ? t('info.tokenCreationUnderDevelopment')
               : config.noTokenFactory
-              ? t('info.tokenCreationNoTokenFactory')
-              : undefined,
+                ? t('info.tokenCreationNoTokenFactory')
+                : undefined,
           },
           {
             label: t('button.useExistingToken'),

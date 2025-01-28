@@ -3,11 +3,7 @@ import { forwardRef, useEffect } from 'react'
 import { useSetRecoilState } from 'recoil'
 
 import { nftQueries } from '@dao-dao/state/query'
-import {
-  nftCardInfoSelector,
-  nftCardInfosForKeyAtom,
-} from '@dao-dao/state/recoil'
-import { useCachedLoadingWithError } from '@dao-dao/stateless'
+import { nftCardInfosForKeyAtom } from '@dao-dao/state/recoil'
 import { LazyNftCardProps } from '@dao-dao/types'
 import { processError } from '@dao-dao/utils'
 
@@ -26,11 +22,12 @@ export const LazyNftCard = forwardRef<HTMLDivElement, LazyNftCardProps>(
     },
     ref
   ) {
-    const info = useCachedLoadingWithError(
-      nftCardInfoSelector({
+    const queryClient = useQueryClient()
+    const info = useQueryLoadingDataWithError(
+      nftQueries.cardInfo(queryClient, {
+        chainId,
         collection: collectionAddress,
         tokenId,
-        chainId,
       })
     )
 
@@ -47,7 +44,6 @@ export const LazyNftCard = forwardRef<HTMLDivElement, LazyNftCardProps>(
       }
     }, [info, setNftCardInfoForKey])
 
-    const queryClient = useQueryClient()
     const stakerOrOwner = useQueryLoadingDataWithError(
       // If showing owner instead of showing collection, load staker or owner if
       // not staker. The owner in the `type` and the owner of the NFT are
@@ -70,8 +66,8 @@ export const LazyNftCard = forwardRef<HTMLDivElement, LazyNftCardProps>(
     const NftCardToUse = staked
       ? StakedNftCard
       : type === 'owner'
-      ? NftCardNoCollection
-      : NftCard
+        ? NftCardNoCollection
+        : NftCard
 
     return info.loading ? (
       <NftCardToUse

@@ -6,22 +6,28 @@ import {
 } from './constants'
 
 /**
+ * Whether or not an error contains a substring or any of a set of substrings.
+ */
+export const isErrorWithSubstring = (
+  error: unknown,
+  substringOrSubstrings: string | string[]
+): boolean =>
+  error instanceof Error &&
+  [substringOrSubstrings]
+    .flat()
+    .some((substring) => (error as Error).message.includes(substring))
+
+/**
  * Whether or not an error is a non-existent query error.
  */
 export const isNonexistentQueryError = (error: unknown): boolean =>
-  error instanceof Error &&
-  NONEXISTENT_QUERY_ERROR_SUBSTRINGS.some((substring) =>
-    (error as Error).message.includes(substring)
-  )
+  isErrorWithSubstring(error, NONEXISTENT_QUERY_ERROR_SUBSTRINGS)
 
 /**
  * Whether or not an error is an invalid contract error.
  */
 export const isInvalidContractError = (error: unknown): boolean =>
-  error instanceof Error &&
-  INVALID_CONTRACT_ERROR_SUBSTRINGS.some((substring) =>
-    (error as Error).message.includes(substring)
-  )
+  isErrorWithSubstring(error, INVALID_CONTRACT_ERROR_SUBSTRINGS)
 
 // Passing a map will allow common errors to be mapped to a custom error message
 // for the given context.
@@ -119,10 +125,10 @@ export enum CommonError {
   InvalidAddress = 'Invalid address.',
   InsufficientFees = "Insufficient fees. Reconnect your wallet, ensure you're on the right chain, and try again.",
   InsufficientFunds = 'Insufficient funds.',
+  InsufficientFundsOverflow = 'Insufficient funds (Error: "Overflow: Cannot Sub with...").',
   GetClientFailed = 'Failed to get client. Try refreshing the page or reconnecting your wallet.',
   Network = 'Network error. Ensure you are connected to the internet, refresh the page, or try again later. If your network is working, the blockchain nodes may be having problems.',
   Unauthorized = 'Unauthorized.',
-  InsufficientForProposalDeposit = 'Insufficient unstaked deposit tokens. Ensure you have enough unstaked deposit tokens to pay for the proposal deposit.',
   PendingTransaction = 'You have another pending transaction. Please try again in 10 seconds.',
   TextEncodingDecodingError = 'Text encoding/decoding error. Invalid character present in text.',
   TxnSentTimeout = 'Transaction sent but has not yet been detected. Refresh this page to view its changes or check back later.',
@@ -192,7 +198,7 @@ const commonErrorPatterns: Record<CommonError, (string | string[])[]> = {
     // https://github.com/cosmos/cosmos-sdk/blob/main/types/errors/errors.go
     'codespace: sdk, code: 4',
   ],
-  [CommonError.InsufficientForProposalDeposit]: ['Overflow: Cannot Sub with'],
+  [CommonError.InsufficientFundsOverflow]: ['Overflow: Cannot Sub with'],
   [CommonError.PendingTransaction]: ['account sequence mismatch'],
   [CommonError.TextEncodingDecodingError]: ['out of printable ASCII range'],
   [CommonError.TxnSentTimeout]: [
@@ -269,7 +275,7 @@ const commonErrorPatterns: Record<CommonError, (string | string[])[]> = {
 }
 const commonErrorPatternsEntries = Object.entries(commonErrorPatterns) as [
   CommonError,
-  (string | string[])[]
+  (string | string[])[],
 ][]
 
 // Whether or not to send the error to Sentry. Some errors we want to clean up

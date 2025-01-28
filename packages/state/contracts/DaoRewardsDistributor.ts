@@ -237,6 +237,18 @@ export interface DaoRewardsDistributorInterface
     memo?: string,
     _funds?: Coin[]
   ) => Promise<ExecuteResult>
+  unsafeForceWithdraw: (
+    {
+      amount,
+      denom,
+    }: {
+      amount: Uint128
+      denom: UncheckedDenom
+    },
+    fee?: number | StdFee | 'auto',
+    memo?: string,
+    _funds?: Coin[]
+  ) => Promise<ExecuteResult>
   updateOwnership: (
     action: Action,
     fee?: number | StdFee | 'auto',
@@ -270,6 +282,7 @@ export class DaoRewardsDistributorClient
     this.fundLatest = this.fundLatest.bind(this)
     this.claim = this.claim.bind(this)
     this.withdraw = this.withdraw.bind(this)
+    this.unsafeForceWithdraw = this.unsafeForceWithdraw.bind(this)
     this.updateOwnership = this.updateOwnership.bind(this)
   }
   memberChangedHook = async (
@@ -512,6 +525,32 @@ export class DaoRewardsDistributorClient
       {
         withdraw: {
           id,
+        },
+      },
+      fee,
+      memo,
+      _funds
+    )
+  }
+  unsafeForceWithdraw = async (
+    {
+      amount,
+      denom,
+    }: {
+      amount: Uint128
+      denom: UncheckedDenom
+    },
+    fee: number | StdFee | 'auto' = CHAIN_GAS_MULTIPLIER,
+    memo?: string,
+    _funds?: Coin[]
+  ): Promise<ExecuteResult> => {
+    return await this.client.execute(
+      this.sender,
+      this.contractAddress,
+      {
+        unsafe_force_withdraw: {
+          amount,
+          denom,
         },
       },
       fee,

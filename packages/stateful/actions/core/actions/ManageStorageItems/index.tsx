@@ -29,7 +29,7 @@ const Component: ActionComponent<undefined, ManageStorageItemsData> = (
 ) => {
   const {
     address,
-    chain: { chain_id: chainId },
+    chain: { chainId },
   } = useActionOptions()
 
   const existingItems = useCachedLoadingWithError(
@@ -77,16 +77,14 @@ export class ManageStorageItemsAction extends ActionBase<ManageStorageItemsData>
       matchPriority: -90,
     })
 
-    this.valueKey = options.context.dao.info.supportedFeatures[
-      Feature.StorageItemValueKey
-    ]
+    this.valueKey = options.context.dao.supports(Feature.StorageItemValueKey)
       ? 'value'
       : 'addr'
   }
 
   encode({ setting, key, value }: ManageStorageItemsData): UnifiedCosmosMsg {
     return makeExecuteSmartContractMessage({
-      chainId: this.options.chain.chain_id,
+      chainId: this.options.chain.chainId,
       sender: this.options.address,
       contractAddress: this.options.address,
       msg: setting

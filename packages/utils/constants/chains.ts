@@ -6,12 +6,14 @@ import {
 } from 'chain-registry'
 
 import {
+  AnyChain,
   BaseChainConfig,
   ChainId,
   CodeHashConfig,
   CodeIdConfig,
   ContractVersion,
   PolytoneConfig,
+  SkipChain,
   SupportedChainConfig,
   TokenType,
 } from '@dao-dao/types'
@@ -32,18 +34,38 @@ const ALL_POLYTONE = _ALL_POLYTONE as unknown as Partial<
   Record<ChainId, PolytoneConfig>
 >
 
+export const convertChainRegistryChainToAnyChain = (
+  chain: Chain
+): AnyChain => ({
+  chainId: chain.chain_id,
+  chainName: chain.chain_name,
+  bech32Prefix: chain.bech32_prefix,
+  prettyName: chain.pretty_name ?? chain.chain_name,
+  chainRegistry: chain,
+})
+
+export const convertSkipChainToAnyChain = (chain: SkipChain): AnyChain => ({
+  chainId: chain.chain_id,
+  chainName: chain.chain_name,
+  bech32Prefix: chain.bech32_prefix,
+  prettyName: chain.pretty_name ?? chain.chain_name,
+  skipChain: chain,
+})
+
 //! ----- Modified chain-registry -----
-let chains = [...chainRegistryChains]
+let chains: AnyChain[] = chainRegistryChains.map(
+  convertChainRegistryChainToAnyChain
+)
 const assets = [...chainRegistryAssets]
 
 // BitSong Testnet
-const bitSongTestnetChain: Chain = {
-  ...chains.find((c) => c.chain_id === ChainId.BitsongMainnet)!,
+const bitSongTestnetChain = convertChainRegistryChainToAnyChain({
+  ...chains.find((c) => c.chainId === ChainId.BitsongMainnet)!.chainRegistry!,
+  chain_id: ChainId.BitsongTestnet,
   chain_name: 'bitsongtestnet',
   status: 'live',
   network_type: 'testnet',
   pretty_name: 'BitSong Testnet',
-  chain_id: ChainId.BitsongTestnet,
   apis: {
     rpc: [
       {
@@ -56,22 +78,23 @@ const bitSongTestnetChain: Chain = {
       },
     ],
   },
-}
+})
 chains.push(bitSongTestnetChain)
 assets.push({
-  chain_name: bitSongTestnetChain.chain_name,
+  chain_name: bitSongTestnetChain.chainName,
   // Copy assets from BitSong mainnet.
   assets: assets.find((a) => a.chain_name === 'bitsong')?.assets ?? [],
 })
 
 // OmniFlix Hub Testnet
-const omniFlixHubTestnetChain: Chain = {
-  ...chains.find((c) => c.chain_id === ChainId.OmniflixHubMainnet)!,
+const omniFlixHubTestnetChain = convertChainRegistryChainToAnyChain({
+  ...chains.find((c) => c.chainId === ChainId.OmniflixHubMainnet)!
+    .chainRegistry!,
+  chain_id: ChainId.OmniflixHubTestnet,
   chain_name: 'omniflixhubtestnet',
   status: 'live',
   network_type: 'testnet',
   pretty_name: 'OmniFlix Hub Testnet',
-  chain_id: ChainId.OmniflixHubTestnet,
   apis: {
     rpc: [
       {
@@ -84,22 +107,21 @@ const omniFlixHubTestnetChain: Chain = {
       },
     ],
   },
-}
+})
 chains.push(omniFlixHubTestnetChain)
 assets.push({
-  chain_name: omniFlixHubTestnetChain.chain_name,
+  chain_name: omniFlixHubTestnetChain.chainName,
   // Copy assets from OmniFlix Hub mainnet.
   assets: assets.find((a) => a.chain_name === 'omniflixhub')?.assets ?? [],
 })
 
 // Remove thorchain and althea since they spam the console.
 const chainsToRemove = ['thorchain', 'althea']
-chains = chains.filter((chain) => !chainsToRemove.includes(chain.chain_name))
+chains = chains.filter((chain) => !chainsToRemove.includes(chain.chainName))
 
 // Shrink Cosmos Hub ICS provider testnet name since Keplr thinks it's too long.
-chains.find(
-  (c) => c.chain_id === ChainId.CosmosHubProviderTestnet
-)!.pretty_name = 'Cosmos ICS Provider Testnet'
+chains.find((c) => c.chainId === ChainId.CosmosHubProviderTestnet)!.prettyName =
+  'Cosmos ICS Provider Testnet'
 
 export { chains, assets }
 //! ----- Modified chain-registry -----
@@ -137,6 +159,37 @@ export const ibc: IBCInfo[] = [
       },
     ],
   },
+  // Neutron <-> Carbon
+  {
+    chain_1: {
+      chain_name: 'neutron',
+      client_id: '07-tendermint-141',
+      connection_id: 'connection-99',
+    },
+    chain_2: {
+      chain_name: 'carbon',
+      client_id: '07-tendermint-77',
+      connection_id: 'connection-51',
+    },
+    channels: [
+      {
+        chain_1: {
+          channel_id: 'channel-4892',
+          port_id: 'transfer',
+        },
+        chain_2: {
+          channel_id: 'channel-48',
+          port_id: 'transfer',
+        },
+        ordering: 'unordered',
+        version: 'ics20-1',
+        tags: {
+          status: 'live',
+          preferred: true,
+        },
+      },
+    ],
+  },
 ]
 
 /**
@@ -152,7 +205,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: true,
     accentColor: '#5064fb',
     factoryContractAddress:
-      'cosmos18cszlvm6pze0x9sz32qnjq4vtd45xehqs8dq7cwy8yhq35wfnn3q795n8y',
+      'cosmos10wrmqup88j9pp489a4ftldgutm52zz02xspfv25rcny8w8wk7pmqauag5d',
     explorerUrlTemplates: {
       tx: 'https://mintscan.io/cosmos/tx/REPLACE',
       gov: 'https://mintscan.io/cosmos/proposals',
@@ -165,7 +218,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
       // No NFTs on the Hub.
       [NftBasedCreatorId]: 'unsupported',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.JunoMainnet,
@@ -173,7 +226,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: true,
     accentColor: '#f74a49',
     factoryContractAddress:
-      'juno19c75u4zdthjcnyz4nv7d85n99erwzzjlr3dm64l0wkpquf0y3easzfesvt',
+      'juno1kyyat0t5ref452fz7r0des6hx5f9zynp9e9k2k3pqk49rcjhmd7sag82sp',
     kado: {
       network: 'JUNO',
     },
@@ -184,12 +237,12 @@ const BASE_SUPPORTED_CHAINS: Omit<
       'juno1mjsgk02jyn72jm2x7fgw72uu9wj7xy0v6pnuj2jd3aq7rgeqg5qq4dnhes',
     ],
     explorerUrlTemplates: {
-      tx: 'https://ping.pub/juno/tx/REPLACE',
-      gov: 'https://ping.pub/juno/gov',
-      govProp: 'https://ping.pub/juno/gov/REPLACE',
-      wallet: 'https://ping.pub/juno/account/REPLACE',
+      tx: 'https://mintscan.io/juno/txs/REPLACE',
+      gov: 'https://mintscan.io/juno/proposals',
+      govProp: 'https://mintscan.io/juno/proposals/REPLACE',
+      wallet: 'https://mintscan.io/juno/account/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.OsmosisMainnet,
@@ -197,17 +250,17 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: true,
     accentColor: '#5604e8',
     factoryContractAddress:
-      'osmo1nqxfazrmuvzaka3k2zy6xqzxalhw0mdzde3navda96ch005u0lxspwyk3q',
+      'osmo13vpxfky3hdd4k9ymjfhnm8939t9e0kx0rc4eckkwwttqxtn9szaq3h3m3y',
     kado: {
       network: 'OSMOSIS',
     },
     explorerUrlTemplates: {
-      tx: 'https://ping.pub/osmosis/tx/REPLACE',
-      gov: 'https://ping.pub/osmosis/gov',
-      govProp: 'https://ping.pub/osmosis/gov/REPLACE',
-      wallet: 'https://ping.pub/osmosis/account/REPLACE',
+      tx: 'https://mintscan.io/osmosis/txs/REPLACE',
+      gov: 'https://mintscan.io/osmosis/proposals',
+      govProp: 'https://mintscan.io/osmosis/proposals/REPLACE',
+      wallet: 'https://mintscan.io/osmosis/account/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.NeutronMainnet,
@@ -215,7 +268,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: true,
     accentColor: '#000000',
     factoryContractAddress:
-      'neutron1xsvrsy4m37pay0fkd6ur75hsl8p6netvxvzvpvj7h4tsp9udxuysqxpuzh',
+      'neutron1exzasdlj6r2lhu5ur642qjft07hljcw88g8xjztvd6a4wymh0v8stxvnju',
     govContractAddress: NEUTRON_GOVERNANCE_DAO,
     subDaos: [
       'neutron1fuyxwxlsgjkfjmxfthq8427dm2am3ya3cwcdr8gls29l7jadtazsuyzwcc',
@@ -225,7 +278,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
       tx: 'https://neutron.celat.one/neutron-1/txs/REPLACE',
       wallet: 'https://neutron.celat.one/neutron-1/accounts/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
     valence: {
       servicesManager:
         'neutron1gantvpnat0la8kkkzrnj48d5d8wxdjllh5r2w4r2hcrpwy00s69quypupa',
@@ -239,14 +292,14 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: true,
     accentColor: '#8ac3cc',
     factoryContractAddress:
-      'stars14reqfce75ayjkdyce0rkfea45y0eh283zgychdjtjkyfxsy28nmqprzf60',
+      'stars1tfqwhhnus2u39kdlhhp93k9z7qvkhty65wvyt6snymejeyftkt5qlzq269',
     explorerUrlTemplates: {
-      tx: 'https://ping.pub/stargaze/tx/REPLACE',
-      gov: 'https://ping.pub/stargaze/gov',
-      govProp: 'https://ping.pub/stargaze/gov/REPLACE',
-      wallet: 'https://ping.pub/stargaze/account/REPLACE',
+      tx: 'https://mintscan.io/stargaze/txs/REPLACE',
+      gov: 'https://mintscan.io/stargaze/proposals',
+      govProp: 'https://mintscan.io/stargaze/proposals/REPLACE',
+      wallet: 'https://mintscan.io/stargaze/account/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.MigalooMainnet,
@@ -254,14 +307,14 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: true,
     accentColor: '#3ccd64',
     factoryContractAddress:
-      'migaloo1pz5adchq4wqdhajnpdc5j4k86xr6z9lv5wdpv5eqpvjz0fsk8h6s6f2vm5',
+      'migaloo1nc87nqkyp4q0zf029ddaluv200vprmsljpke502r5gjj5pcpkt5s9tarl0',
     explorerUrlTemplates: {
       tx: 'https://inbloc.org/migaloo/transactions/REPLACE',
       gov: 'https://inbloc.org/migaloo/governance',
       govProp: 'https://inbloc.org/migaloo/proposal/REPLACE',
       wallet: 'https://inbloc.org/migaloo/account/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.TerraMainnet,
@@ -270,15 +323,15 @@ const BASE_SUPPORTED_CHAINS: Omit<
     overrideChainImageUrl: '/chains/terra.png',
     accentColor: '#113da5',
     factoryContractAddress:
-      'terra1kyj0sgjugpmau8ee37vde3rssxe9ztwh8g98pmmxcr7w2prh9hfqfwhsz7',
+      'terra14nx6mwk3jn595tya24tdjqze2xmrdf0dnh86wyevjyl2ujz6n8qq55wuh4',
     explorerUrlTemplates: {
       tx: 'https://finder.terra.money/mainnet/tx/REPLACE',
-      gov: 'https://ping.pub/terra/gov',
-      govProp: 'https://ping.pub/terra/gov/REPLACE',
+      gov: 'https://mintscan.io/terra/proposals',
+      govProp: 'https://mintscan.io/terra/proposals/REPLACE',
       wallet: 'https://finder.terra.money/mainnet/address/REPLACE',
     },
     tokenDaoType: 'both',
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     // Ensure this chain stays below Terra so that the logic in
@@ -298,7 +351,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         'https://finder.terra-classic.hexxagon.io/mainnet/address/REPLACE',
     },
     tokenDaoType: TokenType.Cw20,
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.OraichainMainnet,
@@ -307,7 +360,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
     overrideChainImageUrl: '/chains/oraichain.svg',
     accentColor: '#ffffff',
     factoryContractAddress:
-      'orai1d53g4e9gpnj5asr8kf9pfn7zpg0yr0cksllyaqc75m4rmxwu6sqqnxpjnm',
+      'orai1my5rxk0x2wczawqta97yhdgz0zxh3jg5vxv7wjnnyvp259acahjqkl32m6',
     explorerUrlTemplates: {
       tx: 'https://scan.orai.io/txs/REPLACE',
       gov: 'https://scan.orai.io/proposals',
@@ -315,7 +368,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
       wallet: 'https://scan.orai.io/account/REPLACE',
     },
     tokenDaoType: TokenType.Cw20,
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.KujiraMainnet,
@@ -328,10 +381,12 @@ const BASE_SUPPORTED_CHAINS: Omit<
     createViaGovernance: true,
     explorerUrlTemplates: {
       tx: 'https://finder.kujira.network/kaiyo-1/tx/REPLACE',
-      gov: 'https://blue.kujira.network/govern',
-      govProp: 'https://blue.kujira.network/govern/REPLACE',
+      gov: 'https://kujira.network/govern',
+      govProp: 'https://kujira.network/govern/REPLACE',
       wallet: 'https://finder.kujira.network/kaiyo-1/address/REPLACE',
     },
+    // TODO(260): Update to V260 once gov prop is published and passes:
+    // https://daodao.zone/dao/kujira/proposals/create?pi=QmYs6F4Zu5rZczqDRzxvyJtCCntMoaWL1yQjtw9p4J3XzZ
     latestVersion: ContractVersion.V250,
   },
   {
@@ -340,16 +395,19 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: true,
     accentColor: '#c53381',
     factoryContractAddress:
-      'bitsong1vdqwdy564mz4cl23nmlgma3c336tsla9vzpw2qrdj5f8w5qgp7pq39h464',
+      'bitsong1tqzvu2hpj83d5s0h3346cx90mscglu4u7yhfm48vpk7kc3x6e7msl98sl8',
     tokenCreationFactoryAddress:
       'bitsong16jp4jd68hzpc9a88mqcg3mnktjhgrlyv96shx4zvt522zzq99afsdldd04',
+    subDaos: [
+      'bitsong1qfwdjcmxgjr9jwa2grhf7pce87afx57j2664tvhh29j7r68a9tgqj9kuf3',
+    ],
     explorerUrlTemplates: {
-      tx: 'https://ping.pub/bitsong/tx/REPLACE',
-      gov: 'https://ping.pub/bitsong/gov',
-      govProp: 'https://ping.pub/bitsong/gov/REPLACE',
-      wallet: 'https://ping.pub/bitsong/account/REPLACE',
+      tx: 'https://mintscan.io/bitsong/txs/REPLACE',
+      gov: 'https://mintscan.io/bitsong/proposals',
+      govProp: 'https://mintscan.io/bitsong/proposals/REPLACE',
+      wallet: 'https://mintscan.io/bitsong/account/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.OmniflixHubMainnet,
@@ -357,35 +415,14 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: true,
     accentColor: '#d71d6a',
     factoryContractAddress:
-      'omniflix1zrhumzxl9hexjwh95te3as6fcjv46cty8z8ephtg70f5am3pw46sk93q7l',
+      'omniflix1yxxxv35e0jwaakzv64l97z43msuw8vqn8cay8amvd0zckhra6h2qmfrzmx',
     explorerUrlTemplates: {
-      tx: 'https://ping.pub/omniflixhub/tx/REPLACE',
-      gov: 'https://ping.pub/omniflixhub/gov',
-      govProp: 'https://ping.pub/omniflixhub/gov/REPLACE',
-      wallet: 'https://ping.pub/omniflixhub/account/REPLACE',
+      tx: 'https://mintscan.io/omniflix/txs/REPLACE',
+      gov: 'https://mintscan.io/omniflix/proposals',
+      govProp: 'https://mintscan.io/omniflix/proposals/REPLACE',
+      wallet: 'https://mintscan.io/omniflix/account/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
-  },
-  {
-    chainId: ChainId.CosmosHubThetaTestnet,
-    name: 'cosmos',
-    mainnet: false,
-    accentColor: '#5064fb',
-    factoryContractAddress:
-      'cosmos124x902fdvdcaawkr7njtjtccx94jq5vq4vtw6mhshxlrjqqxezqq8upgs2',
-    explorerUrlTemplates: {
-      tx: 'https://explorer.polypore.xyz/theta-testnet-001/tx/REPLACE',
-      gov: 'https://explorer.polypore.xyz/theta-testnet-001/gov',
-      govProp: 'https://explorer.polypore.xyz/theta-testnet-001/gov/REPLACE',
-      wallet: 'https://explorer.polypore.xyz/theta-testnet-001/account/REPLACE',
-    },
-    // Disable token creation.
-    noTokenFactory: true,
-    daoCreatorDisabled: {
-      // No NFTs on the Hub.
-      [NftBasedCreatorId]: 'unsupported',
-    },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.CosmosHubProviderTestnet,
@@ -393,7 +430,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: false,
     accentColor: '#5064fb',
     factoryContractAddress:
-      'cosmos1m66772ud8vcx4rhng94qtfusqcslwuszaehmwf23uw27q7ts4yssxedn2z',
+      'cosmos1pt9cc828wcnrwr9x5u3mtdwvcce7ykrxd7gmneyqgexrpa74m3esp0jn9v',
     explorerUrlTemplates: {
       tx: 'https://explorer.polypore.xyz/provider/tx/REPLACE',
       gov: 'https://explorer.polypore.xyz/provider/gov',
@@ -406,7 +443,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
       // No NFTs on the Hub.
       [NftBasedCreatorId]: 'unsupported',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.JunoTestnet,
@@ -414,14 +451,14 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: false,
     accentColor: '#f74a49',
     factoryContractAddress:
-      'juno1f5shaaqhe87mfsx8kvhur8a3ml9kgn466ez59aa6kut7wr5yas6qwhsu9r',
+      'juno1fec7mpkacctlj8w98af6d7grxu0jjy2zadvv9mekzhcdmleaa28s4mwu64',
     explorerUrlTemplates: {
       tx: 'https://testnet.ping.pub/juno/tx/REPLACE',
       gov: 'https://testnet.ping.pub/juno/gov',
       govProp: 'https://testnet.ping.pub/juno/gov/REPLACE',
       wallet: 'https://testnet.ping.pub/juno/account/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.OsmosisTestnet,
@@ -429,14 +466,14 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: false,
     accentColor: '#5604e8',
     factoryContractAddress:
-      'osmo1s8q5jkhpjg7qn353pxhjsuh9jytrufj7wyg5ekfx5y0qjnd0rzdqapyuu7',
+      'osmo1qr2a9hk5423z7rfwp2p5jp27nzvaf3zcsuhta6hqtx7gjv4lzugslqts83',
     explorerUrlTemplates: {
       tx: 'https://testnet.ping.pub/osmosis/tx/REPLACE',
       gov: 'https://testnet.ping.pub/osmosis/gov',
       govProp: 'https://testnet.ping.pub/osmosis/gov/REPLACE',
       wallet: 'https://testnet.ping.pub/osmosis/account/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.StargazeTestnet,
@@ -444,14 +481,14 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: false,
     accentColor: '#8ac3cc',
     factoryContractAddress:
-      'stars1u0fdpc8c2raq8g8pwwz4x7203l47ht0u362f6vq699yghuedgmaq9sfrav',
+      'stars1wahchy39f5zqzdk948z49pp84c0vk7ta434tfzfp0c58e3an7qcqr20270',
     explorerUrlTemplates: {
       tx: 'https://testnet.ping.pub/stargaze/tx/REPLACE',
       gov: 'https://testnet.ping.pub/stargaze/gov',
       govProp: 'https://testnet.ping.pub/stargaze/gov/REPLACE',
       wallet: 'https://testnet.ping.pub/stargaze/account/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.MigalooTestnet,
@@ -459,14 +496,14 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: false,
     accentColor: '#3ccd64',
     factoryContractAddress:
-      'migaloo1fwv8685jxcy5llcxppmwuyauez64j49jw7e3pvtvwtsh3gqmt82ssqeekn',
+      'migaloo14uk6sst2jwdscw8qf0t4tm8330u9qrw7hr39wrvjvynp0cq9rsvsluga70',
     explorerUrlTemplates: {
       tx: 'https://testnet.ping.pub/migaloo/tx/REPLACE',
       gov: 'https://testnet.ping.pub/migaloo/gov',
       govProp: 'https://testnet.ping.pub/migaloo/gov/REPLACE',
       wallet: 'https://testnet.ping.pub/migaloo/account/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.KujiraTestnet,
@@ -474,16 +511,16 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: false,
     accentColor: '#e53935',
     factoryContractAddress:
-      'kujira10nywn24vstw6wdc6dsmlgpzjqdkfnx0ful5unj5syz5wk4ams4xstch5zp',
+      'kujira13aa6np9kh2ejue5mgqd88ktmkmswcs4vyn6djtf3d0h8n0dt2uysfxx9a7',
     explorerUrlTemplates: {
       tx: 'https://finder.kujira.network/harpoon-4/tx/REPLACE',
-      // TODO(kujira-testnet): fix once can link directly to testnet
-      // gov: 'https://blue.kujira.network/govern',
-      // TODO(kujira-testnet): fix once can link directly to testnet
-      // govProp: 'https://blue.kujira.network/govern/REPLACE',
+      // cannot link directly to testnet
+      // gov: 'https://kujira.network/govern',
+      // cannot link directly to testnet
+      // govProp: 'https://kujira.network/govern/REPLACE',
       wallet: 'https://finder.kujira.network/harpoon-4/address/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.NeutronTestnet,
@@ -491,13 +528,13 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: false,
     accentColor: '#000000',
     factoryContractAddress:
-      'neutron1ujfsy8m04mxxam3az6hfxfp2rlky0vk32pknjcwv0weu2fcc2n9sxup3sd',
+      'neutron1amz5kq2fla85wkn93vls5mhfql8nzqpc9chnu6fzutx2lh4c6ecs38knzv',
     govContractAddress: NEUTRON_GOVERNANCE_DAO,
     explorerUrlTemplates: {
       tx: 'https://neutron.celat.one/pion-1/txs/REPLACE',
       wallet: 'https://neutron.celat.one/pion-1/accounts/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.BitsongTestnet,
@@ -505,10 +542,10 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: false,
     accentColor: '#c53381',
     factoryContractAddress:
-      'bitsong13rz2vj79hw3rnynd78qfa8tl0x6qc379fcdgr0j30mplaz3g077s8r425g',
+      'bitsong1zftu69lqmhgwyuqlyawssrm62h58hqyl0gvv4n9aj8pvkr6qqd8s2wl5ve',
     tokenCreationFactoryAddress:
       'bitsong13ackt4dv4ngt4jpngnvyyecjhu33w6gge3mad3n9vc0qkqcrk6cqzfm9vx',
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.OmniflixHubTestnet,
@@ -516,14 +553,14 @@ const BASE_SUPPORTED_CHAINS: Omit<
     mainnet: false,
     accentColor: '#d71d6a',
     factoryContractAddress:
-      'omniflix1g0du5fgvjqgkzpd6pk63utsay29vjjnyfshp7dwn6r20xexyq23skygsss',
+      'omniflix1cqjm2yqkts8tetgkvd222cuk6tqlgsd6vssvduq0d3l6glc5xcfswk9ylt',
     explorerUrlTemplates: {
       tx: 'https://testnet.ping.pub/omniflix/tx/REPLACE',
       gov: 'https://testnet.ping.pub/omniflix/gov',
       govProp: 'https://testnet.ping.pub/omniflix/gov/REPLACE',
       wallet: 'https://testnet.ping.pub/omniflix/account/REPLACE',
     },
-    latestVersion: ContractVersion.V250,
+    latestVersion: ContractVersion.V260,
   },
   {
     chainId: ChainId.SecretTestnet,
@@ -626,10 +663,6 @@ export const CHAIN_ENDPOINTS: Partial<
     rpc: 'https://cosmos-rpc.polkachu.com',
     rest: 'https://cosmos-api.polkachu.com',
   },
-  [ChainId.CosmosHubThetaTestnet]: {
-    rpc: 'https://rpc.sentry-01.theta-testnet.polypore.xyz',
-    rest: 'https://rest.sentry-01.theta-testnet.polypore.xyz',
-  },
   [ChainId.CosmosHubProviderTestnet]: {
     rpc: 'https://rpc.provider-sentry-01.rs-testnet.polypore.xyz',
     rest: 'https://rest.provider-sentry-01.rs-testnet.polypore.xyz',
@@ -643,8 +676,8 @@ export const CHAIN_ENDPOINTS: Partial<
     rest: 'https://terra-classic-lcd.publicnode.com',
   },
   [ChainId.MigalooMainnet]: {
-    rpc: 'https://migaloo-rpc.polkachu.com',
-    rest: 'https://migaloo-api.polkachu.com',
+    rpc: 'https://migaloo-rpc.kleomedes.network',
+    rest: 'https://migaloo-api.kleomedes.network',
   },
   [ChainId.MigalooTestnet]: {
     rpc: 'https://migaloo-testnet-rpc.polkachu.com',
@@ -720,42 +753,56 @@ export const CONFIGURED_CHAINS: BaseChainConfig[] = [
   ...chains
     .flatMap((chain): BaseChainConfig | [] => {
       // Skip if chain already exists in configured chains.
-      if (SUPPORTED_CHAINS.some((c) => c.chainId === chain.chain_id)) {
+      if (SUPPORTED_CHAINS.some((c) => c.chainId === chain.chainId)) {
         return []
       }
 
       // Skip if no RPC exists for chain. Can't use `getRpcForChainId` helper
       // because that file depends on this one. Yay circular dependencies.
-      if (!(chain.chain_id in CHAIN_ENDPOINTS) && !chain.apis?.rpc?.length) {
+      if (
+        !(chain.chainId in CHAIN_ENDPOINTS) &&
+        !chain.chainRegistry?.apis?.rpc?.length
+      ) {
         return []
       }
 
       let explorerUrlTemplates: BaseChainConfig['explorerUrlTemplates'] =
         undefined
-      if (chain.explorers) {
-        const pingPubOrMintscanExplorer =
-          chain.explorers?.find(
-            (explorer) =>
-              explorer.kind?.toLowerCase() === 'ping.pub' &&
-              // Some explorers have kind = 'ping.pub' but the wrong URL.
-              explorer.url?.includes('ping.pub')
-          ) ||
-          chain.explorers?.find(
-            (explorer) =>
-              explorer.kind?.toLowerCase() === 'mintscan' &&
-              explorer.url?.includes('mintscan.io')
-          )
-        if (pingPubOrMintscanExplorer) {
+      const explorers = chain.chainRegistry?.explorers
+      if (explorers) {
+        const mintscanExplorer = explorers.find(
+          (explorer) =>
+            explorer.kind?.toLowerCase() === 'mintscan' &&
+            explorer.url?.includes('mintscan.io')
+        )
+        if (mintscanExplorer) {
           explorerUrlTemplates = {
-            tx: pingPubOrMintscanExplorer.url + '/tx/REPLACE',
-            gov: pingPubOrMintscanExplorer.url + '/gov',
-            govProp: pingPubOrMintscanExplorer.url + '/gov/REPLACE',
-            wallet: pingPubOrMintscanExplorer.url + '/account/REPLACE',
+            tx: mintscanExplorer.url + '/txs/REPLACE',
+            gov: mintscanExplorer.url + '/proposals',
+            govProp: mintscanExplorer.url + '/proposals/REPLACE',
+            wallet: mintscanExplorer.url + '/account/REPLACE',
           }
         }
 
         if (!explorerUrlTemplates) {
-          const atomScanExplorer = chain.explorers?.find(
+          const pingPubExplorer = explorers.find(
+            (explorer) =>
+              explorer.kind?.toLowerCase() === 'ping.pub' &&
+              // Some explorers have kind = 'ping.pub' but the wrong URL.
+              explorer.url?.includes('ping.pub')
+          )
+          if (pingPubExplorer) {
+            explorerUrlTemplates = {
+              tx: pingPubExplorer.url + '/tx/REPLACE',
+              gov: pingPubExplorer.url + '/gov',
+              govProp: pingPubExplorer.url + '/gov/REPLACE',
+              wallet: pingPubExplorer.url + '/account/REPLACE',
+            }
+          }
+        }
+
+        if (!explorerUrlTemplates) {
+          const atomScanExplorer = explorers.find(
             (explorer) =>
               explorer.kind?.toLowerCase() === 'atomscan' &&
               explorer.url?.includes('atomscan.com')
@@ -771,7 +818,7 @@ export const CONFIGURED_CHAINS: BaseChainConfig[] = [
         }
 
         if (!explorerUrlTemplates) {
-          const bigDipperExplorer = chain.explorers?.find(
+          const bigDipperExplorer = explorers.find(
             (explorer) =>
               explorer.kind?.toLowerCase() === 'bigdipper' &&
               explorer.url?.includes('bigdipper.live')
@@ -787,7 +834,7 @@ export const CONFIGURED_CHAINS: BaseChainConfig[] = [
         }
 
         if (!explorerUrlTemplates) {
-          const explorersGuruExplorer = chain.explorers?.find(
+          const explorersGuruExplorer = explorers.find(
             (explorer) =>
               explorer.kind?.toLowerCase() === 'explorers.guru' &&
               explorer.url?.includes('explorers.guru')
@@ -803,7 +850,7 @@ export const CONFIGURED_CHAINS: BaseChainConfig[] = [
         }
 
         if (!explorerUrlTemplates) {
-          const stakeflowExplorer = chain.explorers?.find(
+          const stakeflowExplorer = explorers.find(
             (explorer) =>
               explorer.kind?.toLowerCase() === 'stakeflow' &&
               explorer.url?.includes('stakeflow.io')
@@ -820,11 +867,11 @@ export const CONFIGURED_CHAINS: BaseChainConfig[] = [
       }
 
       return {
-        chainId: chain.chain_id,
-        name: chain.chain_name,
-        mainnet: chain.network_type === 'mainnet',
+        chainId: chain.chainId,
+        name: chain.chainName,
+        mainnet: chain.chainRegistry?.network_type === 'mainnet',
         accentColor: '',
-        noGov: NO_GOV_CHAIN_IDS.includes(chain.chain_id),
+        noGov: NO_GOV_CHAIN_IDS.includes(chain.chainId),
         explorerUrlTemplates,
       }
     })

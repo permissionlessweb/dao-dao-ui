@@ -52,6 +52,13 @@ export type NativeCoinSelectorProps = Pick<
    * Defaults to false.
    */
   noCustomToken?: boolean
+  /**
+   * Override insufficient funds warning.
+   */
+  overrideInsufficientFundsWarning?: (
+    amount: string,
+    tokenSymbol: string
+  ) => string
 }
 
 type NativeCoinForm = {
@@ -76,6 +83,7 @@ export const NativeCoinSelector = ({
   min,
   noBalanceWarning = false,
   noCustomToken = false,
+  overrideInsufficientFundsWarning,
 }: NativeCoinSelectorProps) => {
   const { t } = useTranslation()
 
@@ -106,6 +114,14 @@ export const NativeCoinSelector = ({
     ? watchDecimals
     : selectedToken?.token.decimals || 0
 
+  const insufficientFundsWarning =
+    overrideInsufficientFundsWarning ||
+    ((amount, tokenSymbol) =>
+      t('error.insufficientFundsWarning', {
+        amount,
+        tokenSymbol,
+      }))
+
   // A warning if the denom was not found in the treasury or the amount is too
   // high. We don't want to make this an error because often people want to
   // spend funds that a previous action makes available, so just show a warning.
@@ -114,19 +130,19 @@ export const NativeCoinSelector = ({
     !isCreating || tokens.loading || !watchDenom
       ? undefined
       : customToken
-      ? t('error.customTokenNoDecimals')
-      : noBalanceWarning
-      ? undefined
-      : !selectedToken
-      ? t('error.unknownDenom', { denom: watchDenom })
-      : balance.toHumanReadable(decimals).lt(watchAmount)
-      ? t('error.insufficientFundsWarning', {
-          amount: balance.toInternationalizedHumanReadableString({
-            decimals,
-          }),
-          tokenSymbol: symbol,
-        })
-      : undefined
+        ? t('error.customTokenNoDecimals')
+        : noBalanceWarning
+          ? undefined
+          : !selectedToken
+            ? t('error.unknownDenom', { denom: watchDenom })
+            : balance.toHumanReadable(decimals).lt(watchAmount)
+              ? insufficientFundsWarning(
+                  balance.toInternationalizedHumanReadableString({
+                    decimals,
+                  }),
+                  symbol
+                )
+              : undefined
 
   const minUnit = HugeDecimal.one.toHumanReadableNumber(decimals)
   const minAmount = min ?? minUnit

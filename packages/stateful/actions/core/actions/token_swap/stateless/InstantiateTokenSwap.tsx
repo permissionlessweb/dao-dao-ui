@@ -35,7 +35,7 @@ export const InstantiateTokenSwap: ActionComponent<
 }) => {
   const { t } = useTranslation()
   const {
-    chain: { bech32_prefix: bech32Prefix },
+    chain: { bech32Prefix },
   } = useActionOptions()
   const { register, watch, setValue, getValues, trigger } = useFormContext()
 
@@ -126,13 +126,13 @@ export const InstantiateTokenSwap: ActionComponent<
             !counterpartyAddressValid
               ? { loading: false, data: [] }
               : counterpartyTokenBalances.loading
-              ? { loading: true }
-              : {
-                  loading: false,
-                  data: counterpartyTokenBalances.data.map(
-                    ({ token }) => token
-                  ),
-                }
+                ? { loading: true }
+                : {
+                    loading: false,
+                    data: counterpartyTokenBalances.data.map(
+                      ({ token }) => token
+                    ),
+                  }
           }
         />
 

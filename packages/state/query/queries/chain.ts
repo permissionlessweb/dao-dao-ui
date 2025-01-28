@@ -1,4 +1,5 @@
-import { fromBase64 } from '@cosmjs/encoding'
+import { Asset } from '@chain-registry/types'
+import { fromBase64, toHex } from '@cosmjs/encoding'
 import { Coin } from '@cosmjs/stargate'
 import { QueryClient, queryOptions, skipToken } from '@tanstack/react-query'
 import uniq from 'lodash.uniq'
@@ -33,6 +34,7 @@ import {
   decodeGovProposal,
   feemarketProtoRpcClientRouter,
   getAllRpcResponse,
+  getChainForChainId,
   getCosmWasmClientForChainId,
   getNativeTokenForChainId,
   ibcProtoRpcClientRouter,
@@ -85,7 +87,7 @@ const fetchChainModuleAddress = async ({
     throw new Error(`Failed to find ${name} module address.`)
   }
 
-  return 'baseAccount' in account ? account.baseAccount?.address ?? '' : ''
+  return 'baseAccount' in account ? (account.baseAccount?.address ?? '') : ''
 }
 
 /**
@@ -204,18 +206,17 @@ export const fetchBlockTimestamp = async ({
 /**
  * Fetch the native token balance for a given address.
  */
-export const fetchNativeBalance = async ({
+export const fetchBalance = async ({
   chainId,
   address,
+  denom,
 }: {
   chainId: string
   address: string
+  denom: string
 }): Promise<Coin> => {
   const client = await stargateClientRouter.connect(chainId)
-  return await client.getBalance(
-    address,
-    getNativeTokenForChainId(chainId).denomOrAddress
-  )
+  return await client.getBalance(address, denom)
 }
 
 /**
@@ -1259,6 +1260,42 @@ export const fetchGovProposalVotes = async (
   }
 }
 
+/**
+ * Fetch chain registry assets for chain.
+ */
+export const fetchChainRegistryAssets = async ({
+  chainId,
+}: {
+  chainId: string
+}): Promise<Asset[]> =>
+  (
+    await (
+      await fetch(
+        `https://raw.githubusercontent.com/cosmos/chain-registry/master/${
+          getChainForChainId(chainId).chainName
+        }/assetlist.json`
+      )
+    ).json()
+  ).assets
+
+/**
+ * Fetch the hex public key for a wallet address.
+ */
+export const fetchWalletHexPublicKey = async ({
+  chainId,
+  address,
+}: {
+  chainId: string
+  address: string
+}): Promise<string> => {
+  const client = await stargateClientRouter.connect(chainId)
+  const account = await client.getAccount(address)
+  if (!account?.pubkey?.value || typeof account.pubkey.value !== 'string') {
+    throw new Error('No pubkey found for address')
+  }
+  return toHex(fromBase64(account.pubkey.value))
+}
+
 export const chainQueries = {
   /**
    * Fetch the module address associated with the specified name.
@@ -1298,12 +1335,20 @@ export const chainQueries = {
       queryFn: () => fetchBlockTimestamp(options),
     }),
   /**
+   * Fetch the balance for a given address and denom.
+   */
+  balance: (options: Parameters<typeof fetchBalance>[0]) =>
+    queryOptions({
+      queryKey: ['chain', 'balance', options],
+      queryFn: () => fetchBalance(options),
+    }),
+  /**
    * Fetch the native token balance for a given address.
    */
-  nativeBalance: (options?: Parameters<typeof fetchNativeBalance>[0]) =>
-    queryOptions({
-      queryKey: ['chain', 'nativeBalance', options],
-      queryFn: options ? () => fetchNativeBalance(options) : skipToken,
+  nativeBalance: (options: Omit<Parameters<typeof fetchBalance>[0], 'denom'>) =>
+    chainQueries.balance({
+      ...options,
+      denom: getNativeTokenForChainId(options.chainId).denomOrAddress,
     }),
   /**
    * Fetch the sum of native tokens staked across all validators.
@@ -1486,5 +1531,25 @@ export const chainQueries = {
     queryOptions({
       queryKey: ['chain', 'govProposalVotes', options],
       queryFn: () => fetchGovProposalVotes(queryClient, options),
+    }),
+  /**
+   * Fetch chain registry assets for chain.
+   */
+  chainRegistryAssets: (
+    options: Parameters<typeof fetchChainRegistryAssets>[0]
+  ) =>
+    queryOptions({
+      queryKey: ['chain', 'chainRegistryAssets', options],
+      queryFn: () => fetchChainRegistryAssets(options),
+    }),
+  /**
+   * Fetch the hex public key for a wallet address.
+   */
+  walletHexPublicKey: (
+    options: Parameters<typeof fetchWalletHexPublicKey>[0]
+  ) =>
+    queryOptions({
+      queryKey: ['chain', 'walletHexPublicKey', options],
+      queryFn: () => fetchWalletHexPublicKey(options),
     }),
 }

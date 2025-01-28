@@ -468,8 +468,8 @@ export const daoVotingTokenStakedQueries = {
             formula: 'daoVotingTokenStaked/votingPowerAtHeight',
             args: {
               address: args.address,
+              height: args.height,
             },
-            ...(args.height && { block: { height: args.height } }),
           })
         )
       } catch (error) {
@@ -509,7 +509,9 @@ export const daoVotingTokenStakedQueries = {
             chainId,
             contractAddress,
             formula: 'daoVotingTokenStaked/totalPowerAtHeight',
-            ...(args.height && { block: { height: args.height } }),
+            args: {
+              height: args.height,
+            },
           })
         )
       } catch (error) {

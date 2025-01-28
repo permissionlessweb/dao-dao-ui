@@ -63,7 +63,7 @@ export const CreateRewardDistributionComponent: ActionComponent<
   const { t } = useTranslation()
   const {
     address,
-    chain: { bech32_prefix: bech32Prefix },
+    chain: { bech32Prefix },
   } = useActionOptions()
   const { register, setValue, watch, getValues } =
     useFormContext<CreateRewardDistributionData>()
@@ -95,16 +95,16 @@ export const CreateRewardDistributionComponent: ActionComponent<
     token.updating
       ? undefined
       : !selectedToken
-      ? t('error.unknownDenom', { denom: denomOrAddress })
-      : initialFunds &&
-        selectedBalance.toHumanReadable(decimals).lt(initialFunds)
-      ? t('error.insufficientFundsWarning', {
-          amount: selectedBalance.toInternationalizedHumanReadableString({
-            decimals,
-          }),
-          tokenSymbol: selectedToken.token.symbol,
-        })
-      : undefined
+        ? t('error.unknownDenom', { denom: denomOrAddress })
+        : initialFunds &&
+            selectedBalance.toHumanReadable(decimals).lt(initialFunds)
+          ? t('error.insufficientFundsWarning', {
+              amount: selectedBalance.toInternationalizedHumanReadableString({
+                decimals,
+              }),
+              tokenSymbol: selectedToken.token.symbol,
+            })
+          : undefined
 
   return (
     <>
@@ -268,6 +268,7 @@ export const CreateRewardDistributionComponent: ActionComponent<
         <NumericInput
           containerClassName={!isCreating ? 'self-start' : undefined}
           disabled={!isCreating}
+          error={errors?.initialFunds}
           fieldName={(fieldNamePrefix + 'initialFunds') as 'initialFunds'}
           getValues={getValues}
           min={0}
@@ -332,24 +333,27 @@ export const CreateRewardDistributionComponent: ActionComponent<
         />
       )}
 
-      <div className="flex flex-col gap-2 items-start">
-        <InputLabel name={t('form.openFunding')} primary />
-        <p className="body-text text-text-secondary max-w-prose -mt-1">
-          {t('info.openFundingDescription')}
-        </p>
+      {/* CW20 distributions must have open funding enabled, so disallow changing this if it's not native. */}
+      {selectedToken?.token.type === TokenType.Native && (
+        <div className="flex flex-col gap-2 items-start">
+          <InputLabel name={t('form.openFunding')} primary />
+          <p className="body-text text-text-secondary max-w-prose -mt-1">
+            {t('info.openFundingDescription')}
+          </p>
 
-        <SwitchCard
-          enabled={openFunding}
-          onClick={() =>
-            setValue(
-              (fieldNamePrefix + 'openFunding') as 'openFunding',
-              !openFunding
-            )
-          }
-          readOnly={!isCreating}
-          sizing="md"
-        />
-      </div>
+          <SwitchCard
+            enabled={openFunding}
+            onClick={() =>
+              setValue(
+                (fieldNamePrefix + 'openFunding') as 'openFunding',
+                !openFunding
+              )
+            }
+            readOnly={!isCreating}
+            sizing="md"
+          />
+        </div>
+      )}
     </>
   )
 }

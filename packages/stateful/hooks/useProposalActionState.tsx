@@ -1,27 +1,38 @@
+import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
+import { toUtf8 } from '@cosmjs/encoding'
+import { OfflineSigner } from '@cosmjs/proto-signing'
 import { CancelOutlined, Key, Send } from '@mui/icons-material'
+import { useQueryClient } from '@tanstack/react-query'
+import { usePlausible } from 'next-plausible'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { useRecoilValue } from 'recoil'
 
-import { DaoProposalSingleCommonSelectors } from '@dao-dao/state'
+import {
+  DaoProposalSingleCommonSelectors,
+  makeGetSignerOptions,
+} from '@dao-dao/state'
 import {
   ProposalCrossChainRelayStatus,
   ProposalStatusAndInfoProps,
   TextInput,
-  useConfiguredChainContext,
   useDao,
 } from '@dao-dao/stateless'
 import {
   ChainId,
   LoadingData,
+  PlausibleEvents,
   PreProposeModuleType,
   ProposalStatusEnum,
   ProposalStatusKey,
 } from '@dao-dao/types'
+import { ExtensionData } from '@dao-dao/types/protobuf/codegen/gaia/metaprotocols/extensions'
 import {
   DAO_CORE_ALLOW_MEMO_ON_EXECUTE_ITEM_KEY,
   NEUTRON_GOVERNANCE_DAO,
+  extractProposalDescriptionAndMetadata,
+  getRpcForChainId,
   processError,
 } from '@dao-dao/utils'
 
@@ -32,6 +43,10 @@ import { UseProposalRelayStateReturn } from './useProposalRelayState'
 import { useWallet } from './useWallet'
 
 export type UseProposalActionStateOptions = {
+  /**
+   * Proposal description, for decoding additional execution metadata.
+   */
+  description: string
   relayState: UseProposalRelayStateReturn
   statusKey: ProposalStatusKey
   loadingExecutionTxHash: LoadingData<string | undefined>
@@ -50,6 +65,7 @@ export type UseProposalActionStateReturn = Pick<
  * components.
  */
 export const useProposalActionState = ({
+  description,
   relayState,
   statusKey,
   loadingExecutionTxHash,
@@ -57,13 +73,8 @@ export const useProposalActionState = ({
   onCloseSuccess,
 }: UseProposalActionStateOptions): UseProposalActionStateReturn => {
   const { t } = useTranslation()
-  const {
-    chain: { chain_id: chainId },
-  } = useConfiguredChainContext()
-  const {
-    coreAddress,
-    info: { items },
-  } = useDao()
+  const queryClient = useQueryClient()
+  const dao = useDao()
   const {
     options: { proposalNumber },
     proposalModule,
@@ -72,12 +83,15 @@ export const useProposalActionState = ({
     isWalletConnected,
     address: walletAddress = '',
     getSigningClient,
+    getOfflineSignerDirect,
+    getOfflineSigner,
   } = useWallet()
   const { isMember = false } = useMembership()
+  const plausible = usePlausible<PlausibleEvents>()
 
   const config = useRecoilValue(
     DaoProposalSingleCommonSelectors.configSelector({
-      chainId,
+      chainId: proposalModule.chainId,
       contractAddress: proposalModule.address,
     })
   )
@@ -89,9 +103,13 @@ export const useProposalActionState = ({
     setActionLoading(false)
   }, [statusKey])
 
+  const { metadata } = extractProposalDescriptionAndMetadata(description)
+
   // If enabled, the user will be shown an input field to enter a memo for the
-  // execution transaction.
-  const allowMemoOnExecute = !!items[DAO_CORE_ALLOW_MEMO_ON_EXECUTE_ITEM_KEY]
+  // execution transaction, unless a memo is already set in the metadata.
+  const allowMemoOnExecute = metadata?.memo
+    ? false
+    : !!dao.info.items[DAO_CORE_ALLOW_MEMO_ON_EXECUTE_ITEM_KEY]
   const [memo, setMemo] = useState('')
 
   const onExecute = useCallback(async () => {
@@ -101,11 +119,72 @@ export const useProposalActionState = ({
 
     setActionLoading(true)
     try {
+      const { metadata } = extractProposalDescriptionAndMetadata(description)
+
+      // if gaia metaprotocols extension data exists, must use direct signer.
+      // amino signing does not support it i guess...
+      let signingClientGetter = getSigningClient
+      if (metadata?.gaiaMetaprotocolsExtensionData?.length) {
+        try {
+          let signer: OfflineSigner
+          try {
+            signer = getOfflineSignerDirect()
+          } catch {
+            // fallback to signer if direct signer function is unavailable. this
+            // may or may not be a direct signer, so verify
+            signer = getOfflineSigner()
+            if (!('signDirect' in signer)) {
+              throw new Error('Direct signer not available.')
+            }
+          }
+
+          signingClientGetter = async () =>
+            await SigningCosmWasmClient.connectWithSigner(
+              getRpcForChainId(proposalModule.chainId),
+              signer,
+              makeGetSignerOptions(queryClient)(
+                proposalModule.dao.chain.chainName
+              )
+            )
+        } catch (err) {
+          console.error(
+            'Failed to retrieve direct signer for Gaia Metaprotocols Extension proposal execution.',
+            err
+          )
+
+          throw new Error(
+            t('error.browserExtensionWalletRequiredForProposalExecution')
+          )
+        }
+      }
+
       await proposalModule.execute({
         proposalId: proposalNumber,
-        getSigningClient,
+        getSigningClient: signingClientGetter,
         sender: walletAddress,
-        memo: allowMemoOnExecute && memo ? memo : undefined,
+        memo: metadata?.memo || (allowMemoOnExecute && memo ? memo : undefined),
+        nonCriticalExtensionOptions:
+          metadata?.gaiaMetaprotocolsExtensionData?.map(
+            ({ protocolId, protocolVersion, data }) => ({
+              typeUrl: ExtensionData.typeUrl,
+              value: ExtensionData.fromPartial({
+                protocolId,
+                protocolVersion,
+                data: toUtf8(data),
+              }),
+            })
+          ),
+      })
+
+      plausible('daoProposalExecute', {
+        props: {
+          chainId: dao.chainId,
+          dao: dao.coreAddress,
+          walletAddress,
+          proposalModule: proposalModule.address,
+          proposalModuleType: proposalModule.contractName,
+          proposalNumber: proposalNumber,
+        },
       })
 
       await onExecuteSuccess()
@@ -120,13 +199,20 @@ export const useProposalActionState = ({
     // Loading will stop on success when status refreshes.
   }, [
     isWalletConnected,
+    description,
+    getSigningClient,
     proposalModule,
     proposalNumber,
-    getSigningClient,
     walletAddress,
     allowMemoOnExecute,
     memo,
     onExecuteSuccess,
+    getOfflineSignerDirect,
+    getOfflineSigner,
+    queryClient,
+    t,
+    plausible,
+    dao,
   ])
 
   const onClose = useCallback(async () => {
@@ -141,6 +227,17 @@ export const useProposalActionState = ({
         proposalId: proposalNumber,
         getSigningClient,
         sender: walletAddress,
+      })
+
+      plausible('daoProposalClose', {
+        props: {
+          chainId: dao.chainId,
+          dao: dao.coreAddress,
+          walletAddress,
+          proposalModule: proposalModule.address,
+          proposalModuleType: proposalModule.contractName,
+          proposalNumber: proposalNumber,
+        },
       })
 
       await onCloseSuccess()
@@ -160,6 +257,8 @@ export const useProposalActionState = ({
     getSigningClient,
     walletAddress,
     onCloseSuccess,
+    plausible,
+    dao,
   ])
 
   const showRelayStatus =
@@ -190,33 +289,33 @@ export const useProposalActionState = ({
             ) : undefined,
           }
         : statusKey === ProposalStatusEnum.Rejected &&
-          // Don't show for Neutron overrule proposals.
-          !(
-            chainId === ChainId.NeutronMainnet &&
-            coreAddress === NEUTRON_GOVERNANCE_DAO &&
-            proposalModule.prePropose?.type ===
-              PreProposeModuleType.NeutronOverruleSingle
-          )
-        ? {
-            label: t('button.close'),
-            Icon: CancelOutlined,
-            loading: actionLoading,
-            doAction: onClose,
-          }
-        : // If executed and has polytone messages that need relaying...
-        statusKey === ProposalStatusEnum.Executed &&
-          !relayState.loading &&
-          relayState.data.needsSelfRelay &&
-          !loadingExecutionTxHash.loading &&
-          loadingExecutionTxHash.data
-        ? {
-            label: t('button.relay'),
-            Icon: Send,
-            loading: actionLoading,
-            doAction: relayState.data.openSelfRelay,
-            description: t('error.polytoneExecutedNoRelay'),
-          }
-        : undefined,
+            // Don't show for Neutron overrule proposals.
+            !(
+              dao.chainId === ChainId.NeutronMainnet &&
+              dao.coreAddress === NEUTRON_GOVERNANCE_DAO &&
+              proposalModule.prePropose?.type ===
+                PreProposeModuleType.NeutronOverruleSingle
+            )
+          ? {
+              label: t('button.close'),
+              Icon: CancelOutlined,
+              loading: actionLoading,
+              doAction: onClose,
+            }
+          : // If executed and has polytone messages that need relaying...
+            statusKey === ProposalStatusEnum.Executed &&
+              !relayState.loading &&
+              relayState.data.needsSelfRelay &&
+              !loadingExecutionTxHash.loading &&
+              loadingExecutionTxHash.data
+            ? {
+                label: t('button.relay'),
+                Icon: Send,
+                loading: actionLoading,
+                doAction: relayState.data.openSelfRelay,
+                description: t('error.polytoneExecutedNoRelay'),
+              }
+            : undefined,
     footer: (showRelayStatus || isWalletConnected) && (
       <div className="flex flex-col gap-6">
         {showRelayStatus && (

@@ -2,11 +2,14 @@ import { GeneratedType, Registry, OfflineSigner } from "@cosmjs/proto-signing";
 import { defaultRegistryTypes, AminoTypes, SigningStargateClient } from "@cosmjs/stargate";
 import { HttpEndpoint } from "@cosmjs/tendermint-rpc";
 import * as interchainSecurityCcvConsumerV1TxRegistry from "./ccv/consumer/v1/tx.registry";
+import * as interchainSecurityCcvProviderV1TxRegistry from "./ccv/provider/v1/tx.registry";
 import * as interchainSecurityCcvConsumerV1TxAmino from "./ccv/consumer/v1/tx.amino";
+import * as interchainSecurityCcvProviderV1TxAmino from "./ccv/provider/v1/tx.amino";
 export const interchainSecurityAminoConverters = {
-  ...interchainSecurityCcvConsumerV1TxAmino.AminoConverter
+  ...interchainSecurityCcvConsumerV1TxAmino.AminoConverter,
+  ...interchainSecurityCcvProviderV1TxAmino.AminoConverter
 };
-export const interchainSecurityProtoRegistry: ReadonlyArray<[string, GeneratedType]> = [...interchainSecurityCcvConsumerV1TxRegistry.registry];
+export const interchainSecurityProtoRegistry: ReadonlyArray<[string, GeneratedType]> = [...interchainSecurityCcvConsumerV1TxRegistry.registry, ...interchainSecurityCcvProviderV1TxRegistry.registry];
 export const getSigningInterchainSecurityClientOptions = ({
   defaultTypes = defaultRegistryTypes
 }: {

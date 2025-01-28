@@ -49,7 +49,8 @@ export const validateUrl = (v: string | undefined) =>
   (v && isValidUrl(v)) || 'Invalid image URL: must start with https.'
 
 export const validateUrlWithIpfs = (v: string | undefined) =>
-  (v && isValidUrl(v, true)) ||
+  !v ||
+  isValidUrl(v, true) ||
   'Invalid image URL: must start with https or ipfs.'
 
 export const makeValidateTokenFactoryDenom =

@@ -1,19 +1,18 @@
 import { QueryClient, queryOptions } from '@tanstack/react-query'
 
 import {
-  AstroportToken,
   ChainId,
   GenericToken,
+  GenericTokenBalance,
   GenericTokenSource,
   GenericTokenWithUsdPrice,
   TokenType,
 } from '@dao-dao/types'
 import { FanToken } from '@dao-dao/types/protobuf/codegen/bitsong/fantoken/v1beta1/fantoken'
 import {
-  ASTROPORT_PRICES_API,
   MAINNET,
-  OSMOSIS_API_BASE,
   bitsongProtoRpcClientRouter,
+  convertChainRegistryAssetToGenericToken,
   getChainForChainName,
   getFallbackImage,
   getIbcTransferInfoFromChannel,
@@ -21,7 +20,6 @@ import {
   ibcProtoRpcClientRouter,
   isSecretNetwork,
   isValidUrl,
-  objectMatchesStructure,
   transformIpfsUrlToHttpsIfNecessary,
 } from '@dao-dao/utils'
 
@@ -61,7 +59,7 @@ export const fetchTokenInfo = async (
           denomOrAddress,
         })
       )
-      .catch(() => undefined),
+      .catch(() => null),
   ])
 
   if (asset) {
@@ -87,9 +85,9 @@ export const fetchTokenInfo = async (
     // If Skip API does not have the info, check if Skip API has the source
     // if it's different. This has happened before when Skip does not have
     // an IBC asset that we were able to reverse engineer the source for.
-    const sourceAsset = await queryClient.fetchQuery(
-      skipQueries.asset(queryClient, source)
-    )
+    const sourceAsset = await queryClient
+      .fetchQuery(skipQueries.asset(queryClient, source))
+      .catch(() => null)
 
     if (sourceAsset) {
       return {
@@ -243,6 +241,38 @@ export const fetchTokenInfo = async (
     console.error(err)
   }
 
+  // Attempt to fetch from chain registry on GitHub.
+  try {
+    const chainRegistryAssets = await queryClient.fetchQuery(
+      chainQueries.chainRegistryAssets({
+        chainId: source.chainId,
+      })
+    )
+
+    const asset = chainRegistryAssets.find(
+      (a) => a.base === source.denomOrAddress
+    )
+
+    if (asset) {
+      const converted = convertChainRegistryAssetToGenericToken(
+        source.chainId,
+        asset
+      )
+
+      return {
+        chainId,
+        type,
+        denomOrAddress,
+        symbol: converted.symbol,
+        decimals: converted.decimals,
+        imageUrl: converted.imageUrl,
+        source,
+      }
+    }
+  } catch (err) {
+    console.error(err)
+  }
+
   // If nothing found, just return empty token.
   return {
     chainId,
@@ -264,14 +294,15 @@ export const fetchTokenSource = async (
   { chainId, type, denomOrAddress }: GenericTokenSource
 ): Promise<GenericTokenSource> => {
   // Check if Skip API has the info.
-  const skipAsset = await queryClient.fetchQuery(
-    skipQueries.asset(queryClient, {
-      chainId,
-      type,
-      denomOrAddress,
-    })
-  )
-  console.log("skipAsset:", skipAsset)
+  const skipAsset = await queryClient
+    .fetchQuery(
+      skipQueries.asset(queryClient, {
+        chainId,
+        type,
+        denomOrAddress,
+      })
+    )
+    .catch(() => null)
 
   if (skipAsset) {
     const sourceType = skipAsset.origin_denom.startsWith('cw20:')
@@ -313,7 +344,7 @@ export const fetchTokenSource = async (
               getChainForChainName(
                 getIbcTransferInfoFromChannel(currentChainId, channel)
                   .destinationChain.chain_name
-              ).chain_id,
+              ).chainId,
             chainId
           )
 
@@ -339,6 +370,54 @@ export const fetchTokenSource = async (
         : sourceDenom,
   }
 }
+
+/**
+ * Fetch the balance for any token.
+ */
+export const fetchTokenBalance = (
+  queryClient: QueryClient,
+  {
+    chainId,
+    type,
+    denomOrAddress,
+    address,
+  }: GenericTokenSource & {
+    address: string
+  }
+): Promise<GenericTokenBalance> =>
+  Promise.all([
+    queryClient.fetchQuery(
+      tokenQueries.info(queryClient, { chainId, type, denomOrAddress })
+    ),
+    type === TokenType.Native
+      ? queryClient
+          .fetchQuery(
+            chainQueries.balance({
+              chainId,
+              address,
+              denom: denomOrAddress,
+            })
+          )
+          .then(({ amount }) => amount)
+      : type === TokenType.Cw20
+        ? queryClient
+            .fetchQuery(
+              cw20BaseQueries.balance(queryClient, {
+                chainId,
+                contractAddress: denomOrAddress,
+                args: {
+                  address,
+                },
+              })
+            )
+            .then(({ balance }) => balance)
+        : '0',
+  ]).then(
+    ([token, balance]): GenericTokenBalance => ({
+      token,
+      balance,
+    })
+  )
 
 /**
  * Fetch the logo URL for a cw20 token if it exists. Returns null if not found.
@@ -408,120 +487,7 @@ export const fetchBitSongFantoken = async ({
 }
 
 /**
- * Fetch the Coin Gecko price for a token.
- */
-export const fetchCoinGeckoPrice = async (
-  queryClient: QueryClient,
-  options: GenericTokenSource
-): Promise<GenericTokenWithUsdPrice> => {
-  const token = await queryClient.fetchQuery(
-    tokenQueries.info(queryClient, options)
-  )
-
-  const asset = await queryClient.fetchQuery(
-    skipQueries.asset(queryClient, options)
-  )
-
-  if (!asset?.coingecko_id) {
-    throw new Error('No Coin Gecko ID found')
-  }
-
-  const usdPrice: number | null = await queryClient.fetchQuery(
-    indexerQueries.snapper({
-      query: 'coingecko-price',
-      parameters: {
-        id: asset.coingecko_id,
-      },
-    })
-  )
-
-  if (usdPrice === null) {
-    throw new Error('No Coin Gecko price found')
-  }
-
-  return {
-    token,
-    usdPrice,
-    timestamp: new Date(),
-  }
-}
-
-/**
- * Fetch the Osmosis price for a token.
- */
-export const fetchOsmosisPrice = async (
-  queryClient: QueryClient,
-  options: GenericTokenSource
-): Promise<GenericTokenWithUsdPrice> => {
-  const token = await queryClient.fetchQuery(
-    tokenQueries.info(queryClient, options)
-  )
-
-  const { price } = await (
-    await fetch(OSMOSIS_API_BASE + '/tokens/v2/price/' + token.symbol)
-  ).json()
-
-  if (typeof price !== 'number') {
-    throw new Error('No Osmosis price found')
-  }
-
-  return {
-    token,
-    usdPrice: price,
-    timestamp: new Date(),
-  }
-}
-
-/**
- * Fetch the Astroport price for a token.
- */
-export const fetchAstroportPrice = async (
-  queryClient: QueryClient,
-  options: GenericTokenSource
-): Promise<GenericTokenWithUsdPrice> => {
-  let denom = options.denomOrAddress
-  if (options.chainId !== ChainId.NeutronMainnet) {
-    const asset = await queryClient.fetchQuery(
-      skipQueries.recommendedAssetForGenericToken(queryClient, {
-        fromChainId: options.chainId,
-        toChainId: ChainId.NeutronMainnet,
-        type: options.type,
-        denomOrAddress: options.denomOrAddress,
-      })
-    )
-    if (!asset) {
-      throw new Error('No Neutron asset found for Astroport price')
-    }
-    denom = asset.denom
-  }
-
-  const token = await queryClient.fetchQuery(
-    tokenQueries.info(queryClient, options)
-  )
-
-  const response = await fetch(ASTROPORT_PRICES_API.replace('DENOM', denom))
-  if (response.status !== 200) {
-    throw new Error('No Astroport price found')
-  }
-
-  const astroportToken: AstroportToken = await response.json()
-  if (
-    !objectMatchesStructure(astroportToken, {
-      priceUSD: {},
-    })
-  ) {
-    throw new Error('No Astroport price found')
-  }
-
-  return {
-    token,
-    usdPrice: astroportToken.priceUSD,
-    timestamp: new Date(),
-  }
-}
-
-/**
- * Fetch the USD price for a token.
+ * Fetch the USD price for a token from Snapper.
  */
 export const fetchUsdPrice = async (
   queryClient: QueryClient,
@@ -531,30 +497,27 @@ export const fetchUsdPrice = async (
     throw new Error('USD prices are only available on mainnet')
   }
 
-  const priceQueries = [
-    tokenQueries.coinGeckoPrice,
-    tokenQueries.osmosisPrice,
-    tokenQueries.astroportPrice,
-  ]
-
-  const errors: Error[] = []
-
-  // Return the first successful price query.
-  return await Promise.race(
-    priceQueries.map((query) =>
-      queryClient.fetchQuery(query(queryClient, options)).catch((error) => {
-        errors.push(error)
-
-        // If this is the last query and it failed, throw the aggregate error.
-        if (errors.length === priceQueries.length) {
-          throw new AggregateError(errors, 'All price queries failed')
-        }
-
-        // Return a never-resolving promise to keep the race going.
-        return new Promise<GenericTokenWithUsdPrice>(() => { })
-      })
-    )
+  const token = await queryClient.fetchQuery(
+    tokenQueries.info(queryClient, options)
   )
+
+  const usdPrice =
+    (await queryClient.fetchQuery(
+      indexerQueries.snapper({
+        query: 'token-price',
+        parameters: {
+          chainId: options.chainId,
+          denom: options.denomOrAddress,
+          cw20: (options.type === TokenType.Cw20).toString(),
+        },
+      })
+    )) ?? undefined
+
+  return {
+    token,
+    usdPrice,
+    timestamp: new Date(),
+  }
 }
 
 export const tokenQueries = {
@@ -582,6 +545,17 @@ export const tokenQueries = {
       queryFn: () => fetchTokenSource(queryClient, options),
     }),
   /**
+   * Fetch the balance for any token.
+   */
+  balance: (
+    queryClient: QueryClient,
+    options: Parameters<typeof fetchTokenBalance>[1]
+  ) =>
+    queryOptions({
+      queryKey: ['token', 'balance', options],
+      queryFn: () => fetchTokenBalance(queryClient, options),
+    }),
+  /**
    * Fetch the logo URL for a cw20 token if it exists.
    */
   cw20LogoUrl: (
@@ -599,39 +573,6 @@ export const tokenQueries = {
     queryOptions({
       queryKey: ['token', 'bitSongFantoken', options],
       queryFn: () => fetchBitSongFantoken(options),
-    }),
-  /**
-   * Fetch the Coin Gecko price for a token.
-   */
-  coinGeckoPrice: (
-    queryClient: QueryClient,
-    options: Parameters<typeof fetchCoinGeckoPrice>[1]
-  ) =>
-    queryOptions({
-      queryKey: ['token', 'coinGeckoPrice', options],
-      queryFn: () => fetchCoinGeckoPrice(queryClient, options),
-    }),
-  /**
-   * Fetch the Osmosis price for a token.
-   */
-  osmosisPrice: (
-    queryClient: QueryClient,
-    options: Parameters<typeof fetchOsmosisPrice>[1]
-  ) =>
-    queryOptions({
-      queryKey: ['token', 'osmosisPrice', options],
-      queryFn: () => fetchOsmosisPrice(queryClient, options),
-    }),
-  /**
-   * Fetch the Astroport price for a token.
-   */
-  astroportPrice: (
-    queryClient: QueryClient,
-    options: Parameters<typeof fetchAstroportPrice>[1]
-  ) =>
-    queryOptions({
-      queryKey: ['token', 'astroportPrice', options],
-      queryFn: () => fetchAstroportPrice(queryClient, options),
     }),
   /**
    * Fetch the USD price for a token.

@@ -5,7 +5,6 @@ import { wallets as cosmosExtensionMetamaskWallets } from '@cosmos-kit/cosmos-ex
 import { wallets as cosmostationWallets } from '@cosmos-kit/cosmostation'
 import { wallets as exodusWallets } from '@cosmos-kit/exodus'
 import { wallets as frontierWallets } from '@cosmos-kit/frontier'
-// import { wallets as galaxyStationWallets } from '@cosmos-kit/galaxy-station'
 import { wallets as keplrWallets } from '@cosmos-kit/keplr'
 import { wallets as keplrExtensionWallets } from '@cosmos-kit/keplr-extension'
 import { wallets as leapWallets } from '@cosmos-kit/leap'
@@ -147,7 +146,6 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
           ...keplrWallets,
           ...leapWallets.filter((w) => !leapMetamaskWallets.includes(w)),
           ...stationWallets,
-          // ...galaxyStationWallets,
           ...vectisWallets,
           ...trustWallets,
           ...cosmostationWallets,
@@ -175,13 +173,13 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     <ChainProvider
       allowedIframeParentOrigins={ALLOWED_IFRAME_PARENT_ORIGINS}
       assetLists={assets}
-      chains={chains}
+      chains={chains.flatMap((c) => c.chainRegistry || [])}
       endpointOptions={{
         // Load all custom chain endpoints into wallet provider.
         endpoints: Object.entries(CHAIN_ENDPOINTS).reduce(
           (acc, [chainId, { rpc, rest }]) => ({
             ...acc,
-            [getChainForChainId(chainId).chain_name]: {
+            [getChainForChainId(chainId).chainName]: {
               rpc: [rpc],
               rest: [rest],
               isLazy: true,
@@ -191,7 +189,9 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
         ),
       }}
       signerOptions={{
+        // @ts-ignore
         signingStargate: getSigningOptions,
+        // @ts-ignore
         signingCosmwasm: getSigningOptions,
       }}
       walletConnectOptions={{
@@ -226,7 +226,7 @@ const InnerWalletProvider = ({ children }: PropsWithChildren<{}>) => {
     useWallet()
 
   // Auto-connect to current chain if switched chains and no longer connected.
-  const previousChain = usePrevious(chain.chain_name)
+  const previousChain = usePrevious(chain.chainName)
   const previousConnected = usePrevious(isWalletConnected)
   const previousWalletName = usePrevious(wallet?.name)
   const walletRepoRef = useUpdatingRef(walletRepo)
@@ -236,7 +236,7 @@ const InnerWalletProvider = ({ children }: PropsWithChildren<{}>) => {
       previousConnected &&
       previousWalletName &&
       !isWalletConnected &&
-      previousChain !== chain.chain_name &&
+      previousChain !== chain.chainName &&
       !reconnectingRef.current
     ) {
       reconnectingRef.current = true
@@ -251,7 +251,7 @@ const InnerWalletProvider = ({ children }: PropsWithChildren<{}>) => {
     previousConnected,
     isWalletConnected,
     previousChain,
-    chain.chain_name,
+    chain.chainName,
     previousWalletName,
     walletRepoRef,
   ])

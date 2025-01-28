@@ -5,9 +5,11 @@ import { IndexerFormulaType } from '@dao-dao/types'
 import {
   QueryIndexerOptions,
   QuerySnapperOptions,
+  SearchDaosOptions,
   queryIndexer,
   queryIndexerUpStatus,
   querySnapper,
+  searchDaos,
 } from '../../indexer'
 
 /**
@@ -145,5 +147,13 @@ export const indexerQueries = {
       // Replace undefined responses with null since react-query and static
       // props can't serialize undefined.
       queryFn: async () => (await querySnapper<T>(options)) ?? null,
+    }),
+  /**
+   * Search DAOs.
+   */
+  searchDaos: (options: SearchDaosOptions) =>
+    queryOptions({
+      queryKey: ['indexer', 'searchDaos', options],
+      queryFn: () => searchDaos(options),
     }),
 }

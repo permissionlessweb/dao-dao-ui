@@ -21,7 +21,7 @@ export const makeValenceActionCategory: ActionCategoryMaker = (options) =>
           ActionKey.WithdrawFromRebalancer,
           ActionKey.PauseRebalancer,
           ActionKey.ResumeRebalancer,
-          ActionKey.CreateValenceAccount,
+          // ActionKey.CreateValenceAccount,
         ],
       }
     : null

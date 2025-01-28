@@ -19,16 +19,19 @@ import {
 import { getNftKey } from '@dao-dao/utils'
 
 export type BurnNftData = {
-  chainId: string
-  collection: string
-  tokenId: string
+  nfts: {
+    chainId: string
+    collection: string
+    tokenId: string
+  }[]
 }
 
 export interface BurnNftOptions {
   // The set of NFTs that may be burned as part of this action.
   options: LoadingDataWithError<LazyNftCardInfo[]>
-  // Information about the NFT currently selected. If errored, it may be burnt.
-  nftInfo: LoadingDataWithError<NftCardInfo | undefined>
+  // Information about the NFTs currently selected. If errored, it may be burnt.
+  // If undefined, no NFTs are selected.
+  nftInfos: LoadingDataWithError<NftCardInfo[]> | undefined
   NftSelectionModal: ComponentType<NftSelectionModalProps>
 }
 
@@ -36,79 +39,67 @@ export const BurnNft: ActionComponent<BurnNftOptions> = ({
   fieldNamePrefix,
   isCreating,
   errors,
-  options: { options, nftInfo, NftSelectionModal },
+  options: { options, nftInfos, NftSelectionModal },
 }) => {
   const { t } = useTranslation()
-  const { watch, setValue, setError, clearErrors } =
+  const { watch, setValue, getValues, setError, clearErrors } =
     useFormContext<BurnNftData>()
 
-  const chainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
-  const tokenId = watch((fieldNamePrefix + 'tokenId') as 'tokenId')
-  const collection = watch((fieldNamePrefix + 'collection') as 'collection')
-
-  const selectedKey = getNftKey(chainId, collection, tokenId)
+  const nfts = watch((fieldNamePrefix + 'nfts') as 'nfts')
+  const selectedKeys = nfts.map((nft) =>
+    getNftKey(nft.chainId, nft.collection, nft.tokenId)
+  )
 
   useEffect(() => {
-    if (
-      !selectedKey ||
-      // If selected, make sure it exists in options.
-      (!options.loading &&
-        !options.errored &&
-        !options.data.some((nft) => nft.key === selectedKey))
-    ) {
-      if (!errors?.collection) {
-        setError((fieldNamePrefix + 'collection') as 'collection', {
-          type: 'required',
-          message: t('error.noNftSelected'),
-        })
-      }
+    if (!nfts.length) {
+      setError((fieldNamePrefix + 'nfts') as 'nfts', {
+        type: 'required',
+        message: t('error.noNftSelected'),
+      })
     } else {
-      if (errors?.collection) {
-        clearErrors((fieldNamePrefix + 'collection') as 'collection')
-      }
+      clearErrors((fieldNamePrefix + 'nfts') as 'nfts')
     }
-  }, [
-    selectedKey,
-    setError,
-    clearErrors,
-    t,
-    fieldNamePrefix,
-    options,
-    errors?.collection,
-  ])
+  }, [nfts.length, setError, clearErrors, t, fieldNamePrefix])
 
   // Show modal initially if creating and no NFT already selected.
   const [showModal, setShowModal] = useState<boolean>(
-    isCreating && !selectedKey
+    isCreating && !nfts.length
   )
 
   return (
     <>
       <div className="flex flex-col gap-2">
-        {nftInfo.loading ? (
-          <HorizontalNftCardLoader />
-        ) : !nftInfo.errored && nftInfo.data ? (
-          <HorizontalNftCard {...nftInfo.data} />
-        ) : (
-          // If errored loading NFT and not creating, token likely burned.
-          nftInfo.errored &&
-          !isCreating && (
-            <p className="primary-text">{t('info.tokenBurned', { tokenId })}</p>
-          )
-        )}
+        {nftInfos &&
+          (nftInfos.loading ? (
+            <HorizontalNftCardLoader />
+          ) : !nftInfos.errored ? (
+            <div className="flex flex-col gap-1">
+              {nftInfos.data.map(({ key, ...nftInfo }) => (
+                <HorizontalNftCard key={key} {...nftInfo} />
+              ))}
+            </div>
+          ) : (
+            // If errored loading NFT and not creating, token likely burned.
+            nftInfos.errored &&
+            !isCreating && (
+              <p className="primary-text">
+                {t('info.tokensBurned', { tokenIds: selectedKeys.join(', ') })}
+              </p>
+            )
+          ))}
 
         {isCreating && (
           <Button
             className={clsx(
               'text-text-tertiary',
-              !nftInfo.loading && !nftInfo.errored && nftInfo.data
+              nftInfos && !nftInfos.loading && !nftInfos.errored
                 ? 'self-end'
                 : 'self-start'
             )}
             onClick={() => setShowModal(true)}
-            variant="secondary"
+            variant={nfts.length ? 'secondary' : 'primary'}
           >
-            {t('button.selectNft')}
+            {t('button.selectNfts')}
           </Button>
         )}
 
@@ -123,25 +114,42 @@ export const BurnNft: ActionComponent<BurnNftOptions> = ({
             onClick: () => setShowModal(false),
           }}
           header={{
-            title: t('title.selectNftToBurn'),
+            title: t('title.selectNftsToBurn'),
           }}
           nfts={options}
           onClose={() => setShowModal(false)}
           onNftClick={(nft) => {
-            if (nft.key === selectedKey) {
-              setValue((fieldNamePrefix + 'chainId') as 'chainId', '')
-              setValue((fieldNamePrefix + 'tokenId') as 'tokenId', '')
-              setValue((fieldNamePrefix + 'collection') as 'collection', '')
-            } else {
-              setValue((fieldNamePrefix + 'chainId') as 'chainId', nft.chainId)
-              setValue((fieldNamePrefix + 'tokenId') as 'tokenId', nft.tokenId)
-              setValue(
-                (fieldNamePrefix + 'collection') as 'collection',
-                nft.collectionAddress
+            const selected = getValues((fieldNamePrefix + 'nfts') as 'nfts')
+
+            // If the NFT is already selected, remove it.
+            if (
+              selected.some(
+                (n) =>
+                  n.chainId === nft.chainId &&
+                  n.collection === nft.collectionAddress &&
+                  n.tokenId === nft.tokenId
               )
+            ) {
+              setValue(
+                (fieldNamePrefix + 'nfts') as 'nfts',
+                nfts.filter(
+                  (n) =>
+                    getNftKey(n.chainId, n.collection, n.tokenId) !== nft.key
+                )
+              )
+            } else {
+              // Otherwise, add the NFT.
+              setValue((fieldNamePrefix + 'nfts') as 'nfts', [
+                ...selected,
+                {
+                  chainId: nft.chainId,
+                  collection: nft.collectionAddress,
+                  tokenId: nft.tokenId,
+                },
+              ])
             }
           }}
-          selectedKeys={selectedKey ? [selectedKey] : []}
+          selectedKeys={selectedKeys}
           visible={showModal}
         />
       )}

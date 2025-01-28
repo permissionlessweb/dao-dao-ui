@@ -1,4 +1,4 @@
-import MeiliSearch from 'meilisearch'
+import MeiliSearch, { SearchResponse } from 'meilisearch'
 
 import { IndexerDumpState, WithChainId } from '@dao-dao/types'
 import { ProposalResponse as MultipleChoiceProposalResponse } from '@dao-dao/types/contracts/DaoProposalMultiple'
@@ -37,17 +37,49 @@ export type DaoSearchResult = {
 }
 
 export type SearchDaosOptions = WithChainId<{
+  /**
+   * Search query that compares against all fields.
+   */
   query: string
+  /**
+   * Offset to start search results from.
+   */
+  offset?: number
+  /**
+   * Limit number of search results.
+   */
   limit?: number
+  /**
+   * Number of hits per page.
+   */
+  hitsPerPage?: number
+  /**
+   * Page number.
+   */
+  page?: number
+  /**
+   * Exclude DAOs by their core address.
+   */
   exclude?: string[]
+  /**
+   * Sort search results by the given fields.
+   *
+   * Defaults to most recently created at the top, and deprioritize those with
+   * no proposals: `['value.createdAtEpoch:desc', 'value.proposalCount:desc']`.
+   */
+  sort?: string[]
 }>
 
 export const searchDaos = async ({
   chainId,
   query,
+  offset,
   limit,
+  hitsPerPage,
+  page,
   exclude = [],
-}: SearchDaosOptions): Promise<DaoSearchResult[]> => {
+  sort = ['value.createdAtEpoch:desc', 'value.proposalCount:desc'],
+}: SearchDaosOptions): Promise<SearchResponse<DaoSearchResult>> => {
   const client = await loadMeilisearchClient()
 
   if (!chainIsIndexed(chainId)) {
@@ -59,7 +91,10 @@ export const searchDaos = async ({
   exclude.push(...DAOS_HIDDEN_FROM_SEARCH)
 
   const results = await index.search<Omit<DaoSearchResult, 'chainId'>>(query, {
+    offset,
     limit,
+    hitsPerPage,
+    page,
     filter: [
       // Exclude inactive DAOs.
       `NOT value.config.name IN ["${INACTIVE_DAO_NAMES.join('", "')}"]`,
@@ -70,14 +105,16 @@ export const searchDaos = async ({
     ]
       .map((filter) => `(${filter})`)
       .join(' AND '),
-    // Most recent at the top.
-    sort: ['block.height:desc', 'value.proposalCount:desc'],
+    sort,
   })
 
-  return results.hits.map((hit) => ({
-    chainId,
-    ...hit,
-  }))
+  return {
+    ...results,
+    hits: results.hits.map((hit) => ({
+      chainId,
+      ...hit,
+    })),
+  }
 }
 
 export type DaoProposalSearchResult = {

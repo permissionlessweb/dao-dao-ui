@@ -25,15 +25,15 @@ export const getCoreActionCategoryMakers = (): ActionCategoryMaker[] => {
   _coreActionCategoryMakers ??= [
     categories.makeCommonlyUsedCategory,
     categories.makeTreasuryActionCategory,
+    categories.makeValenceActionCategory,
+    categories.makeRewardsActionCategory,
     categories.makeDaoGovernanceActionCategory,
     categories.makeSubDaosActionCategory,
-    categories.makeRewardsActionCategory,
-    categories.makeDaoAppearanceActionCategory,
+    categories.makeAppearanceActionCategory,
     categories.makeManageNftsActionCategory,
     categories.makeSmartContractingActionCategory,
     categories.makeAuthorizationsActionCategory,
     categories.makeChainGovernanceActionCategory,
-    categories.makeValenceActionCategory,
     categories.makeAdvancedActionCategory,
   ]
   return _coreActionCategoryMakers

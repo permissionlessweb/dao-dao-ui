@@ -56,6 +56,9 @@ export const createRPCQueryClient = async ({
       ccv: {
         consumer: {
           v1: (await import("./ccv/consumer/v1/query.rpc.Query")).createRpcQueryExtension(client)
+        },
+        provider: {
+          v1: (await import("./ccv/provider/v1/query.rpc.Query")).createRpcQueryExtension(client)
         }
       }
     }

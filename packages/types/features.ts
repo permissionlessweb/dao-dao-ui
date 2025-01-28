@@ -12,7 +12,11 @@ export enum ContractVersion {
   // https://github.com/DA0-DA0/dao-contracts/releases/tag/v2.0.0-alpha
   V2Alpha = '0.2.0',
   // https://github.com/neutron-org/neutron-dao/releases/tag/v0.5.0
-  V2AlphaNeutronFork = '0.2.1',
+  V2AlphaNeutronFork1 = '0.2.1',
+  // https://github.com/neutron-org/neutron-dao/releases/tag/v0.6.0
+  V2AlphaNeutronFork2 = '0.2.2',
+  // https://github.com/neutron-org/neutron-dao/releases/tag/v0.6.0
+  V2AlphaNeutronFork3 = '0.2.3',
   // https://github.com/DA0-DA0/dao-contracts/releases/tag/v2.0.0-beta
   V2Beta = '2.0.0-beta',
   // https://github.com/DA0-DA0/dao-contracts/releases/tag/v2.0.1
@@ -27,9 +31,14 @@ export enum ContractVersion {
   V230 = '2.3.0',
   // https://github.com/DA0-DA0/dao-contracts/releases/tag/v2.4.0
   V240 = '2.4.0',
+  // https://github.com/DA0-DA0/dao-contracts/releases/tag/v2.4.1
+  V241 = '2.4.1',
   // https://github.com/DA0-DA0/dao-contracts/releases/tag/v2.4.2
   V242 = '2.4.2',
+  // https://github.com/DA0-DA0/dao-contracts/releases/tag/v2.5.0
   V250 = '2.5.0',
+  // https://github.com/DA0-DA0/dao-contracts/releases/tag/v2.6.0
+  V260 = '2.6.0',
 }
 
 /**
@@ -90,12 +99,16 @@ export enum Feature {
    */
   Veto,
   /**
+   * Cast vote on proposal creation was added.
+   */
+  CastVoteOnProposalCreation,
+  /**
    * The ability to specify a more granular pre-propose submission policy.
    */
   GranularSubmissionPolicy,
+  /**
+   * The new NFT claim system was added that removes the limit on simultaneous
+   * outstanding claims.
+   */
+  UnlimitedNftClaims,
 }
-
-/**
- * Map each feature to whether or not it is supported.
- */
-export type SupportedFeatureMap = Record<Feature, boolean>

@@ -60,6 +60,7 @@ telescope({
           'cosmwasm.tokenfactory.v1beta1',
           'cosmwasm.wasm.v1',
           'gaia.globalfee.v1beta1',
+          'gaia.metaprotocols',
           'google.protobuf',
           'ibc.applications.transfer.v1',
           'ibc.applications.interchain_accounts.v1',
@@ -126,6 +127,8 @@ telescope({
           'secret.registration.v1beta1',
           'OmniFlix.onft.v1beta1',
           'interchain_security.ccv.consumer.v1',
+          'interchain_security.ccv.provider.v1',
+          'Switcheo.carbon.cdp',
 
           // interferes with v1beta1 MsgSubmitProposal amino encoders since the
           // type names overlap

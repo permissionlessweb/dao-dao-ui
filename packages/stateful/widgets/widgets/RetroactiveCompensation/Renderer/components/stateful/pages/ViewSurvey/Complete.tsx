@@ -55,7 +55,7 @@ export const Complete = ({
   const { t } = useTranslation()
   const dao = useDao()
   const { goToDaoProposal } = useDaoNavHelpers()
-  const { chain_id: chainId, bech32_prefix: bech32Prefix } = useChain()
+  const { chainId, bech32Prefix } = useChain()
   const { address: walletAddress = '' } = useWallet()
   const postRequest = usePostRequest()
   const queryClient = useQueryClient()
@@ -113,8 +113,8 @@ export const Complete = ({
               attribute === null
                 ? null
                 : maxPerAttribute[i] === 0
-                ? 0
-                : (attribute / maxPerAttribute[i]) * 100
+                  ? 0
+                  : (attribute / maxPerAttribute[i]) * 100
             ),
           }))
         }),

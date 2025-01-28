@@ -18,6 +18,7 @@ import {
   ArrayOfString,
   Binary,
   Boolean,
+  ClaimType,
   Config,
   Duration,
   HooksResponse,
@@ -191,6 +192,12 @@ export interface DaoVotingCw721StakedInterface
     _funds?: Coin[]
   ) => Promise<ExecuteResult>
   claimNfts: (
+    {
+      type,
+    }?: {
+      // v2.6.0 and above.
+      type?: ClaimType
+    },
     fee?: number | StdFee | 'auto',
     memo?: string,
     _funds?: Coin[]
@@ -313,6 +320,12 @@ export class DaoVotingCw721StakedClient
     )
   }
   claimNfts = async (
+    {
+      type,
+    }: {
+      // v2.6.0 and above.
+      type?: ClaimType
+    } = {},
     fee: number | StdFee | 'auto' = CHAIN_GAS_MULTIPLIER,
     memo?: string,
     _funds?: Coin[]
@@ -321,7 +334,9 @@ export class DaoVotingCw721StakedClient
       this.sender,
       this.contractAddress,
       {
-        claim_nfts: {},
+        claim_nfts: {
+          ...(type ? { type } : {}),
+        },
       },
       fee,
       memo,

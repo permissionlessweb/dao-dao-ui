@@ -30,7 +30,7 @@ import { IconButton } from '../icon_buttons'
  */
 export const NumericInput = <
   FV extends FieldValues,
-  FieldName extends Path<FV>
+  FieldName extends Path<FV>,
 >({
   fieldName,
   register,
@@ -200,6 +200,13 @@ export const NumericInput = <
                 )
               })
         }
+        onWheel={(e) => {
+          // Disallow mouse wheel on number inputs that change value.
+          if (e.currentTarget === document.activeElement) {
+            e.currentTarget.blur()
+          }
+          e.preventDefault()
+        }}
         type="number"
         value={value}
         {...props}

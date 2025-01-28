@@ -1,3 +1,4 @@
+import { usePlausible } from 'next-plausible'
 import { useCallback, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -9,23 +10,23 @@ import {
   blocksPerYearSelector,
   stakingLoadingAtom,
 } from '@dao-dao/state'
-import { useCachedLoadable, useChain, useDao } from '@dao-dao/stateless'
+import { useCachedLoadable, useDao, useUpdatingRef } from '@dao-dao/stateless'
 import {
   BaseProfileCardMemberInfoProps,
+  Feature,
+  PlausibleEvents,
   UnstakingTask,
   UnstakingTaskStatus,
 } from '@dao-dao/types'
 import {
   convertExpirationToDate,
   durationToSeconds,
+  executeSmartContracts,
+  isFeatureSupportedByVersion,
   processError,
 } from '@dao-dao/utils'
 
-import {
-  DaoVotingCw721StakedHooks,
-  useAwaitNextBlock,
-  useWallet,
-} from '../../../../hooks'
+import { useAwaitNextBlock, useWallet } from '../../../../hooks'
 import { ProfileCardMemberInfoTokens } from '../../../components'
 import { useGovernanceCollectionInfo, useStakingInfo } from '../hooks'
 import { StakingModal } from './StakingModal'
@@ -35,16 +36,17 @@ export const ProfileCardMemberInfo = ({
   ...props
 }: BaseProfileCardMemberInfoProps) => {
   const { t } = useTranslation()
-  const { chain_id: chainId } = useChain()
-  const { name: daoName } = useDao()
+  const { chainId, name: daoName, coreAddress, votingModule } = useDao()
   const {
-    address: walletAddress,
+    address: walletAddress = '',
     isWalletConnected,
     refreshBalances,
+    getSigningClient,
   } = useWallet()
   const [showStakingModal, setShowStakingModal] = useState(false)
   const [claimingLoading, setClaimingLoading] = useState(false)
   const stakingLoading = useRecoilValue(stakingLoadingAtom)
+  const plausible = usePlausible<PlausibleEvents>()
 
   const {
     collectionInfo,
@@ -60,7 +62,6 @@ export const ProfileCardMemberInfo = ({
     refreshTotals,
     claimsPending,
     claimsAvailable,
-    sumClaimsAvailable,
     loadingWalletStakedValue,
     loadingTotalStakedValue,
     refreshClaims,
@@ -70,23 +71,78 @@ export const ProfileCardMemberInfo = ({
     fetchTotalStakedValue: true,
   })
 
-  const doClaim = DaoVotingCw721StakedHooks.useClaimNfts({
-    contractAddress: stakingContractAddress,
-    sender: walletAddress ?? '',
-  })
-
+  const claimsAvailableRef = useUpdatingRef(claimsAvailable)
   const awaitNextBlock = useAwaitNextBlock()
   const onClaim = useCallback(async () => {
-    if (!isWalletConnected) {
+    if (!isWalletConnected || !walletAddress) {
       return toast.error(t('error.logInToContinue'))
     }
-    if (!sumClaimsAvailable?.isPositive()) {
+
+    const claimsAvailable = claimsAvailableRef.current
+    if (!claimsAvailable?.length) {
       return toast.error(t('error.noClaimsAvailable'))
     }
 
     setClaimingLoading(true)
     try {
-      await doClaim()
+      await executeSmartContracts({
+        client: getSigningClient,
+        sender: walletAddress,
+        instructions: isFeatureSupportedByVersion(
+          Feature.UnlimitedNftClaims,
+          votingModule.version
+        )
+          ? [
+              // If legacy claims exist, claim them.
+              ...(claimsAvailable.some(({ legacy }) => legacy)
+                ? [
+                    {
+                      contractAddress: stakingContractAddress,
+                      msg: {
+                        claim_nfts: {
+                          type: 'legacy',
+                        },
+                      },
+                    },
+                  ]
+                : []),
+              // If non-legacy claims exist, claim them specifically.
+              ...(claimsAvailable.some(({ legacy }) => !legacy)
+                ? [
+                    {
+                      contractAddress: stakingContractAddress,
+                      msg: {
+                        claim_nfts: {
+                          type: {
+                            specific: claimsAvailable
+                              .filter(({ legacy }) => !legacy)
+                              .map(({ token_id }) => token_id),
+                          },
+                        },
+                      },
+                    },
+                  ]
+                : []),
+            ]
+          : [
+              {
+                contractAddress: stakingContractAddress,
+                msg: {
+                  claim_nfts: {},
+                },
+              },
+            ],
+      })
+
+      plausible('daoVotingClaim', {
+        props: {
+          chainId,
+          dao: coreAddress,
+          walletAddress,
+          votingModule: votingModule.address,
+          votingModuleType: votingModule.contractName,
+        },
+      })
 
       // New balances will not appear until the next block.
       await awaitNextBlock()
@@ -97,7 +153,9 @@ export const ProfileCardMemberInfo = ({
 
       toast.success(
         t('success.claimedTokens', {
-          amount: sumClaimsAvailable.toInternationalizedHumanReadableString(),
+          amount: HugeDecimal.from(
+            claimsAvailable.length
+          ).toInternationalizedHumanReadableString(),
           tokenSymbol: collectionInfo.symbol,
         })
       )
@@ -108,15 +166,23 @@ export const ProfileCardMemberInfo = ({
       setClaimingLoading(false)
     }
   }, [
-    awaitNextBlock,
     isWalletConnected,
-    doClaim,
-    collectionInfo.symbol,
-    refreshBalances,
-    refreshClaims,
-    refreshTotals,
-    sumClaimsAvailable,
+    walletAddress,
+    claimsAvailableRef,
     t,
+    getSigningClient,
+    votingModule.version,
+    votingModule.address,
+    votingModule.contractName,
+    stakingContractAddress,
+    plausible,
+    chainId,
+    coreAddress,
+    awaitNextBlock,
+    refreshBalances,
+    refreshTotals,
+    refreshClaims,
+    collectionInfo.symbol,
   ])
 
   const blockHeightLoadable = useCachedLoadable(

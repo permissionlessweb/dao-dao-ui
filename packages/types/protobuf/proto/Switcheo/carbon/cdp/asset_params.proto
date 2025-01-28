@@ -1,0 +1,85 @@
+syntax = "proto3";
+package Switcheo.carbon.cdp;
+
+import "google/protobuf/wrappers.proto";
+import "gogoproto/gogo.proto";
+// this line is used by starport scaffolding # proto/tx/import
+
+option go_package = "github.com/Switcheo/carbon/x/cdp/types";
+option (gogoproto.goproto_getters_all) = false;
+
+message AssetParamsAPI {
+  AssetParams asset_params = 1;
+  string token_name = 2;
+}
+
+message AssetParams {
+  string denom = 1;
+  reserved 2; // deprecated: oracle_id is now on pricing
+  string rate_strategy_name = 3;
+  bool allow_repay_stablecoin_interest = 4;
+  string loan_to_value = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+  string liquidation_threshold = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+  string liquidation_discount = 7 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+  string supply_cap = 8 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+  string borrow_cap = 9 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+}
+
+message AssetUtilization {
+  string denom = 1;
+  string total_borrowed = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+  string total_amount = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+  string utilization_rate = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = true
+  ];
+}
+
+message UpdateAssetParams {
+  string denom = 1;
+  google.protobuf.StringValue rate_strategy_name = 2
+      [ (gogoproto.wktpointer) = true ];
+  google.protobuf.BoolValue allow_repay_stablecoin_interest = 3
+      [ (gogoproto.wktpointer) = true ];
+  string loan_to_value = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+  string liquidation_threshold = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+  string liquidation_discount = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+  string supply_cap = 7 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+  string borrow_cap = 8 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+}

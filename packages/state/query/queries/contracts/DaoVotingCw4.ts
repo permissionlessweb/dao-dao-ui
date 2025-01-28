@@ -145,10 +145,8 @@ export const daoVotingCw4Queries = {
             formula: 'daoVotingCw4/votingPowerAtHeight',
             args: {
               address: args.address,
+              height: args.height,
             },
-            ...(args.height && {
-              block: { height: args.height },
-            }),
           })
         )
       } catch (error) {
@@ -188,9 +186,9 @@ export const daoVotingCw4Queries = {
             chainId,
             contractAddress,
             formula: 'daoVotingCw4/totalPowerAtHeight',
-            ...(args.height && {
-              block: { height: args.height },
-            }),
+            args: {
+              height: args.height,
+            },
           })
         )
       } catch (error) {

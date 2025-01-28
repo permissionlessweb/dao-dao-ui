@@ -1,0 +1,78 @@
+syntax = "proto3";
+package Switcheo.carbon.cdp;
+
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/Switcheo/carbon/x/cdp/types";
+
+option (gogoproto.goproto_getters_all) = false;
+
+message RewardScheme {
+  uint64 id = 1;
+  string creator = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string reward_denom = 3;
+  string asset_denom = 4;
+  string reward_type = 5;
+  string reward_amount_per_second = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  google.protobuf.Timestamp start_time = 7
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  google.protobuf.Timestamp end_time = 8
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  google.protobuf.Timestamp reward_per_share_last_updated_at = 9
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  string reward_per_share = 10 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message CreateRewardSchemeParams {
+  string reward_denom = 1;
+  string asset_denom = 2;
+  string reward_type = 3;
+  string reward_amount_per_second = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  google.protobuf.Timestamp start_time = 5
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  google.protobuf.Timestamp end_time = 6
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+}
+
+message UpdateRewardSchemeParams {
+  uint64 reward_scheme_id = 1;
+  google.protobuf.StringValue reward_denom = 2 [ (gogoproto.wktpointer) = true
+
+  ];
+  google.protobuf.StringValue asset_denom = 3 [ (gogoproto.wktpointer) = true
+
+  ];
+  google.protobuf.StringValue reward_type = 4 [ (gogoproto.wktpointer) = true ];
+  string reward_amount_per_second = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+
+  ];
+  google.protobuf.Timestamp start_time = 6
+      [ (gogoproto.stdtime) = true, (gogoproto.wktpointer) = true ];
+  google.protobuf.Timestamp end_time = 7
+      [ (gogoproto.stdtime) = true, (gogoproto.wktpointer) = true ];
+}
+
+message RewardDebt {
+  string user_address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  uint64 reward_scheme_id = 2;
+  string reward_debt = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+  google.protobuf.Timestamp last_updated_at = 4
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+}

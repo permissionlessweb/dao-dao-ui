@@ -1,10 +1,6 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import {
-  constSelector,
-  useRecoilValue,
-  useSetRecoilState,
-  waitForAll,
-} from 'recoil'
+import { useRecoilValue, useSetRecoilState, waitForAll } from 'recoil'
 
 import { HugeDecimal } from '@dao-dao/math'
 import {
@@ -12,20 +8,19 @@ import {
   DaoVotingCw721StakedSelectors,
   blockHeightSelector,
   contractVersionSelector,
-  nftCardInfoSelector,
+  daoVotingCw721StakedQueries,
   refreshClaimsIdAtom,
   refreshWalletBalancesIdAtom,
 } from '@dao-dao/state'
 import {
   useCachedLoadable,
-  useCachedLoading,
   useCachedLoadingWithError,
   useDao,
 } from '@dao-dao/stateless'
-import { NftClaim } from '@dao-dao/types/contracts/DaoVotingCw721Staked'
-import { claimAvailable } from '@dao-dao/utils'
+import { LazyNftCardInfo } from '@dao-dao/types'
+import { claimAvailable, getNftKey } from '@dao-dao/utils'
 
-import { useWallet } from '../../../../hooks/useWallet'
+import { useQueryLoadingDataWithError, useWallet } from '../../../../hooks'
 import { UseStakingInfoOptions, UseStakingInfoResponse } from '../types'
 import { useGovernanceCollectionInfo } from './useGovernanceCollectionInfo'
 
@@ -36,7 +31,8 @@ export const useStakingInfo = ({
   fetchWalletUnstakedNfts = false,
 }: UseStakingInfoOptions = {}): UseStakingInfoResponse => {
   const dao = useDao()
-  const { address: walletAddress } = useWallet()
+  const { address: walletAddress = '' } = useWallet()
+  const queryClient = useQueryClient()
 
   const { collectionAddress: governanceTokenAddress } =
     useGovernanceCollectionInfo()
@@ -88,26 +84,18 @@ export const useStakingInfo = ({
     [_setClaimsId]
   )
 
-  const loadingClaims = useCachedLoading(
-    fetchClaims && walletAddress
-      ? DaoVotingCw721StakedSelectors.nftClaimsSelector({
-          chainId: dao.chainId,
-          contractAddress: dao.votingModule.address,
-          params: [{ address: walletAddress }],
-        })
-      : constSelector(undefined),
-    undefined
-  )
-  const claims =
-    loadingClaims.loading || !loadingClaims.data
+  const loadingClaims = useQueryLoadingDataWithError({
+    ...daoVotingCw721StakedQueries.nftClaims(queryClient, {
+      chainId: dao.chainId,
+      contractAddress: dao.votingModule.address,
+      args: { address: walletAddress },
+    }),
+    enabled: !!fetchClaims && !!walletAddress,
+  })
+  const nftClaims =
+    loadingClaims.loading || loadingClaims.errored
       ? []
       : loadingClaims.data.nft_claims
-  const nftClaims = claims.map(
-    ({ token_id, release_at }): NftClaim => ({
-      release_at,
-      token_id,
-    })
-  )
 
   const claimsPending = blockHeight
     ? nftClaims?.filter((c) => !claimAvailable(c, blockHeight))
@@ -118,68 +106,53 @@ export const useStakingInfo = ({
   const sumClaimsAvailable = HugeDecimal.from(claimsAvailable?.length || 0)
 
   // Total staked value
-  const loadingTotalStakedValue = useCachedLoading(
-    fetchTotalStakedValue
-      ? DaoVotingCw721StakedSelectors.totalPowerAtHeightSelector({
-          chainId: dao.chainId,
-          contractAddress: dao.votingModule.address,
-          params: [{}],
-        })
-      : constSelector(undefined),
-    undefined
-  )
+  const loadingTotalStakedValue = useQueryLoadingDataWithError({
+    ...daoVotingCw721StakedQueries.totalPowerAtHeight(queryClient, {
+      chainId: dao.chainId,
+      contractAddress: dao.votingModule.address,
+      args: {},
+    }),
+    enabled: !!fetchTotalStakedValue,
+  })
 
   // Wallet staked value
-  const loadingWalletStakedNftsLoadable = useCachedLoading(
-    fetchWalletStakedValue && walletAddress
-      ? DaoVotingCw721StakedSelectors.stakedNftsSelector({
+  const loadingWalletStakedNfts = useQueryLoadingDataWithError(
+    {
+      ...daoVotingCw721StakedQueries.stakedNfts(queryClient, {
+        chainId: dao.chainId,
+        contractAddress: dao.votingModule.address,
+        args: { address: walletAddress },
+      }),
+      enabled: !!fetchWalletStakedValue && !!walletAddress,
+    },
+    (data) =>
+      data.map(
+        (tokenId): LazyNftCardInfo => ({
+          key: getNftKey(dao.chainId, governanceTokenAddress, tokenId),
           chainId: dao.chainId,
-          contractAddress: dao.votingModule.address,
-          params: [{ address: walletAddress }],
+          collectionAddress: governanceTokenAddress,
+          tokenId,
         })
-      : undefined,
-    undefined
+      )
   )
 
-  const loadingWalletStakedNfts = useCachedLoadingWithError(
-    !loadingWalletStakedNftsLoadable.loading &&
-      loadingWalletStakedNftsLoadable.data
-      ? waitForAll(
-          loadingWalletStakedNftsLoadable.data?.map((tokenId) =>
-            nftCardInfoSelector({
-              chainId: dao.chainId,
-              collection: governanceTokenAddress,
-              tokenId,
-            })
-          )
-        )
-      : undefined
-  )
-
-  const loadingWalletUnstakedNftsLoadable = useCachedLoadingWithError(
+  const loadingWalletUnstakedNfts = useCachedLoadingWithError(
     fetchWalletUnstakedNfts && walletAddress && governanceTokenAddress
       ? CommonNftSelectors.unpaginatedAllTokensForOwnerSelector({
           chainId: dao.chainId,
           contractAddress: governanceTokenAddress,
           owner: walletAddress,
         })
-      : undefined
-  )
-
-  const loadingWalletUnstakedNfts = useCachedLoadingWithError(
-    !loadingWalletUnstakedNftsLoadable.loading &&
-      !loadingWalletUnstakedNftsLoadable.errored &&
-      loadingWalletUnstakedNftsLoadable.data
-      ? waitForAll(
-          loadingWalletUnstakedNftsLoadable.data?.map((tokenId) =>
-            nftCardInfoSelector({
-              chainId: dao.chainId,
-              collection: governanceTokenAddress,
-              tokenId,
-            })
-          )
-        )
-      : undefined
+      : undefined,
+    (data) =>
+      data.map(
+        (tokenId): LazyNftCardInfo => ({
+          key: getNftKey(dao.chainId, governanceTokenAddress, tokenId),
+          chainId: dao.chainId,
+          collectionAddress: governanceTokenAddress,
+          tokenId,
+        })
+      )
   )
 
   return {
@@ -201,21 +174,21 @@ export const useStakingInfo = ({
     // Total staked value
     loadingTotalStakedValue: loadingTotalStakedValue.loading
       ? { loading: true }
-      : !loadingTotalStakedValue.data
-      ? undefined
-      : {
-          loading: false,
-          data: HugeDecimal.from(loadingTotalStakedValue.data.power),
-        },
+      : loadingTotalStakedValue.errored
+        ? undefined
+        : {
+            loading: false,
+            data: HugeDecimal.from(loadingTotalStakedValue.data.power),
+          },
     // Wallet staked value
-    loadingWalletStakedValue: loadingWalletStakedNftsLoadable.loading
+    loadingWalletStakedValue: loadingWalletStakedNfts.loading
       ? { loading: true }
-      : !loadingWalletStakedNftsLoadable.data
-      ? undefined
-      : {
-          loading: false,
-          data: HugeDecimal.from(loadingWalletStakedNftsLoadable.data.length),
-        },
+      : loadingWalletStakedNfts.errored
+        ? undefined
+        : {
+            loading: false,
+            data: HugeDecimal.from(loadingWalletStakedNfts.data.length),
+          },
     loadingWalletStakedNfts,
     loadingWalletUnstakedNfts,
   }

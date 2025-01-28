@@ -1,15 +1,15 @@
-import { fromBase64, fromUtf8 } from '@cosmjs/encoding'
-import { useQueries, useQueryClient } from '@tanstack/react-query'
-import cloneDeep from 'lodash.clonedeep'
-import { useEffect } from 'react'
+import { fromBase64, fromUtf8, toUtf8 } from '@cosmjs/encoding'
+import { useQueryClient } from '@tanstack/react-query'
 import { useFormContext } from 'react-hook-form'
 import { waitForAll } from 'recoil'
 
 import { HugeDecimal } from '@dao-dao/math'
 import {
+  contractQueries,
   genericTokenSelector,
   tokenQueries,
   valenceRebalancerExtraQueries,
+  valenceRebalancerQueries,
 } from '@dao-dao/state'
 import { usdPriceSelector } from '@dao-dao/state/recoil/selectors'
 import {
@@ -20,8 +20,6 @@ import {
   useActionOptions,
   useCachedLoading,
   useCachedLoadingWithError,
-  useInitializedActionForKey,
-  useUpdatingRef,
 } from '@dao-dao/stateless'
 import {
   AccountType,
@@ -30,9 +28,9 @@ import {
   TokenType,
   UnifiedCosmosMsg,
   ValenceAccount,
+  makeStargateMessage,
 } from '@dao-dao/types'
 import {
-  ActionChainContextType,
   ActionComponent,
   ActionContextType,
   ActionKey,
@@ -40,32 +38,35 @@ import {
   ActionOptions,
   ProcessedMessage,
 } from '@dao-dao/types/actions'
-import { ExecuteMsg as ValenceAccountExecuteMsg } from '@dao-dao/types/contracts/ValenceAccount'
+import {
+  ExecuteMsg as ValenceAccountExecuteMsg,
+  InstantiateMsg as ValenceAccountInstantiateMsg,
+} from '@dao-dao/types/contracts/ValenceAccount'
 import {
   RebalancerData,
   RebalancerUpdateData,
 } from '@dao-dao/types/contracts/ValenceRebalancer'
+import { MsgInstantiateContract2 } from '@dao-dao/types/protobuf/codegen/cosmwasm/wasm/v1/tx'
 import {
   VALENCE_INSTANTIATE2_SALT,
   VALENCE_SUPPORTED_CHAINS,
   encodeJsonToBase64,
   getAccount,
   getChainAddressForActionOptions,
+  getDisplayNameForChainId,
   getSupportedChainConfig,
-  makeCombineQueryResultsIntoLoadingData,
+  isDecodedStargateMsg,
   makeWasmMessage,
   maybeMakePolytoneExecuteMessages,
   mustGetSupportedChainConfig,
   objectMatchesStructure,
+  tokensEqual,
 } from '@dao-dao/utils'
 
+import { Trans } from '../../../../components'
 import { AddressInput } from '../../../../components/AddressInput'
-import {
-  useGenerateInstantiate2,
-  useQueryLoadingDataWithError,
-} from '../../../../hooks'
+import { useQueryLoadingDataWithError } from '../../../../hooks'
 import { useTokenBalances } from '../../../hooks/useTokenBalances'
-import { CreateValenceAccountData } from '../CreateValenceAccount/Component'
 import {
   ConfigureRebalancerData,
   ConfigureRebalancerComponent as StatelessConfigureRebalancerComponent,
@@ -77,113 +78,29 @@ const Component: ActionComponent<undefined, ConfigureRebalancerData> = (
 ) => {
   const queryClient = useQueryClient()
   const options = useActionOptions()
+
   const { watch, setValue } = useFormContext<ConfigureRebalancerData>()
-  const valenceAccount = watch(
-    (props.fieldNamePrefix + 'valenceAccount') as 'valenceAccount'
-  )
   const chainId = watch((props.fieldNamePrefix + 'chainId') as 'chainId')
   const selectedTokens = watch((props.fieldNamePrefix + 'tokens') as 'tokens')
-
-  // Get predictable valence account address in case we have to create it.
-  const generatedValenceAddress = useGenerateInstantiate2({
-    chainId,
-    creator: getChainAddressForActionOptions(options, chainId) || '',
-    codeId:
-      (options.chainContext.type === ActionChainContextType.Supported &&
-        options.chainContext.config.codeIds.ValenceAccount) ||
-      -1,
-    salt: VALENCE_INSTANTIATE2_SALT,
-  })
-
-  const existingValenceAccount = getAccount({
-    accounts: options.context.accounts,
-    chainId,
-    types: [AccountType.Valence],
-  })
-
-  // Check if create valence account action already exists.
-  const existingCreateValenceAccountActionIndex =
-    props.allActionsWithData.findIndex(
-      ({ actionKey }) => actionKey === ActionKey.CreateValenceAccount
-    )
-  // Get the data from the Valence creation action if it exists.
-  const existingCreateValenceAccountActionData =
-    existingCreateValenceAccountActionIndex > -1
-      ? (props.allActionsWithData[existingCreateValenceAccountActionIndex]
-          ?.data as CreateValenceAccountData)
-      : undefined
-  const createValenceAccountAction = useInitializedActionForKey(
-    ActionKey.CreateValenceAccount
-  )
-  // Can add create valence account if no existing action and defaults loaded.
-  const canAddCreateValenceAccountAction =
-    props.isCreating &&
-    !existingValenceAccount &&
-    (existingCreateValenceAccountActionIndex === -1 ||
-      existingCreateValenceAccountActionIndex > props.index) &&
-    !createValenceAccountAction.loading &&
-    !createValenceAccountAction.errored
-  const addCreateValenceAccountActionIfNeededRef = useUpdatingRef(() => {
-    if (canAddCreateValenceAccountAction) {
-      props.addAction?.(
-        {
-          actionKey: ActionKey.CreateValenceAccount,
-          data: cloneDeep(createValenceAccountAction.data.defaults),
-        },
-        props.index
-      )
-    }
-  })
-
-  // Set valence account if not set, or add action to create if not found before
-  // this configure action.
-  useEffect(() => {
-    if (!valenceAccount) {
-      // If existing account found, set it.
-      if (existingValenceAccount?.type === AccountType.Valence) {
-        setValue(
-          (props.fieldNamePrefix + 'valenceAccount') as 'valenceAccount',
-          existingValenceAccount
-        )
-      }
-      // Otherwise attempt to use generated one.
-      else if (
-        !generatedValenceAddress.loading &&
-        !generatedValenceAddress.errored
-      ) {
-        setValue(
-          (props.fieldNamePrefix + 'valenceAccount') as 'valenceAccount',
-          {
-            type: AccountType.Valence,
-            chainId,
-            address: generatedValenceAddress.data,
-            config: {
-              admin: '',
-              rebalancer: null,
-            },
-          }
-        )
-      }
-    }
-
-    // Attempt to add create valence account action if needed.
-    if (canAddCreateValenceAccountAction) {
-      addCreateValenceAccountActionIfNeededRef.current()
-    }
-  }, [
-    setValue,
-    valenceAccount,
-    props.fieldNamePrefix,
-    existingValenceAccount,
-    canAddCreateValenceAccountAction,
-    addCreateValenceAccountActionIfNeededRef,
-    generatedValenceAddress,
-    chainId,
-  ])
+  const newValenceAccount =
+    watch(
+      (props.fieldNamePrefix + 'newValenceAccount') as 'newValenceAccount'
+    ) || {}
 
   const rebalancer = mustGetSupportedChainConfig(chainId).valence?.rebalancer
   const whitelists = useQueryLoadingDataWithError(
     valenceRebalancerExtraQueries.whitelistGenericTokens(
+      queryClient,
+      rebalancer
+        ? {
+            chainId,
+            address: rebalancer,
+          }
+        : undefined
+    )
+  )
+  const serviceFee = useQueryLoadingDataWithError(
+    valenceRebalancerExtraQueries.rebalancerRegistrationServiceFee(
       queryClient,
       rebalancer
         ? {
@@ -208,7 +125,22 @@ const Component: ActionComponent<undefined, ConfigureRebalancerData> = (
     undefined
   )
 
-  const currentBalances = useTokenBalances({
+  const nativeBalances = useTokenBalances({
+    filter: TokenType.Native,
+    // Ensure chosen tokens are loaded.
+    additionalTokens: props.isCreating
+      ? undefined
+      : (newValenceAccount.funds || []).map(({ denom }) => ({
+          chainId,
+          type: TokenType.Native,
+          denomOrAddress: denom,
+        })),
+    // Only fetch balances for base/polytone account on Valence chain.
+    includeAccountTypes: [AccountType.Base, AccountType.Polytone],
+    includeChainIds: [chainId],
+  })
+
+  const valenceBalances = useTokenBalances({
     filter: TokenType.Native,
     // Ensure chosen tokens are loaded.
     additionalTokens: selectedTokens.map(({ denom }) => ({
@@ -218,48 +150,24 @@ const Component: ActionComponent<undefined, ConfigureRebalancerData> = (
     })),
     // Only fetch balances for Valence account.
     includeAccountTypes: [AccountType.Valence],
+    includeChainIds: [chainId],
   })
 
-  // Load tokens used in the create valence account action if it exists.
-  const initialTokens = useQueries({
-    queries:
-      existingCreateValenceAccountActionData?.funds.map(({ denom }) =>
-        tokenQueries.info(queryClient, {
-          chainId,
-          type: TokenType.Native,
-          denomOrAddress: denom,
-        })
-      ) ?? [],
-    combine: makeCombineQueryResultsIntoLoadingData({
-      transform: (tokens) =>
-        tokens.map(
-          (token): GenericTokenBalance => ({
-            token,
-            balance: HugeDecimal.fromHumanReadable(
-              existingCreateValenceAccountActionData?.funds
-                .find(({ denom }) => denom === token.denomOrAddress)
-                ?.amount?.toString() || 0,
-              token.decimals
-            ).toString(),
-          })
-        ),
-    }),
-  })
-
-  const nativeBalances: LoadingData<GenericTokenBalance[]> =
-    // If creating new Valence account, use initial tokens from that action,
-    // since there will be no current balances loaded yet.
-    existingCreateValenceAccountActionData
-      ? initialTokens
-      : currentBalances.loading
-      ? currentBalances
-      : {
-          loading: false,
-          updating: currentBalances.updating,
-          data: currentBalances.data.filter(
-            ({ token }) => token.chainId === chainId
-          ),
-        }
+  const currentValenceBalances: LoadingData<GenericTokenBalance[]> =
+    // If creating new Valence account, use base native tokens that will be used
+    // to fund the initial account.
+    newValenceAccount.creating
+      ? nativeBalances
+      : // Otherwise use current Valence account balances.
+        valenceBalances.loading
+        ? valenceBalances
+        : {
+            loading: false,
+            updating: valenceBalances.updating,
+            data: valenceBalances.data.filter(
+              ({ token }) => token.chainId === chainId
+            ),
+          }
 
   const prices = useCachedLoadingWithError(
     whitelists.loading || whitelists.errored
@@ -285,6 +193,14 @@ const Component: ActionComponent<undefined, ConfigureRebalancerData> = (
             disabled={!props.isCreating}
             fieldName={props.fieldNamePrefix + 'chainId'}
             includeChainIds={VALENCE_SUPPORTED_CHAINS}
+            onChange={() => {
+              // Reset new valence account funds when switching chain.
+              setValue(
+                (props.fieldNamePrefix +
+                  'newValenceAccount.funds') as 'newValenceAccount.funds',
+                []
+              )
+            }}
           />
         )}
 
@@ -292,7 +208,38 @@ const Component: ActionComponent<undefined, ConfigureRebalancerData> = (
         <StatelessConfigureRebalancerComponent
           {...props}
           options={{
-            nativeBalances,
+            nativeBalances:
+              nativeBalances.loading || serviceFee.loading
+                ? { loading: true }
+                : {
+                    loading: false,
+                    updating: nativeBalances.updating,
+                    data: nativeBalances.data.map(
+                      ({ balance: _balance, ...data }) => {
+                        // Subtract service fee from balance for corresponding
+                        // token to ensure that they leave enough for the fee.
+                        // This value is used as the input max.
+                        let balance =
+                          !serviceFee.errored &&
+                          serviceFee.data &&
+                          tokensEqual(data.token, serviceFee.data.token)
+                            ? HugeDecimal.from(_balance).minus(
+                                serviceFee.data.balance
+                              )
+                            : HugeDecimal.from(_balance)
+                        if (balance.lt(0)) {
+                          balance = HugeDecimal.zero
+                        }
+
+                        return {
+                          ...data,
+                          balance: balance.toFixed(0),
+                        }
+                      }
+                    ),
+                  },
+            serviceFee,
+            currentValenceBalances,
             baseDenomWhitelistTokens:
               whitelists.loading || whitelists.errored
                 ? { loading: true }
@@ -306,6 +253,7 @@ const Component: ActionComponent<undefined, ConfigureRebalancerData> = (
               ? undefined
               : minBalanceToken.data,
             AddressInput,
+            Trans,
           }}
         />
       </ChainProvider>
@@ -385,9 +333,16 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
     )
 
     this.defaults = {
-      // If no valence account found, the action will detect this and add the
-      // create account action automatically.
-      valenceAccount: this.existingValenceAccount,
+      newValenceAccount: {
+        creating: !this.existingValenceAccount,
+        funds: [
+          {
+            denom: 'untrn',
+            amount: '10',
+            decimals: 6,
+          },
+        ],
+      },
       chainId: this.valenceChainId,
       trustee: rebalancerConfig?.trustee || undefined,
       baseDenom:
@@ -410,8 +365,8 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
       maxLimit:
         rebalancerConfig?.max_limit &&
         !isNaN(Number(rebalancerConfig.max_limit))
-          ? Number(rebalancerConfig.max_limit)
-          : 500,
+          ? Number(rebalancerConfig.max_limit) * 100
+          : 5,
       minBalance:
         minBalanceTarget?.min_balance && minBalanceToken
           ? {
@@ -427,7 +382,7 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
   }
 
   async encode({
-    valenceAccount,
+    newValenceAccount,
     chainId,
     trustee,
     baseDenom,
@@ -437,14 +392,56 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
     minBalance,
     targetOverrideStrategy,
   }: ConfigureRebalancerData): Promise<UnifiedCosmosMsg[]> {
-    if (!valenceAccount) {
-      throw new Error('Missing valence account.')
+    const chainConfig = getSupportedChainConfig(chainId)
+    if (!chainConfig?.codeIds?.ValenceAccount || !chainConfig?.valence) {
+      throw new Error(this.options.t('error.unsupportedValenceChain'))
     }
 
-    const rebalancer = mustGetSupportedChainConfig(chainId).valence?.rebalancer
-    if (!rebalancer) {
-      throw new Error('Missing rebalancer address.')
+    const sender = getChainAddressForActionOptions(this.options, chainId)
+    if (!sender) {
+      throw new Error(
+        this.options.t('error.failedToFindChainAccount', {
+          chain: getDisplayNameForChainId(chainId),
+        })
+      )
     }
+
+    const {
+      valence: { rebalancer, servicesManager },
+      codeIds: { ValenceAccount },
+    } = chainConfig
+
+    const valenceAccountAddress = this.existingValenceAccount
+      ? this.existingValenceAccount.address
+      : newValenceAccount.creating
+        ? // Compute predicted valence account address if we're creating it.
+          await this.options.queryClient.fetchQuery(
+            contractQueries.instantiate2Address(this.options.queryClient, {
+              chainId,
+              creator: sender,
+              codeId: ValenceAccount,
+              salt: VALENCE_INSTANTIATE2_SALT,
+            })
+          )
+        : undefined
+    if (!valenceAccountAddress) {
+      throw new Error('Missing valence account address.')
+    }
+
+    const rebalancerConfig = this.existingValenceAccount
+      ? await this.options.queryClient
+          .fetchQuery(
+            valenceRebalancerQueries.getConfig({
+              chainId,
+              contractAddress: rebalancer,
+              args: {
+                addr: valenceAccountAddress,
+              },
+            })
+          )
+          // This will error when no rebalancer is configured.
+          .catch(() => null)
+      : undefined
 
     const whitelists = await this.options.queryClient.fetchQuery(
       valenceRebalancerExtraQueries.whitelistGenericTokens(
@@ -456,27 +453,84 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
       )
     )
 
-    return maybeMakePolytoneExecuteMessages(
-      this.options.chain.chain_id,
-      chainId,
+    const msgs: UnifiedCosmosMsg[] = []
+
+    // Add account creation message if valence account does not exist.
+    if (!this.existingValenceAccount) {
+      const serviceFee = await this.options.queryClient.fetchQuery(
+        valenceRebalancerExtraQueries.rebalancerRegistrationServiceFee(
+          this.options.queryClient,
+          {
+            chainId,
+            address: rebalancer,
+          }
+        )
+      )
+
+      const convertedFunds = (newValenceAccount.funds || []).map(
+        ({ denom, amount, decimals }) =>
+          HugeDecimal.fromHumanReadable(amount, decimals).toCoin(denom)
+      )
+
+      // Add service fee to funds.
+      if (serviceFee && serviceFee.balance !== '0') {
+        const existing = convertedFunds.find(
+          (f) => f.denom === serviceFee.token.denomOrAddress
+        )
+        if (existing) {
+          existing.amount = HugeDecimal.from(existing.amount)
+            .plus(serviceFee.balance)
+            .toFixed(0)
+        } else {
+          convertedFunds.push(
+            HugeDecimal.from(serviceFee.balance).toCoin(
+              serviceFee.token.denomOrAddress
+            )
+          )
+        }
+      }
+
+      msgs.push(
+        makeStargateMessage({
+          stargate: {
+            typeUrl: MsgInstantiateContract2.typeUrl,
+            value: MsgInstantiateContract2.fromPartial({
+              sender,
+              admin: sender,
+              codeId: BigInt(ValenceAccount),
+              label: 'Valence Account',
+              msg: toUtf8(
+                JSON.stringify({
+                  services_manager: servicesManager,
+                } as ValenceAccountInstantiateMsg)
+              ),
+              funds: convertedFunds
+                // Neutron errors with `invalid coins` if the funds list is not
+                // alphabetized.
+                .sort((a, b) => a.denom.localeCompare(b.denom)),
+              salt: toUtf8(VALENCE_INSTANTIATE2_SALT),
+              fixMsg: false,
+            }),
+          },
+        })
+      )
+    }
+
+    msgs.push(
       makeWasmMessage({
         wasm: {
           execute: {
-            contract_addr: valenceAccount.address,
+            contract_addr: valenceAccountAddress,
             funds: [],
             msg: {
               // If rebalancer already exists, update it. Otherwise,
               // register it.
-              [valenceAccount.config.rebalancer
-                ? 'update_service'
-                : 'register_to_service']: {
+              [rebalancerConfig ? 'update_service' : 'register_to_service']: {
                 service_name: 'rebalancer',
                 data: encodeJsonToBase64({
                   // Common options.
                   ...({
                     base_denom: baseDenom,
-                    // BPS
-                    max_limit_bps: maxLimit && maxLimit * 100,
                     pid: {
                       p: pid.kp.toString(),
                       i: pid.ki.toString(),
@@ -503,12 +557,18 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
                     keyof RebalancerData & keyof RebalancerUpdateData
                   >),
                   // Differences between data and update.
-                  ...(valenceAccount.config.rebalancer
+                  ...(rebalancerConfig
                     ? ({
                         trustee: trustee ? { set: trustee } : 'clear',
+                        // BPS
+                        max_limit_bps: maxLimit
+                          ? { set: maxLimit * 100 }
+                          : 'clear',
                       } as Partial<RebalancerUpdateData>)
                     : ({
                         trustee: trustee || null,
+                        // BPS
+                        max_limit_bps: maxLimit && maxLimit * 100,
                       } as Partial<RebalancerData>)),
                 }),
               },
@@ -517,14 +577,50 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
         },
       })
     )
+
+    return maybeMakePolytoneExecuteMessages(
+      this.options.chain.chainId,
+      chainId,
+      msgs
+    )
   }
 
-  async match([
-    {
+  // There are four cases:
+  // 1. same-chain valence creation and rebalancer configure
+  // 2. same-chain rebalancer configure
+  // 3. cross-chain valence creation and rebalancer configure
+  // 4. cross-chain rebalancer configure
+  async match(_messages: ProcessedMessage[]): Promise<ActionMatch> {
+    const isCrossChain = _messages[0].isCrossChain
+    const messages = isCrossChain ? _messages[0].wrappedMessages : _messages
+
+    const firstMessageIsCreateValenceAccount =
+      !!getSupportedChainConfig(messages[0].account.chainId)?.codeIds
+        ?.ValenceAccount &&
+      isDecodedStargateMsg(
+        messages[0].decodedMessage,
+        MsgInstantiateContract2
+      ) &&
+      fromUtf8(messages[0].decodedMessage.stargate.value.salt) ===
+        VALENCE_INSTANTIATE2_SALT
+
+    // Verify configure rebalancer message immediately following. If cross chain
+    // message, exactly two should exist since we don't want to match this
+    // action if the cross-chain execution does anything else. Otherwise, we
+    // need at least two messages.
+    const requiredMessageCount = firstMessageIsCreateValenceAccount ? 2 : 1
+    if (
+      (isCrossChain && messages.length !== requiredMessageCount) ||
+      (!isCrossChain && messages.length < requiredMessageCount)
+    ) {
+      return false
+    }
+
+    const {
       decodedMessage,
       account: { chainId },
-    },
-  ]: ProcessedMessage[]): Promise<ActionMatch> {
+    } = messages[firstMessageIsCreateValenceAccount ? 1 : 0]
+
     let serviceName: string | undefined
     let data: RebalancerData | RebalancerUpdateData | undefined
     if (
@@ -542,8 +638,8 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
         'register_to_service' in decodedMessage.wasm.execute.msg
           ? decodedMessage.wasm.execute.msg.register_to_service
           : 'update_service' in decodedMessage.wasm.execute.msg
-          ? decodedMessage.wasm.execute.msg.update_service
-          : undefined
+            ? decodedMessage.wasm.execute.msg.update_service
+            : undefined
       if (
         objectMatchesStructure(serviceData, {
           service_name: {},
@@ -568,15 +664,27 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
       return false
     }
 
-    return true
+    // Cross-chain message wraps multiple messages in one, so we only need to
+    // match one if this is cross-chain. Otherwise, the create and configure
+    // messages will be separate.
+    return isCrossChain ? 1 : requiredMessageCount
   }
 
-  async decode([
-    {
+  async decode(
+    _messages: ProcessedMessage[]
+  ): Promise<ConfigureRebalancerData> {
+    const messages = _messages[0].isCrossChain
+      ? _messages[0].wrappedMessages
+      : _messages
+
+    const isCreating = messages.length === 2
+
+    // Configure rebalancer message.
+    const {
       decodedMessage,
       account: { chainId },
-    },
-  ]: ProcessedMessage[]): Promise<ConfigureRebalancerData> {
+    } = messages[isCreating ? 1 : 0]
+
     let data: RebalancerData | RebalancerUpdateData | undefined
     if (
       objectMatchesStructure(decodedMessage, {
@@ -593,8 +701,8 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
         'register_to_service' in decodedMessage.wasm.execute.msg
           ? decodedMessage.wasm.execute.msg.register_to_service
           : 'update_service' in decodedMessage.wasm.execute.msg
-          ? decodedMessage.wasm.execute.msg.update_service
-          : undefined
+            ? decodedMessage.wasm.execute.msg.update_service
+            : undefined
       if (
         objectMatchesStructure(serviceData, {
           service_name: {},
@@ -647,7 +755,36 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
         )
       : undefined
 
+    const newValenceAccountFunds = isCreating
+      ? await Promise.all(
+          (
+            messages[0].decodedMessage.stargate.value as MsgInstantiateContract2
+          ).funds.map(async ({ denom, amount }) => {
+            const token = await this.options.queryClient.fetchQuery(
+              tokenQueries.info(this.options.queryClient, {
+                chainId,
+                type: TokenType.Native,
+                denomOrAddress: denom,
+              })
+            )
+
+            return {
+              denom,
+              amount: HugeDecimal.from(amount).toHumanReadableString(
+                token.decimals
+              ),
+              decimals: token.decimals,
+            }
+          })
+        )
+      : []
+
     return {
+      newValenceAccount: {
+        creating: isCreating,
+        funds: newValenceAccountFunds,
+        acknowledgedServiceFee: true,
+      },
       chainId,
       trustee:
         typeof data.trustee === 'string'
@@ -656,11 +793,11 @@ export class ConfigureRebalancerAction extends ActionBase<ConfigureRebalancerDat
             ? undefined
             : data.trustee
           : 'update_service' in decodedMessage.wasm.execute.msg &&
-            typeof data.trustee === 'object' &&
-            data.trustee &&
-            'set' in data.trustee
-          ? data.trustee.set
-          : undefined,
+              typeof data.trustee === 'object' &&
+              data.trustee &&
+              'set' in data.trustee
+            ? data.trustee.set
+            : undefined,
       baseDenom: data.base_denom || whitelists.baseDenoms[0].denomOrAddress,
       tokens: data.targets.map(({ denom, bps }) => ({
         denom,

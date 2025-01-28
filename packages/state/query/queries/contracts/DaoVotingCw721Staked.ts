@@ -378,8 +378,8 @@ export const daoVotingCw721StakedQueries = {
             formula: 'daoVotingCw721Staked/votingPowerAtHeight',
             args: {
               address: args.address,
+              height: args.height,
             },
-            ...(args.height && { block: { height: args.height } }),
           })
         )
       } catch (error) {
@@ -419,7 +419,9 @@ export const daoVotingCw721StakedQueries = {
             chainId,
             contractAddress,
             formula: 'daoVotingCw721Staked/totalPowerAtHeight',
-            ...(args.height && { block: { height: args.height } }),
+            args: {
+              height: args.height,
+            },
           })
         )
       } catch (error) {

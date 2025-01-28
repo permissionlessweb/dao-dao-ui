@@ -2,6 +2,7 @@ import { Check, Close } from '@mui/icons-material'
 import clsx from 'clsx'
 import { ComponentType, useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
+import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -33,11 +34,12 @@ import {
 
 export type TransferNftData = {
   chainId: string
-  collection: string
-  tokenId: string
+  nfts: {
+    collection: string
+    tokenId: string
+  }[]
   recipient: string
-
-  // When true, uses `send` instead of `transfer_nft` to transfer the NFT.
+  // When true, uses `send` instead of `transfer_nft` to transfer the NFT(s).
   executeSmartContract: boolean
   smartContractMsg: string
 }
@@ -45,8 +47,9 @@ export type TransferNftData = {
 export interface TransferNftOptions {
   // The set of NFTs that may be transfered as part of this action.
   options: LoadingDataWithError<LazyNftCardInfo[]>
-  // Information about the NFT currently selected.
-  nftInfo: LoadingDataWithError<NftCardInfo | undefined>
+  // Information about the NFTs currently selected. If undefined, no NFTs are
+  // selected.
+  nftInfos: LoadingDataWithError<NftCardInfo[]> | undefined
 
   AddressInput: ComponentType<AddressInputProps<TransferNftData>>
   NftSelectionModal: ComponentType<NftSelectionModalProps>
@@ -56,37 +59,57 @@ export const TransferNftComponent: ActionComponent<TransferNftOptions> = ({
   fieldNamePrefix,
   isCreating,
   errors,
-  options: { options, nftInfo, AddressInput, NftSelectionModal },
+  options: { options, nftInfos, AddressInput, NftSelectionModal },
 }) => {
   const { t } = useTranslation()
-  const { control, watch, setValue, setError, register, clearErrors } =
-    useFormContext<TransferNftData>()
+  const {
+    control,
+    watch,
+    setValue,
+    getValues,
+    setError,
+    register,
+    clearErrors,
+  } = useFormContext<TransferNftData>()
 
   const chainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
   const chain = getChainForChainId(chainId)
 
-  const tokenId = watch((fieldNamePrefix + 'tokenId') as 'tokenId')
-  const collection = watch((fieldNamePrefix + 'collection') as 'collection')
+  const nfts = watch((fieldNamePrefix + 'nfts') as 'nfts')
   const executeSmartContract = watch(
     (fieldNamePrefix + 'executeSmartContract') as 'executeSmartContract'
   )
 
-  const selectedKey = getNftKey(chainId, collection, tokenId)
-
   useEffect(() => {
-    if (!selectedKey) {
-      setError((fieldNamePrefix + 'collection') as 'collection', {
+    if (!nfts.length) {
+      setError((fieldNamePrefix + 'nfts') as 'nfts', {
         type: 'required',
         message: t('error.noNftSelected'),
       })
     } else {
-      clearErrors((fieldNamePrefix + 'collection') as 'collection')
+      clearErrors((fieldNamePrefix + 'nfts') as 'nfts')
     }
-  }, [selectedKey, setError, clearErrors, t, fieldNamePrefix])
+  }, [nfts.length, setError, clearErrors, t, fieldNamePrefix])
 
   // Show modal initially if creating and no NFT already selected.
   const [showModal, setShowModal] = useState<boolean>(
-    isCreating && !selectedKey
+    isCreating && !nfts.length
+  )
+
+  // If any NFT is selected, only show NFTs from that chain. Otherwise, show all
+  // NFTs.
+  const nftOptions: LoadingDataWithError<LazyNftCardInfo[]> =
+    options.loading || options.errored || nfts.length === 0
+      ? options
+      : {
+          loading: false,
+          errored: false,
+          updating: options.updating,
+          data: options.data.filter((o) => o.chainId === chainId),
+        }
+
+  const selectedKeys = nfts.map((nft) =>
+    getNftKey(chainId, nft.collection, nft.tokenId)
   )
 
   return (
@@ -94,11 +117,15 @@ export const TransferNftComponent: ActionComponent<TransferNftOptions> = ({
       <div className="flex flex-col gap-y-4 gap-x-12 lg:flex-row lg:flex-wrap">
         <div className="flex grow flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <p className="primary-text mb-3">
-              {isCreating
-                ? t('form.whoTransferNftQuestion')
-                : t('form.recipient')}
-            </p>
+            <InputLabel
+              className={clsx(isCreating && 'mb-2')}
+              name={
+                isCreating
+                  ? t('form.whoTransferNftsQuestion')
+                  : t('form.recipient')
+              }
+              primary={isCreating}
+            />
 
             <ChainProvider chainId={chainId}>
               <AddressInput
@@ -112,7 +139,7 @@ export const TransferNftComponent: ActionComponent<TransferNftOptions> = ({
                   // contract.
                   (executeSmartContract
                     ? makeValidateAddress
-                    : makeValidateAddress)(chain.bech32_prefix),
+                    : makeValidateAddress)(chain.bech32Prefix),
                 ]}
               />
             </ChainProvider>
@@ -184,28 +211,42 @@ export const TransferNftComponent: ActionComponent<TransferNftOptions> = ({
         </div>
 
         <div className="flex grow flex-col gap-2">
-          {nftInfo.loading ? (
-            <HorizontalNftCardLoader />
-          ) : nftInfo.errored ? (
-            <ErrorPage error={nftInfo.error} />
-          ) : (
-            nftInfo.data && <HorizontalNftCard {...nftInfo.data} />
+          {!isCreating && (
+            <InputLabel
+              name={t('title.numNfts', {
+                count: nfts.length,
+              })}
+            />
           )}
+
+          {nftInfos &&
+            (nftInfos.loading ? (
+              <HorizontalNftCardLoader />
+            ) : nftInfos.errored ? (
+              <ErrorPage error={nftInfos.error} />
+            ) : (
+              <div className="flex flex-col gap-1">
+                {nftInfos.data.map(({ key, ...nftInfo }) => (
+                  <HorizontalNftCard key={key} {...nftInfo} />
+                ))}
+              </div>
+            ))}
 
           {isCreating && (
             <Button
               className={clsx(
-                'text-text-tertiary',
-                nftInfo ? 'self-end' : 'self-start'
+                nftInfos && !nftInfos.loading && !nftInfos.errored
+                  ? 'self-end'
+                  : 'self-start'
               )}
               onClick={() => setShowModal(true)}
-              variant="secondary"
+              variant={nfts.length ? 'secondary' : 'primary'}
             >
-              {t('button.selectNft')}
+              {t('button.selectNfts')}
             </Button>
           )}
 
-          <InputErrorMessage error={errors?.collection} />
+          <InputErrorMessage error={errors?.nfts} />
         </div>
       </div>
 
@@ -217,24 +258,52 @@ export const TransferNftComponent: ActionComponent<TransferNftOptions> = ({
             onClick: () => setShowModal(false),
           }}
           header={{
-            title: t('title.selectNftToTransfer'),
+            title: t('title.selectNftsToTransfer'),
           }}
-          nfts={options}
+          nfts={nftOptions}
           onClose={() => setShowModal(false)}
           onNftClick={(nft) => {
-            if (nft.key === selectedKey) {
-              setValue((fieldNamePrefix + 'tokenId') as 'tokenId', '')
-              setValue((fieldNamePrefix + 'collection') as 'collection', '')
-            } else {
+            const selected = getValues((fieldNamePrefix + 'nfts') as 'nfts')
+
+            // If no NFTs are selected, set the chain and selected NFT.
+            if (selected.length === 0) {
               setValue((fieldNamePrefix + 'chainId') as 'chainId', nft.chainId)
-              setValue((fieldNamePrefix + 'tokenId') as 'tokenId', nft.tokenId)
-              setValue(
-                (fieldNamePrefix + 'collection') as 'collection',
-                nft.collectionAddress
+              setValue((fieldNamePrefix + 'nfts') as 'nfts', [
+                {
+                  collection: nft.collectionAddress,
+                  tokenId: nft.tokenId,
+                },
+              ])
+            } else if (
+              // If the NFT is already selected, remove it.
+              selected.some(
+                (n) =>
+                  n.collection === nft.collectionAddress &&
+                  n.tokenId === nft.tokenId
               )
+            ) {
+              setValue(
+                (fieldNamePrefix + 'nfts') as 'nfts',
+                nfts.filter(
+                  (n) => getNftKey(chainId, n.collection, n.tokenId) !== nft.key
+                )
+              )
+            } else if (nft.chainId === chainId) {
+              // Otherwise, add the NFT if from the same chain.
+              setValue((fieldNamePrefix + 'nfts') as 'nfts', [
+                ...selected,
+                {
+                  collection: nft.collectionAddress,
+                  tokenId: nft.tokenId,
+                },
+              ])
+            } else {
+              // This should never happen since we filter NFTs based on the
+              // chain of the first one selected, but if it does, show an error.
+              toast.error(t('error.selectedNftsMustBeFromSameChain'))
             }
           }}
-          selectedKeys={selectedKey ? [selectedKey] : []}
+          selectedKeys={selectedKeys}
           visible={showModal}
         />
       )}

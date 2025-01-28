@@ -1,9 +1,10 @@
+import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { waitForAll } from 'recoil'
 
-import { CommonNftSelectors, nftCardInfoSelector } from '@dao-dao/state/recoil'
+import { nftQueries } from '@dao-dao/state/query'
+import { CommonNftSelectors } from '@dao-dao/state/recoil'
 import {
   Button,
   HorizontalScroller,
@@ -11,11 +12,14 @@ import {
   NftCard,
   Tooltip,
   useCachedLoadable,
-  useCachedLoading,
   useChain,
 } from '@dao-dao/stateless'
 import { WidgetRendererProps } from '@dao-dao/types'
-import { executeSmartContract, processError } from '@dao-dao/utils'
+import {
+  executeSmartContract,
+  makeCombineQueryResultsIntoLoadingData,
+  processError,
+} from '@dao-dao/utils'
 
 import { useWallet } from '../../../hooks/useWallet'
 import { MintNftData } from './types'
@@ -28,7 +32,7 @@ export const MintNftRenderer = ({
   },
 }: WidgetRendererProps<MintNftData>) => {
   const { t } = useTranslation()
-  const { chain_id: chainId } = useChain()
+  const { chainId } = useChain()
   const {
     address: walletAddress = '',
     getSigningClient,
@@ -44,20 +48,20 @@ export const MintNftRenderer = ({
     })
   )
 
-  const first100Cards = useCachedLoading(
-    allTokensLoadable.state === 'hasValue'
-      ? waitForAll(
-          allTokensLoadable.contents.slice(0, 100).map((tokenId) =>
-            nftCardInfoSelector({
+  const queryClient = useQueryClient()
+  const first100Cards = useQueries({
+    queries:
+      allTokensLoadable.state === 'hasValue'
+        ? allTokensLoadable.contents.slice(0, 100).map((tokenId) =>
+            nftQueries.cardInfo(queryClient, {
               collection: nftCollection,
               chainId,
               tokenId,
             })
           )
-        )
-      : undefined,
-    []
-  )
+        : [],
+    combine: makeCombineQueryResultsIntoLoadingData(),
+  })
 
   const onClick = async () => {
     if (!walletAddress) {

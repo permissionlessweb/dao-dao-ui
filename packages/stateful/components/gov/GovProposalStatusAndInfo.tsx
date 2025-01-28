@@ -58,7 +58,7 @@ export type GovProposalStatusAndInfoProps = {
 export const GovProposalStatusAndInfo = (
   props: GovProposalStatusAndInfoProps
 ) => {
-  const { chain_id: chainId } = useChain()
+  const { chainId } = useChain()
 
   const loadingProposal = useLoadingGovProposal(props.proposalId)
   const depositToken = useCachedLoading(
@@ -101,7 +101,7 @@ const InnerGovProposalStatusAndInfo = ({
 }) => {
   const { t } = useTranslation()
   const {
-    chain: { chain_id: chainId },
+    chain: { chainId },
     config: { name: chainConfigName },
   } = useConfiguredChainContext()
   const {
@@ -201,16 +201,16 @@ const InnerGovProposalStatusAndInfo = ({
     status === ProposalStatus.PROPOSAL_STATUS_DEPOSIT_PERIOD
       ? t('info.proposalStatus.depositPeriod')
       : status === ProposalStatus.PROPOSAL_STATUS_VOTING_PERIOD
-      ? !quorumReached
-        ? t('info.proposalStatus.willFailBadQuorum')
-        : vetoReached
-        ? t('info.proposalStatus.willVeto')
-        : thresholdReached
-        ? t('info.proposalStatus.willPass')
-        : t('info.proposalStatus.willFailBadThreshold')
-      : t('info.proposalStatus.govNotOpen', {
-          turnoutYesPercent: formatPercentOf100(turnoutYesPercent),
-        })
+        ? !quorumReached
+          ? t('info.proposalStatus.willFailBadQuorum')
+          : vetoReached
+            ? t('info.proposalStatus.willVeto')
+            : thresholdReached
+              ? t('info.proposalStatus.willPass')
+              : t('info.proposalStatus.willFailBadThreshold')
+        : t('info.proposalStatus.govNotOpen', {
+            turnoutYesPercent: formatPercentOf100(turnoutYesPercent),
+          })
 
   const refreshProposal = useRefreshGovProposals()
 
@@ -280,7 +280,9 @@ const InnerGovProposalStatusAndInfo = ({
     <StatelessProposalStatusAndInfo
       {...props}
       Voter={
-        status === ProposalStatus.PROPOSAL_STATUS_VOTING_PERIOD
+        status === ProposalStatus.PROPOSAL_STATUS_VOTING_PERIOD &&
+        // Will be loading if not logged in. Only show if logged in.
+        !proposal.walletVoteInfo.loading
           ? Voter
           : undefined
       }
@@ -351,7 +353,7 @@ const InnerProposalStatusAndInfoLoader = (
       label: t('title.dao'),
       Value: (props) => (
         <ButtonLink href={getDaoPath(name)} variant="underline" {...props}>
-          {getDisplayNameForChainId(chain.chain_id)}
+          {getDisplayNameForChainId(chain.chainId)}
         </ButtonLink>
       ),
     },

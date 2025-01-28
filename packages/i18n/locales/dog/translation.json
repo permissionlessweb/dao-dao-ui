@@ -54,7 +54,6 @@
     "openInChainExplorer": "opun in chain explorerr",
     "openInDestination": "opun in {{destination}}",
     "preview": "preevoo",
-    "proposeUpgrade": "puppoze upgrad",
     "publish": "publishe",
     "resetQuestion": "resset¿",
     "review": "reevyoo",
@@ -134,7 +133,6 @@
     "correctErrorsAbove": "pls corect teh errurz above",
     "couldntFindDAO": "we cudnt fynd a da0 with dat adress. searche da0z on da <2>home page</2> ❤",
     "couldntFindProposal": "we coodnt find a puppozal wif dat i.d. see all puppozalz on da <2>da0z home page</2>",
-    "daoFeatureUnsupported": "{{name}} don suport {{feature}} yet",
     "daoIsPaused": "u cannt cre8 a puppozal when da da0 iz pauzed",
     "errorOccurredOnPage": "an errr ocoorrd on dis page",
     "failedParsingCoreVersion": "fayld 2 deternmin corr verzion",
@@ -166,7 +164,8 @@
     "stakeInsufficient": "da0 haz {{amount}} ${{tokenSymbol}} steaked, which is insufficien",
     "subDaoAlreadyExists": "subdao alredie existz",
     "treasuryInsufficientCannotStake": "da trezurie onlee haz {{amount}} ${{tokenSymbol}}, which iz insuffishent",
-    "unexpectedError": "an unexpectedd errur occurd"
+    "unexpectedError": "an unexpectedd errur occurd",
+    "v1DaoFeatureUnsupported": "{{name}} don suport {{feature}} yet"
   },
   "form": {
     "addAnImage": "addd an imaje",

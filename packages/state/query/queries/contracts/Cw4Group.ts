@@ -199,12 +199,8 @@ export const cw4GroupQueries = {
               formula: 'cw4Group/member',
               args: {
                 address: args.addr,
+                height: args.atHeight,
               },
-              ...(args.atHeight && {
-                block: {
-                  height: args.atHeight,
-                },
-              }),
             })
           ),
         }

@@ -13,6 +13,7 @@ export const getPassthroughProps = <P extends IconButtonifierProps>({
   focused: _focused,
   className: _className,
   iconClassName: _iconClassName,
+  confirm: _confirm,
   disabled,
   loading,
   ...props

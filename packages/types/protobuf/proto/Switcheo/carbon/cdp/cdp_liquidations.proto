@@ -1,0 +1,68 @@
+syntax = "proto3";
+package Switcheo.carbon.cdp;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "cosmos_proto/cosmos.proto";
+// this line is used by starport scaffolding # proto/tx/import
+
+option go_package = "github.com/Switcheo/carbon/x/cdp/types";
+option (gogoproto.goproto_getters_all) = false;
+
+message CDPLiquidations {
+  uint64 id = 1 [ (gogoproto.moretags) = "db:\"id\"" ];
+  string liquidator = 2 [
+    (gogoproto.moretags) = "db:\"liquidator\"",
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  string debtor = 3 [
+    (gogoproto.moretags) = "db:\"debtor\"",
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  string collateral_denom = 4
+      [ (gogoproto.moretags) = "db:\"collateral_denom\"" ];
+  string collateral_amount_liquidated = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.moretags) = "db:\"collateral_amount_liquidated\"",
+    (gogoproto.nullable) = false
+  ];
+  string collateral_amount_liquidator = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.moretags) = "db:\"collateral_amount_liquidator\"",
+    (gogoproto.nullable) = false
+  ];
+  string collateral_amount_fee = 7 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.moretags) = "db:\"collateral_amount_fee\"",
+    (gogoproto.nullable) = false
+  ];
+  string liquidation_price = 8 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.moretags) = "db:\"liquidation_price\"",
+    (gogoproto.nullable) = false
+  ];
+  string market_price = 9 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.moretags) = "db:\"market_price\"",
+    (gogoproto.nullable) = false
+  ];
+  string discount = 10 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.moretags) = "db:\"discount\"",
+    (gogoproto.nullable) = false
+  ];
+  string debt_denom = 11 [ (gogoproto.moretags) = "db:\"debt_denom\"" ];
+  string debt_amount = 12 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.moretags) = "db:\"debt_amount\"",
+    (gogoproto.nullable) = false
+  ];
+  int64 block_height = 13 [ (gogoproto.moretags) = "db:\"block_height\"" ];
+  google.protobuf.Timestamp block_time = 14 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.moretags) = "db:\"block_time\"",
+    (gogoproto.nullable) = false
+  ];
+  string transaction_hash = 15
+      [ (gogoproto.moretags) = "db:\"transaction_hash\"" ];
+}

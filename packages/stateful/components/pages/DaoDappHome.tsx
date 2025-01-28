@@ -154,12 +154,13 @@ export const DaoDappHome = () => {
   const { t } = useTranslation()
   const { getDaoProposalPath } = useDaoNavHelpers()
 
+  const dao = useDao()
   const {
     chainId,
     coreAddress,
     name,
-    info: { contractAdmin, supportedFeatures, parentDao },
-  } = useDao()
+    info: { contractAdmin, parentDao },
+  } = dao
 
   const { isMember = false } = useMembership()
   // We won't use this value unless there's a parent, so the undefined DAO
@@ -173,7 +174,7 @@ export const DaoDappHome = () => {
     // parent.
     isMemberOfParent &&
     // Only v2+ DAOs support SubDAOs.
-    supportedFeatures[Feature.SubDaos] &&
+    dao.supports(Feature.SubDaos) &&
     // Only show if the parent has not already registered this as a SubDAO.
     parentDao &&
     !parentDao.registeredSubDao
@@ -227,7 +228,7 @@ export const DaoDappHome = () => {
                 {
                   actionKey: ActionKey.UpdateAdmin,
                   data: {
-                    chainId: chainId,
+                    chainId,
                     contract: coreAddress,
                     newAdmin: parentDao.coreAddress,
                   },
@@ -236,44 +237,44 @@ export const DaoDappHome = () => {
             }),
           })
         : // Make proposal in parent DAO if current wallet is a member.
-        isMemberOfParent
-        ? getDaoProposalPath(parentDao.coreAddress, 'create', {
-            prefill: getDaoProposalSinglePrefill({
-              title: t('title.fixChildAdmin', {
-                child: name,
-              }),
-              description:
-                t('info.parentDaoNotAdmin', {
+          isMemberOfParent
+          ? getDaoProposalPath(parentDao.coreAddress, 'create', {
+              prefill: getDaoProposalSinglePrefill({
+                title: t('title.fixChildAdmin', {
                   child: name,
-                  parent: parentDao.name,
-                }) +
-                ' ' +
-                t('info.proposalFixesChildAdmin', {
-                  child: name,
-                  parent: parentDao.name,
                 }),
-              actions: [
-                {
-                  actionKey: ActionKey.DaoAdminExec,
-                  data: {
-                    coreAddress: coreAddress,
-                    msgs: [],
-                    _actionData: [
-                      {
-                        actionKey: ActionKey.UpdateAdmin,
-                        data: {
-                          chainId: chainId,
-                          contract: coreAddress,
-                          newAdmin: parentDao.coreAddress,
+                description:
+                  t('info.parentDaoNotAdmin', {
+                    child: name,
+                    parent: parentDao.name,
+                  }) +
+                  ' ' +
+                  t('info.proposalFixesChildAdmin', {
+                    child: name,
+                    parent: parentDao.name,
+                  }),
+                actions: [
+                  {
+                    actionKey: ActionKey.DaoAdminExec,
+                    data: {
+                      coreAddress: coreAddress,
+                      msgs: [],
+                      _actionData: [
+                        {
+                          actionKey: ActionKey.UpdateAdmin,
+                          data: {
+                            chainId,
+                            contract: coreAddress,
+                            newAdmin: parentDao.coreAddress,
+                          },
                         },
-                      },
-                    ],
+                      ],
+                    },
                   },
-                },
-              ],
-            }),
-          })
-        : undefined
+                ],
+              }),
+            })
+          : undefined
       : undefined
 
   const loadingTabs = useDaoTabs()

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { FieldValues, UseFormSetValue } from 'react-hook-form'
+import { FieldValues, UseFormSetValue, UseFormWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 
 import { BooleanFieldNames } from '@dao-dao/types'
@@ -129,54 +129,72 @@ export const SwitchCard = ({
 export type FormSwitchWrapperProps<
   Props,
   FV extends FieldValues,
-  BooleanFieldName extends BooleanFieldNames<FV>
+  BooleanFieldName extends BooleanFieldNames<FV>,
 > = Omit<Props, 'enabled' | 'onClick'> & {
   fieldName: BooleanFieldName
-  value: boolean | undefined
   setValue: UseFormSetValue<FV>
   onToggle?: (newValue: boolean) => void
-}
+} & (
+    | {
+        value: boolean | undefined
+        watch?: never
+      }
+    | {
+        value?: never
+        watch: UseFormWatch<FV>
+      }
+  )
 
 export const FormSwitch = <
   FV extends FieldValues,
-  BooleanFieldName extends BooleanFieldNames<FV>
+  BooleanFieldName extends BooleanFieldNames<FV>,
 >({
   fieldName,
-  value,
+  value: _value,
+  watch,
   setValue,
   onToggle,
   ...props
-}: FormSwitchWrapperProps<SwitchProps, FV, BooleanFieldName>) => (
-  <Switch
-    enabled={!!value}
-    onClick={() => {
-      const newValue = !value
-      setValue(fieldName, newValue as any)
-      onToggle?.(newValue)
-    }}
-    {...props}
-  />
-)
+}: FormSwitchWrapperProps<SwitchProps, FV, BooleanFieldName>) => {
+  const value = _value ?? watch?.(fieldName)
+
+  return (
+    <Switch
+      enabled={!!value}
+      onClick={() => {
+        const newValue = !value
+        setValue(fieldName, newValue as any)
+        onToggle?.(newValue)
+      }}
+      {...props}
+    />
+  )
+}
 
 export const FormSwitchCard = <
   FV extends FieldValues,
-  BooleanFieldName extends BooleanFieldNames<FV>
+  BooleanFieldName extends BooleanFieldNames<FV>,
 >({
   fieldName,
-  value,
+  value: _value,
+  watch,
   setValue,
   onToggle,
   ...props
-}: FormSwitchWrapperProps<SwitchCardProps, FV, BooleanFieldName>) => (
-  <SwitchCard
-    enabled={!!value}
-    onClick={() => {
-      const newValue = !value
-      setValue(fieldName, newValue as any)
-      onToggle?.(newValue)
-    }}
-    sizing="sm"
-    tooltipIconSize="sm"
-    {...props}
-  />
-)
+}: FormSwitchWrapperProps<SwitchCardProps, FV, BooleanFieldName>) => {
+  const value = _value ?? watch?.(fieldName)
+
+  return (
+    <SwitchCard
+      enabled={!!value}
+      onClick={() => {
+        const newValue = !value
+        setValue(fieldName, newValue as any)
+        onToggle?.(newValue)
+      }}
+      sizing="sm"
+      tooltipIconSize="sm"
+      {...props}
+    />
+  )
+}

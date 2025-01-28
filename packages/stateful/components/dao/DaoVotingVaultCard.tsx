@@ -9,7 +9,7 @@ import { StatefulDaoVotingVaultCardProps } from '@dao-dao/types'
 import { useQueryLoadingDataWithError, useWallet } from '../../hooks'
 
 export const DaoVotingVaultCard = (props: StatefulDaoVotingVaultCardProps) => {
-  const { chain_id: chainId } = useChain()
+  const { chainId } = useChain()
   const { address } = useWallet()
 
   const loadingWalletVotingPower = useQueryLoadingDataWithError(
@@ -49,18 +49,18 @@ export const DaoVotingVaultCard = (props: StatefulDaoVotingVaultCardProps) => {
               data: undefined,
             }
           : loadingWalletVotingPower.loading || loadingWalletVotingPower.errored
-          ? {
-              loading: true,
-            }
-          : {
-              loading: false,
-              data: props.vault.totalPower.isZero()
-                ? 0
-                : HugeDecimal.from(loadingWalletVotingPower.data.power)
-                    .div(props.vault.totalPower)
-                    .times(100)
-                    .toNumber(),
-            }
+            ? {
+                loading: true,
+              }
+            : {
+                loading: false,
+                data: props.vault.totalPower.isZero()
+                  ? 0
+                  : HugeDecimal.from(loadingWalletVotingPower.data.power)
+                      .div(props.vault.totalPower)
+                      .times(100)
+                      .toNumber(),
+              }
       }
       {...props}
     />

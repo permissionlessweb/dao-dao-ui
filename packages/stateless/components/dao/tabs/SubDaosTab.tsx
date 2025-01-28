@@ -24,7 +24,6 @@ export interface SubDaosTabProps {
   subDaos: LoadingDataWithError<DaoInfo[]>
   isMember: boolean
   createSubDaoHref?: string
-  upgradeToV2Href?: string
   ButtonLink: ComponentType<ButtonLinkProps>
 }
 
@@ -33,20 +32,14 @@ export const SubDaosTab = ({
   subDaos,
   isMember,
   createSubDaoHref,
-  upgradeToV2Href,
   ButtonLink,
 }: SubDaosTabProps) => {
   const { t } = useTranslation()
-  const {
-    coreAddress,
-    coreVersion,
-    name,
-    info: { supportedFeatures },
-  } = useDao()
+  const dao = useDao()
   const { getDaoPath } = useDaoNavHelpers()
 
   const subDaosSupported =
-    coreVersion === ContractVersion.Gov || supportedFeatures[Feature.SubDaos]
+    dao.coreVersion === ContractVersion.Gov || dao.supports(Feature.SubDaos)
 
   return (
     <>
@@ -60,19 +53,19 @@ export const SubDaosTab = ({
         <Tooltip
           title={
             !subDaosSupported
-              ? t('error.daoFeatureUnsupported', {
-                  name,
+              ? t('error.v1DaoFeatureUnsupported', {
+                  name: dao.name,
                   feature: t('title.subDaos'),
                 })
               : !isMember
-              ? t('error.mustBeMemberToCreateSubDao')
-              : undefined
+                ? t('error.mustBeMemberToCreateSubDao')
+                : undefined
           }
         >
           <ButtonLink
             className="shrink-0"
             disabled={!isMember || !subDaosSupported}
-            href={getDaoPath(coreAddress, 'create')}
+            href={getDaoPath(dao.coreAddress, 'create')}
           >
             <Add className="!h-4 !w-4" />
             <span className="hidden md:inline">{t('button.newSubDao')}</span>
@@ -84,13 +77,10 @@ export const SubDaosTab = ({
       {!subDaosSupported ? (
         <NoContent
           Icon={Upgrade}
-          actionNudge={t('info.submitUpgradeProposal')}
-          body={t('error.daoFeatureUnsupported', {
-            name,
+          body={t('error.v1DaoFeatureUnsupported', {
+            name: dao.name,
             feature: t('title.subDaos'),
           })}
-          buttonLabel={t('button.proposeUpgrade')}
-          href={isMember ? upgradeToV2Href : undefined}
         />
       ) : subDaos.errored ? (
         <ErrorPage error={subDaos.error} />

@@ -11,16 +11,21 @@ import {
   isSecretNetwork,
 } from '@dao-dao/utils'
 
-import { useMembership, useQueryLoadingDataWithError } from '../../../../hooks'
+import { useQueryLoadingDataWithError } from '../../../../hooks'
 import { useGovernanceTokenInfo } from './useGovernanceTokenInfo'
 import { useStakingInfo } from './useStakingInfo'
 
 export const useMainDaoInfoCards = (): DaoInfoCard[] => {
   const { t } = useTranslation()
   const votingModule = useVotingModule()
-  const { totalVotingWeight } = useMembership()
 
-  const { unstakingDuration } = useStakingInfo()
+  const { loadingTotalStakedValue, unstakingDuration } = useStakingInfo({
+    fetchTotalStakedValue: true,
+  })
+
+  if (loadingTotalStakedValue === undefined) {
+    throw new Error(t('error.loadingData'))
+  }
 
   const {
     governanceToken: { decimals, symbol },
@@ -49,8 +54,8 @@ export const useMainDaoInfoCards = (): DaoInfoCard[] => {
             value: loadingMembers.loading
               ? undefined
               : loadingMembers.errored
-              ? '<error>'
-              : loadingMembers.data?.length ?? '<error>',
+                ? '<error>'
+                : (loadingMembers.data?.length ?? '<error>'),
           },
         ]),
     {
@@ -71,16 +76,21 @@ export const useMainDaoInfoCards = (): DaoInfoCard[] => {
       tooltip: t('info.totalStakedTooltip', {
         tokenSymbol: symbol,
       }),
-      loading: totalVotingWeight === undefined,
-      value:
-        totalVotingWeight === undefined
-          ? undefined
-          : formatPercentOf100(
-              HugeDecimal.from(totalVotingWeight)
-                .div(HugeDecimal.fromHumanReadable(supply, decimals))
-                .times(100)
-                .toNumber()
-            ),
+      value: (
+        <TokenAmountDisplay
+          amount={loadingTotalStakedValue}
+          decimals={decimals}
+          suffix={
+            loadingTotalStakedValue.loading
+              ? undefined
+              : ` (${formatPercentOf100(
+                  loadingTotalStakedValue.data.div(supply).times(100).toNumber()
+                )})`
+          }
+          suffixClassName="text-text-secondary"
+          symbol={symbol}
+        />
+      ),
     },
     {
       label: t('title.unstakingPeriod'),

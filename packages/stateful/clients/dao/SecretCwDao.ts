@@ -87,8 +87,8 @@ export class SecretCwDao extends CwDao {
 
     return {
       admin: config.admin || null,
-      codeId: codeIds.DaoCore,
-      codeHash: codeHashes.DaoCore,
+      codeId: codeIds.DaoDaoCore,
+      codeHash: codeHashes.DaoDaoCore,
       label: `DAO DAO DAO (${Date.now()})`,
       msg: encodeJsonToBase64({
         admin: config.admin,

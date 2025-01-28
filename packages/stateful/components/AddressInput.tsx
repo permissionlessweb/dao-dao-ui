@@ -3,14 +3,11 @@ import Fuse from 'fuse.js'
 import { useMemo } from 'react'
 import { FieldValues, Path, useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { waitForNone } from 'recoil'
 import { useDeepCompareMemoize } from 'use-deep-compare-effect'
 
-import { profileQueries } from '@dao-dao/state/query'
-import { searchDaosSelector } from '@dao-dao/state/recoil'
+import { indexerQueries, profileQueries } from '@dao-dao/state/query'
 import {
   AddressInput as StatelessAddressInput,
-  useCachedLoadable,
   useChain,
 } from '@dao-dao/stateless'
 import { AddressInputProps, Entity, EntityType } from '@dao-dao/types'
@@ -27,7 +24,7 @@ import { EntityDisplay } from './EntityDisplay'
 
 export const AddressInput = <
   FV extends FieldValues,
-  FieldName extends Path<FV>
+  FieldName extends Path<FV>,
 >(
   props: AddressInputProps<FV, FieldName>
 ) => {
@@ -37,19 +34,21 @@ export const AddressInput = <
   // Null if not within a FormProvider.
   const formContext = useFormContext<FV>()
   const watch = props.watch || formContext?.watch
-  const formValue = watch?.(props.fieldName) as string | undefined
+  const formValue = (
+    props.fieldName ? watch?.(props.fieldName) : props.value
+  ) as string | undefined
 
   const hasFormValue =
     formValue &&
     formValue.length >= 3 &&
     // Don't search name if it's an address.
-    !isValidBech32Address(formValue, currentChain.bech32_prefix)
+    !isValidBech32Address(formValue, currentChain.bech32Prefix)
 
   const searchProfilesLoading = useQueryLoadingDataWithError(
     profileQueries.searchByNamePrefix(
       hasFormValue && props.type !== 'contract'
         ? {
-            chainId: currentChain.chain_id,
+            chainId: currentChain.chainId,
             namePrefix: formValue,
           }
         : undefined
@@ -58,26 +57,29 @@ export const AddressInput = <
 
   // Search DAOs on current chains and all polytone-connected chains so we can
   // find polytone accounts.
-  const searchDaosLoadable = useCachedLoadable(
-    hasFormValue && props.type !== 'wallet'
-      ? waitForNone(
-          [
+  const searchedDaos = useQueries({
+    queries:
+      hasFormValue && props.type !== 'wallet'
+        ? [
             // Current chain.
-            currentChain.chain_id,
+            currentChain.chainId,
             // Chains that have polytone connections with the current chain.
             ...POLYTONE_CONFIG_PER_CHAIN.filter(([, destChains]) =>
-              Object.keys(destChains).includes(currentChain.chain_id)
+              Object.keys(destChains).includes(currentChain.chainId)
             ).map(([chainId]) => chainId),
           ].map((chainId) =>
-            searchDaosSelector({
+            indexerQueries.searchDaos({
               chainId,
               query: formValue,
               limit: 5,
             })
           )
-        )
-      : undefined
-  )
+        : [],
+    combine: makeCombineQueryResultsIntoLoadingData({
+      firstLoad: 'none',
+      transform: (results) => results.flatMap((r) => r.hits),
+    }),
+  })
 
   const queryClient = useQueryClient()
   const loadingEntities = useQueries({
@@ -85,21 +87,17 @@ export const AddressInput = <
       ...(!searchProfilesLoading.loading && !searchProfilesLoading.errored
         ? searchProfilesLoading.data.map(({ address }) =>
             entityQueries.info(queryClient, {
-              chainId: currentChain.chain_id,
+              chainId: currentChain.chainId,
               address,
             })
           )
         : []),
-      ...(searchDaosLoadable.state === 'hasValue'
-        ? searchDaosLoadable.contents.flatMap((loadable) =>
-            loadable.state === 'hasValue'
-              ? loadable.contents.map(({ chainId, id: address }) =>
-                  entityQueries.info(queryClient, {
-                    chainId,
-                    address,
-                  })
-                )
-              : []
+      ...(!searchedDaos.loading
+        ? searchedDaos.data.flatMap(({ chainId, id: address }) =>
+            entityQueries.info(queryClient, {
+              chainId,
+              address,
+            })
           )
         : []),
     ],
@@ -110,11 +108,11 @@ export const AddressInput = <
         // accounts (polytone probably) on the current chain.
         entities.filter(
           (entity) =>
-            entity.chainId === currentChain.chain_id ||
+            entity.chainId === currentChain.chainId ||
             (entity.type === EntityType.Dao &&
               getAccountAddress({
                 accounts: entity.daoInfo.accounts,
-                chainId: currentChain.chain_id,
+                chainId: currentChain.chainId,
               }))
         ),
     }),
@@ -151,12 +149,7 @@ export const AddressInput = <
                     (!searchProfilesLoading.errored &&
                       searchProfilesLoading.updating))) ||
                 (props.type !== 'wallet' &&
-                  (searchDaosLoadable.state === 'loading' ||
-                    (searchDaosLoadable.state === 'hasValue' &&
-                      (searchDaosLoadable.updating ||
-                        searchDaosLoadable.contents.some(
-                          (loadable) => loadable.state === 'loading'
-                        ))))) ||
+                  (searchedDaos.loading || searchedDaos.updating)) ||
                 loadingEntities.loading ||
                 !!loadingEntities.updating,
             }

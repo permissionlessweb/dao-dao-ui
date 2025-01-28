@@ -79,6 +79,8 @@ export const allBalancesSelector = selectorFamily<
     includeAccountTypes?: AccountType[]
     // Exclude these account types.
     excludeAccountTypes?: AccountType[]
+    // Include only these chain IDs.
+    includeChainIds?: string[]
   }>
 >({
   key: 'allBalances',
@@ -94,6 +96,7 @@ export const allBalancesSelector = selectorFamily<
       ignoreStaked,
       includeAccountTypes,
       excludeAccountTypes = [AccountType.Valence],
+      includeChainIds,
     }) =>
     ({ get }) => {
       const allAccounts = get(
@@ -102,10 +105,15 @@ export const allBalancesSelector = selectorFamily<
           address: mainAddress,
           includeIcaChains,
         })
-      ).filter(({ type }) => {
+      ).filter(({ chainId, type }) => {
+        if (includeChainIds && !includeChainIds.includes(chainId)) {
+          return false
+        }
+
         if (includeAccountTypes) {
           return includeAccountTypes.includes(type)
         }
+
         if (excludeAccountTypes) {
           return !excludeAccountTypes.includes(type)
         }

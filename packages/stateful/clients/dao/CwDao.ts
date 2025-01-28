@@ -1,4 +1,3 @@
-import { Chain } from '@chain-registry/types'
 import {
   FetchQueryOptions,
   QueryClient,
@@ -7,6 +6,7 @@ import {
 
 import { daoDaoCoreQueries } from '@dao-dao/state/query'
 import {
+  AnyChain,
   DaoInfo,
   IProposalModuleBase,
   IVotingModuleBase,
@@ -113,7 +113,7 @@ export class CwDao extends DaoBase {
   ): InstantiateInfo {
     return {
       admin: config.admin || null,
-      codeId: mustGetSupportedChainConfig(chainId).codeIds.DaoCore,
+      codeId: mustGetSupportedChainConfig(chainId).codeIds.DaoDaoCore,
       label: `DAO DAO DAO (${Date.now()})`,
       msg: encodeJsonToBase64({
         admin: config.admin,
@@ -201,7 +201,7 @@ export class CwDao extends DaoBase {
     return this.options.chainId
   }
 
-  get chain(): Chain {
+  get chain(): AnyChain {
     return getChainForChainId(this.chainId)
   }
 

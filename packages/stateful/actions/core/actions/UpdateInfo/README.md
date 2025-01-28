@@ -1,6 +1,6 @@
 # UpdateInfo
 
-Update the name, description, image, and some other config for the DAO.
+Update the name, description, image, banner, and some other config for the DAO.
 
 ## Bulk import format
 
@@ -19,6 +19,8 @@ guide](https://github.com/DA0-DA0/dao-dao-ui/wiki/Bulk-importing-actions).
   "description": "<DESCRIPTION>",
   // Optional. If unset, will be removed.
   "image_url": "<IMAGE URL>",
+  // Optional. If unset, will be removed.
+  "banner": "<BANNER URL>",
   "automatically_add_cw20s": <true | false>,
   "automatically_add_cw721s": <true | false>,
   // Only on v2 and above. Optional. If unset, will be removed.

@@ -1,6 +1,6 @@
 import { useQueryClient, useSuspenseQueries } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { useSetRecoilState, waitForAll } from 'recoil'
+import { useSetRecoilState } from 'recoil'
 
 import { HugeDecimal } from '@dao-dao/math'
 import {
@@ -8,17 +8,13 @@ import {
   contractQueries,
   daoVotingOnftStakedQueries,
   daoVotingOnftStakedQueryKeys,
-  nftCardInfoSelector,
   omniflixQueries,
   refreshDaoVotingPowerAtom,
 } from '@dao-dao/state'
-import {
-  useCachedLoadable,
-  useCachedLoadingWithError,
-  useDao,
-} from '@dao-dao/stateless'
-import { NftClaim } from '@dao-dao/types/contracts/DaoVotingOnftStaked'
-import { claimAvailable, parseContractVersion } from '@dao-dao/utils'
+import { useCachedLoadable, useDao } from '@dao-dao/stateless'
+import { LazyNftCardInfo } from '@dao-dao/types'
+import { NftClaimsResponse } from '@dao-dao/types/contracts/DaoVotingOnftStaked'
+import { claimAvailable, getNftKey, parseContractVersion } from '@dao-dao/utils'
 
 import {
   useQueryLoadingData,
@@ -206,16 +202,9 @@ export const useStakingInfo = ({
         enabled: fetchClaims && !!walletAddress,
       },
     }),
-    { nft_claims: [] }
+    { nft_claims: [] } as NftClaimsResponse
   )
-  const nftClaims = (
-    loadingClaims.loading ? [] : loadingClaims.data.nft_claims
-  ).map(
-    ({ token_id, release_at }): NftClaim => ({
-      release_at,
-      token_id,
-    })
-  )
+  const nftClaims = loadingClaims.loading ? [] : loadingClaims.data.nft_claims
 
   const claimsPending = blockHeight
     ? nftClaims?.filter((c) => !claimAvailable(c, blockHeight))
@@ -232,7 +221,7 @@ export const useStakingInfo = ({
   })
 
   // Wallet staked value
-  const loadingWalletStakedNftIds = useQueryLoadingDataWithError(
+  const loadingWalletStakedNfts = useQueryLoadingDataWithError(
     daoVotingOnftStakedQueries.stakedNfts(queryClient, {
       chainId: votingModule.chainId,
       contractAddress: votingModule.address,
@@ -242,44 +231,36 @@ export const useStakingInfo = ({
       options: {
         enabled: fetchWalletStakedValue && !!walletAddress,
       },
-    })
-  )
-
-  const loadingWalletStakedNfts = useCachedLoadingWithError(
-    !loadingWalletStakedNftIds.loading && !loadingWalletStakedNftIds.errored
-      ? waitForAll(
-          loadingWalletStakedNftIds.data.map((tokenId) =>
-            nftCardInfoSelector({
-              chainId: votingModule.chainId,
-              collection: collectionAddress,
-              tokenId,
-            })
-          )
-        )
-      : undefined
-  )
-
-  const loadingWalletUnstakedOnfts = useQueryLoadingDataWithError({
-    ...omniflixQueries.allOnfts(queryClient, {
-      chainId: votingModule.chainId,
-      id: collectionAddress,
-      owner: walletAddress ?? '',
     }),
-    enabled: fetchWalletUnstakedNfts && !!walletAddress,
-  })
+    (data) =>
+      data.map(
+        (tokenId): LazyNftCardInfo => ({
+          key: getNftKey(votingModule.chainId, collectionAddress, tokenId),
+          chainId: votingModule.chainId,
+          collectionAddress,
+          tokenId,
+        })
+      )
+  )
 
-  const loadingWalletUnstakedNfts = useCachedLoadingWithError(
-    !loadingWalletUnstakedOnfts.loading && !loadingWalletUnstakedOnfts.errored
-      ? waitForAll(
-          loadingWalletUnstakedOnfts.data.map(({ id }) =>
-            nftCardInfoSelector({
-              chainId: votingModule.chainId,
-              collection: collectionAddress,
-              tokenId: id,
-            })
-          )
-        )
-      : undefined
+  const loadingWalletUnstakedNfts = useQueryLoadingDataWithError(
+    {
+      ...omniflixQueries.allOnfts(queryClient, {
+        chainId: votingModule.chainId,
+        id: collectionAddress,
+        owner: walletAddress ?? '',
+      }),
+      enabled: fetchWalletUnstakedNfts && !!walletAddress,
+    },
+    ([{ onfts }]) =>
+      onfts.map(
+        ({ id }): LazyNftCardInfo => ({
+          key: getNftKey(votingModule.chainId, collectionAddress, id),
+          chainId: votingModule.chainId,
+          collectionAddress,
+          tokenId: id,
+        })
+      )
   )
 
   return {
@@ -303,21 +284,21 @@ export const useStakingInfo = ({
       !fetchTotalStakedValue || loadingTotalStakedValue.errored
         ? undefined
         : loadingTotalStakedValue.loading
-        ? { loading: true }
-        : {
-            loading: false,
-            data: HugeDecimal.from(loadingTotalStakedValue.data.power),
-          },
+          ? { loading: true }
+          : {
+              loading: false,
+              data: HugeDecimal.from(loadingTotalStakedValue.data.power),
+            },
     // Wallet staked value
     loadingWalletStakedValue:
-      !fetchWalletStakedValue || loadingWalletStakedNftIds.errored
+      !fetchWalletStakedValue || loadingWalletStakedNfts.errored
         ? undefined
-        : loadingWalletStakedNftIds.loading
-        ? { loading: true }
-        : {
-            loading: false,
-            data: HugeDecimal.from(loadingWalletStakedNftIds.data.length),
-          },
+        : loadingWalletStakedNfts.loading
+          ? { loading: true }
+          : {
+              loading: false,
+              data: HugeDecimal.from(loadingWalletStakedNfts.data.length),
+            },
     loadingWalletStakedNfts,
     loadingWalletUnstakedNfts,
   }

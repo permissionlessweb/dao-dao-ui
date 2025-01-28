@@ -39,7 +39,7 @@ export type StringFieldNames<FieldValues> = {
 
 export interface ImageSelectorModalProps<
   FV extends FieldValues,
-  StringFieldName extends StringFieldNames<FV>
+  StringFieldName extends StringFieldNames<FV>,
 > {
   fieldName: StringFieldName
   register: UseFormRegister<FV>
@@ -53,11 +53,12 @@ export interface ImageSelectorModalProps<
   buttonLabel?: string
   imageClassName?: string
   visible?: boolean
+  style?: 'avatar' | 'banner'
 }
 
 export const ImageSelectorModal = <
   FV extends FieldValues,
-  StringFieldName extends StringFieldNames<FV>
+  StringFieldName extends StringFieldNames<FV>,
 >({
   fieldName,
   register,
@@ -71,6 +72,7 @@ export const ImageSelectorModal = <
   buttonLabel,
   imageClassName,
   visible = true,
+  style = 'avatar',
 }: ImageSelectorModalProps<FV, StringFieldName>) => {
   const { t } = useTranslation()
   const imageUrl = watch(fieldName) ?? ''
@@ -79,13 +81,18 @@ export const ImageSelectorModal = <
 
   return (
     <Modal
-      contentContainerClassName="gap-3 items-center"
+      contentContainerClassName="gap-3 items-center max-w-[16rem]"
+      hideCloseButton
       onClose={() => onCloseOrDone(false)}
       visible={visible}
     >
       <div
         className={clsx(
-          'h-[95px] w-[95px] rounded-full border border-border-secondary bg-cover bg-center',
+          'border border-border-secondary bg-cover bg-center bg-no-repeat mb-4',
+          {
+            'rounded-full h-24 w-24': style === 'avatar',
+            'rounded-lg h-24 w-full': style === 'banner',
+          },
           imageClassName
         )}
         role="img"
@@ -97,6 +104,7 @@ export const ImageSelectorModal = <
             : {}
         }
       />
+
       <div className="flex flex-col gap-1 self-stretch">
         <InputLabel
           mono
@@ -126,7 +134,7 @@ export const ImageSelectorModal = <
         <InputLabel mono name={t('form.orUploadOne')} />
         <ImageUploadInput
           Trans={Trans}
-          className="aspect-square max-w-[14rem]"
+          className={clsx(style === 'avatar' && 'aspect-square')}
           onChange={(url) => {
             setUploadError(undefined)
             setValue(fieldName, url as any)
@@ -152,7 +160,7 @@ export const ImageSelectorModal = <
 
 export interface ImageSelectorProps<
   FV extends FieldValues,
-  StringFieldName extends StringFieldNames<FV>
+  StringFieldName extends StringFieldNames<FV>,
 > {
   fieldName: StringFieldName
   register: UseFormRegister<FV>
@@ -164,11 +172,12 @@ export interface ImageSelectorProps<
   error?: FieldError
   className?: string
   size?: string | number
+  style?: 'avatar' | 'banner'
 }
 
 export const ImageSelector = <
   FV extends FieldValues,
-  StringFieldName extends StringFieldNames<FV>
+  StringFieldName extends StringFieldNames<FV>,
 >({
   fieldName,
   error,
@@ -176,6 +185,7 @@ export const ImageSelector = <
   className,
   disabled,
   size,
+  style = 'avatar',
   ...props
 }: ImageSelectorProps<FV, StringFieldName>) => {
   const [showImageSelect, setShowImageSelect] = useState(false)
@@ -185,11 +195,12 @@ export const ImageSelector = <
     <>
       <button
         className={clsx(
-          'flex shrink-0 items-center justify-center rounded-full border border-border-secondary bg-background-secondary bg-cover bg-center transition',
+          'flex shrink-0 items-center justify-center border border-border-secondary bg-background-secondary bg-cover bg-center bg-no-repeat transition',
+          style === 'avatar' && 'rounded-full',
           {
             'hover:ring': !disabled,
             'ring ring-border-interactive-error': error,
-            'h-24 w-24': size === undefined,
+            'h-24 w-24': size === undefined && style === 'avatar',
           },
           className
         )}
@@ -213,6 +224,7 @@ export const ImageSelector = <
           error={error}
           fieldName={fieldName}
           onCloseOrDone={() => setShowImageSelect(false)}
+          style={style}
           watch={watch}
           {...props}
         />

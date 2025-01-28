@@ -1,3 +1,4 @@
+import { usePlausible } from 'next-plausible'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -14,7 +15,11 @@ import {
   StakingModal as StatelessStakingModal,
   useVotingModule,
 } from '@dao-dao/stateless'
-import { BaseStakingModalProps, StakingMode } from '@dao-dao/types'
+import {
+  BaseStakingModalProps,
+  PlausibleEvents,
+  StakingMode,
+} from '@dao-dao/types'
 import { CHAIN_GAS_MULTIPLIER, processError } from '@dao-dao/utils'
 
 import { SuspenseLoader } from '../../../../components'
@@ -41,11 +46,12 @@ const InnerStakingModal = ({
 }: BaseStakingModalProps) => {
   const { t } = useTranslation()
   const {
-    address: walletAddress,
+    address: walletAddress = '',
     isWalletConnected,
     refreshBalances,
   } = useWallet()
   const votingModule = useVotingModule()
+  const plausible = usePlausible<PlausibleEvents>()
 
   const [stakingLoading, setStakingLoading] = useRecoilState(stakingLoadingAtom)
 
@@ -68,15 +74,15 @@ const InnerStakingModal = ({
 
   const doStake = DaoVotingTokenStakedHooks.useStake({
     contractAddress: votingModule.address,
-    sender: walletAddress ?? '',
+    sender: walletAddress,
   })
   const doUnstake = DaoVotingTokenStakedHooks.useUnstake({
     contractAddress: votingModule.address,
-    sender: walletAddress ?? '',
+    sender: walletAddress,
   })
   const doClaim = DaoVotingTokenStakedHooks.useClaim({
     contractAddress: votingModule.address,
-    sender: walletAddress ?? '',
+    sender: walletAddress,
   })
 
   const setRefreshDaoVotingPower = useSetRecoilState(
@@ -107,6 +113,16 @@ const InnerStakingModal = ({
             undefined,
             amount.toCoins(governanceToken.denomOrAddress)
           )
+
+          plausible('daoVotingStake', {
+            props: {
+              chainId: votingModule.chainId,
+              dao: votingModule.dao.coreAddress,
+              walletAddress,
+              votingModule: votingModule.address,
+              votingModuleType: votingModule.contractName,
+            },
+          })
 
           // New balances will not appear until the next block.
           await awaitNextBlock()
@@ -142,6 +158,16 @@ const InnerStakingModal = ({
         try {
           await doUnstake({
             amount: amount.toFixed(0),
+          })
+
+          plausible('daoVotingUnstake', {
+            props: {
+              chainId: votingModule.chainId,
+              dao: votingModule.dao.coreAddress,
+              walletAddress,
+              votingModule: votingModule.address,
+              votingModuleType: votingModule.contractName,
+            },
           })
 
           // New balances will not appear until the next block.
@@ -182,6 +208,16 @@ const InnerStakingModal = ({
         setStakingLoading(true)
         try {
           await doClaim()
+
+          plausible('daoVotingClaim', {
+            props: {
+              chainId: votingModule.chainId,
+              dao: votingModule.dao.coreAddress,
+              walletAddress,
+              votingModule: votingModule.address,
+              votingModuleType: votingModule.contractName,
+            },
+          })
 
           // New balances will not appear until the next block.
           await awaitNextBlock()

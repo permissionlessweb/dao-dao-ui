@@ -1,6 +1,8 @@
+import { usePlausible } from 'next-plausible'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
+import { PlausibleEvents } from '@dao-dao/types'
 import { MultipleChoiceVote } from '@dao-dao/types/contracts/DaoProposalMultiple'
 import { processError } from '@dao-dao/utils'
 
@@ -18,6 +20,7 @@ export const useCastVote = (onSuccess?: () => void | Promise<void>) => {
     address: walletAddress = '',
     getSigningClient,
   } = useWallet()
+  const plausible = usePlausible<PlausibleEvents>()
 
   const [castingVote, setCastingVote] = useState(false)
 
@@ -49,6 +52,17 @@ export const useCastVote = (onSuccess?: () => void | Promise<void>) => {
           sender: walletAddress,
         })
 
+        plausible('daoProposalVote', {
+          props: {
+            chainId: proposalModule.chainId,
+            dao: proposalModule.dao.coreAddress,
+            walletAddress,
+            proposalModule: proposalModule.address,
+            proposalModuleType: proposalModule.contractName,
+            proposalNumber,
+          },
+        })
+
         await onSuccess?.()
       } catch (err) {
         console.error(err)
@@ -67,6 +81,7 @@ export const useCastVote = (onSuccess?: () => void | Promise<void>) => {
       getSigningClient,
       walletAddress,
       onSuccess,
+      plausible,
     ]
   )
 

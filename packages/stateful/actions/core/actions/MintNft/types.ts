@@ -48,5 +48,5 @@ export interface ChooseExistingNftCollectionOptions {
 export interface MintNftOptions {
   nftInfo: NftCardInfo
   addCollectionToDao?: () => void
-  AddressInput: ComponentType<AddressInputProps>
+  AddressInput: ComponentType<AddressInputProps<MintNftData>>
 }

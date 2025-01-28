@@ -61,7 +61,7 @@ export class SecretSnip721StakedVotingModule extends VotingModuleBase<SecretCwDa
       label: `dao-voting-snip721-staked_${Date.now()}`,
       msg: encodeJsonToBase64({
         active_threshold: config.activeThreshold,
-        dao_code_hash: codeHashes.DaoCore,
+        dao_code_hash: codeHashes.DaoDaoCore,
         nft_contract: {
           existing: {
             address: config.nft.existing.address,

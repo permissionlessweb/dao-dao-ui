@@ -23,7 +23,7 @@ export const useLoadingDepositInfo = (): LoadingData<
   const {
     proposalModule: { address, version, prePropose },
     proposalNumber,
-    chain: { chain_id: chainId },
+    chain: { chainId },
   } = useProposalModuleAdapterOptions()
 
   const selectorValue = useCachedLoadable<
@@ -41,19 +41,19 @@ export const useLoadingDepositInfo = (): LoadingData<
           ],
         })
       : // Every other version supports pre-propose.
-      prePropose &&
-        // Approver does not have deposit info.
-        prePropose.type !== PreProposeModuleType.Approver
-      ? DaoPreProposeSingleSelectors.depositInfoSelector({
-          chainId,
-          contractAddress: prePropose.address,
-          params: [
-            {
-              proposalId: proposalNumber,
-            },
-          ],
-        })
-      : constSelector(undefined)
+        prePropose &&
+          // Approver does not have deposit info.
+          prePropose.type !== PreProposeModuleType.Approver
+        ? DaoPreProposeSingleSelectors.depositInfoSelector({
+            chainId,
+            contractAddress: prePropose.address,
+            params: [
+              {
+                proposalId: proposalNumber,
+              },
+            ],
+          })
+        : constSelector(undefined)
   )
 
   if (selectorValue.state !== 'hasValue') {
@@ -82,9 +82,9 @@ export const useLoadingDepositInfo = (): LoadingData<
             : DepositRefundPolicy.OnlyPassed,
         }
       : // If has pre-propose, check deposit info response.
-      prePropose
-      ? depositInfoResponse?.deposit_info ?? undefined
-      : undefined
+        prePropose
+        ? (depositInfoResponse?.deposit_info ?? undefined)
+        : undefined
 
   return {
     loading: false,

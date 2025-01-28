@@ -73,7 +73,6 @@ Default.args = {
     ],
   },
   createSubDaoHref: '#',
-  upgradeToV2Href: '#',
   ButtonLink,
 }
 

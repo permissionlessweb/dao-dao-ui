@@ -1,4 +1,5 @@
 import { Close, InfoOutlined } from '@mui/icons-material'
+import clsx from 'clsx'
 import { ComponentType, useEffect, useState } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -6,12 +7,15 @@ import { useTranslation } from 'react-i18next'
 import { HugeDecimal } from '@dao-dao/math'
 import {
   Button,
+  ButtonLink,
   ErrorPage,
+  FormCheckbox,
   IconButton,
   InputErrorMessage,
   InputLabel,
   Loader,
   MarkdownRenderer,
+  NativeCoinSelector,
   NumericInput,
   RebalancerProjector,
   RebalancerProjectorAsset,
@@ -29,12 +33,13 @@ import {
   GenericTokenWithUsdPrice,
   LoadingData,
   LoadingDataWithError,
-  ValenceAccount,
+  TransProps,
 } from '@dao-dao/types'
 import { ActionComponent } from '@dao-dao/types/actions'
 import { TargetOverrideStrategy } from '@dao-dao/types/contracts/ValenceRebalancer'
 import {
   formatPercentOf100,
+  getNativeTokenForChainId,
   makeValidateAddress,
   validatePositive,
   validateRequired,
@@ -68,10 +73,17 @@ export const pidPresets: {
 ]
 
 export type ConfigureRebalancerData = {
-  // Will be set when a valence account is found so the transformation function
-  // has the address.
-  valenceAccount?: ValenceAccount
   chainId: string
+  newValenceAccount: {
+    creating: boolean
+    funds: {
+      denom: string
+      amount: string
+      // Will multiply `amount` by 10^decimals when generating the message.
+      decimals: number
+    }[]
+    acknowledgedServiceFee?: boolean
+  }
   trustee?: string
   baseDenom: string
   tokens: {
@@ -97,11 +109,14 @@ export type ConfigureRebalancerData = {
 
 export type ConfigureRebalancerOptions = {
   nativeBalances: LoadingData<GenericTokenBalance[]>
+  serviceFee: LoadingDataWithError<GenericTokenBalance | null>
+  currentValenceBalances: LoadingData<GenericTokenBalance[]>
   baseDenomWhitelistTokens: LoadingData<GenericToken[]>
   denomWhitelistTokens: LoadingData<GenericToken[]>
   prices: LoadingDataWithError<GenericTokenWithUsdPrice[]>
   minBalanceToken: GenericToken | undefined
   AddressInput: ComponentType<AddressInputProps<ConfigureRebalancerData>>
+  Trans: ComponentType<TransProps>
 }
 
 export const ConfigureRebalancerComponent: ActionComponent<
@@ -112,16 +127,19 @@ export const ConfigureRebalancerComponent: ActionComponent<
   isCreating,
   options: {
     nativeBalances,
+    serviceFee,
+    currentValenceBalances,
     baseDenomWhitelistTokens,
     denomWhitelistTokens,
     prices,
     minBalanceToken,
     AddressInput,
+    Trans,
   },
 }) => {
   const { t } = useTranslation()
   const {
-    chain: { bech32_prefix: bech32Prefix },
+    chain: { bech32Prefix },
   } = useSupportedChainContext()
 
   const {
@@ -133,6 +151,7 @@ export const ConfigureRebalancerComponent: ActionComponent<
     clearErrors,
     setError,
   } = useFormContext<ConfigureRebalancerData>()
+
   const {
     fields: tokensFields,
     append: appendToken,
@@ -142,6 +161,17 @@ export const ConfigureRebalancerComponent: ActionComponent<
     name: (fieldNamePrefix + 'tokens') as 'tokens',
   })
 
+  const {
+    fields: newValenceAccountFunds,
+    append: appendNewValenceAccountFund,
+    remove: removeNewValenceAccountFund,
+  } = useFieldArray({
+    control,
+    name: (fieldNamePrefix +
+      'newValenceAccount.funds') as 'newValenceAccount.funds',
+  })
+
+  const chainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
   const baseDenom = watch((fieldNamePrefix + 'baseDenom') as 'baseDenom')
   const targetOverrideStrategy = watch(
     (fieldNamePrefix + 'targetOverrideStrategy') as 'targetOverrideStrategy'
@@ -151,6 +181,10 @@ export const ConfigureRebalancerComponent: ActionComponent<
   const totalPercent = tokens.reduce((acc, { percent }) => acc + percent, 0)
   const showCustomPid = watch(
     (fieldNamePrefix + 'showCustomPid') as 'showCustomPid'
+  )
+  const creatingNewValenceAccount = !!watch(
+    (fieldNamePrefix +
+      'newValenceAccount.creating') as 'newValenceAccount.creating'
   )
 
   // Get selected whitelist tokens.
@@ -198,8 +232,175 @@ export const ConfigureRebalancerComponent: ActionComponent<
       preset.kp === pid.kp && preset.ki === pid.ki && preset.kd === pid.kd
   )?.preset
 
+  const acknowledgedServiceFee = watch(
+    (fieldNamePrefix +
+      'newValenceAccount.acknowledgedServiceFee') as 'newValenceAccount.acknowledgedServiceFee'
+  )
+
+  useEffect(() => {
+    if (!isCreating) {
+      return
+    }
+
+    if (acknowledgedServiceFee) {
+      if (errors?.newValenceAccount?.acknowledgedServiceFee) {
+        clearErrors(
+          (fieldNamePrefix +
+            'newValenceAccount.acknowledgedServiceFee') as 'newValenceAccount.acknowledgedServiceFee'
+        )
+      }
+    } else {
+      if (!errors?.newValenceAccount?.acknowledgedServiceFee) {
+        setError(
+          (fieldNamePrefix +
+            'newValenceAccount.acknowledgedServiceFee') as 'newValenceAccount.acknowledgedServiceFee',
+          {
+            type: 'required',
+            message: t('error.acknowledgeServiceFee'),
+          }
+        )
+      }
+    }
+  }, [
+    isCreating,
+    acknowledgedServiceFee,
+    fieldNamePrefix,
+    clearErrors,
+    setError,
+    t,
+    errors?.newValenceAccount?.acknowledgedServiceFee,
+  ])
+
   return (
     <>
+      <p className="secondary-text max-w-prose">
+        <Trans i18nKey="info.rebalancerMainDescription">
+          The Rebalancer enables automated balance sheet and treasury
+          management. Use the Rebalancer to efficiently convert tokens for
+          scheduled payments or manage your asset portfolio. The Rebalancer is
+          custom-built to address the needs of blockchains, protocols, and DAOs.
+          Check out the{' '}
+          <ButtonLink
+            containerClassName="inline-block"
+            href="https://github.com/timewave-computer/rebalancer/blob/main/guides/daodao_rebalancer_user_guide.md"
+            size="none"
+            variant="underline"
+          >
+            user guide
+          </ButtonLink>{' '}
+          for more information.
+        </Trans>
+      </p>
+
+      {creatingNewValenceAccount && (
+        <div className="flex flex-col gap-2 mb-2">
+          <InputLabel name={t('form.initialBalances')} primary />
+
+          {newValenceAccountFunds.map(({ id }, index) => (
+            <NativeCoinSelector
+              key={id + index}
+              chainId={chainId}
+              errors={errors?.newValenceAccount?.funds?.[index]}
+              fieldNamePrefix={
+                fieldNamePrefix + `newValenceAccount.funds.${index}.`
+              }
+              isCreating={isCreating}
+              onRemove={
+                // Don't allow removing the first token.
+                isCreating && newValenceAccountFunds.length > 1
+                  ? () => removeNewValenceAccountFund(index)
+                  : undefined
+              }
+              overrideInsufficientFundsWarning={(amount, tokenSymbol) =>
+                t('error.insufficientFundsWarningMinusServiceFee', {
+                  amount,
+                  tokenSymbol,
+                })
+              }
+              tokens={nativeBalances}
+            />
+          ))}
+
+          {!isCreating && newValenceAccountFunds.length === 0 && (
+            <p className="-mt-1 text-xs italic text-text-tertiary">
+              {t('info.none')}
+            </p>
+          )}
+
+          {isCreating && (
+            <>
+              <Button
+                className="self-start"
+                onClick={() =>
+                  appendNewValenceAccountFund({
+                    amount: '1',
+                    denom: getNativeTokenForChainId(chainId).denomOrAddress,
+                    decimals: getNativeTokenForChainId(chainId).decimals,
+                  })
+                }
+                variant="secondary"
+              >
+                {t('button.addToken')}
+              </Button>
+            </>
+          )}
+
+          <div
+            className={clsx(
+              'flex flex-row gap-2 items-center',
+              isCreating ? 'mt-4' : 'mt-2'
+            )}
+          >
+            <FormCheckbox
+              fieldName={
+                (fieldNamePrefix +
+                  'newValenceAccount.acknowledgedServiceFee') as 'newValenceAccount.acknowledgedServiceFee'
+              }
+              readOnly={!isCreating}
+              setValue={setValue}
+              size="sm"
+              value={acknowledgedServiceFee}
+            />
+
+            <p
+              className="body-text cursor-pointer"
+              onClick={() =>
+                setValue(
+                  (fieldNamePrefix +
+                    'newValenceAccount.acknowledgedServiceFee') as 'newValenceAccount.acknowledgedServiceFee',
+                  !acknowledgedServiceFee
+                )
+              }
+            >
+              {t('info.acknowledgeServiceFee', {
+                fee: serviceFee.loading
+                  ? '...'
+                  : serviceFee.errored
+                    ? '<error>'
+                    : serviceFee.data
+                      ? t('format.token', {
+                          amount: HugeDecimal.from(
+                            serviceFee.data.balance
+                          ).toInternationalizedHumanReadableString({
+                            decimals: serviceFee.data.token.decimals,
+                          }),
+                          symbol: serviceFee.data.token.symbol,
+                        })
+                      : '',
+                context:
+                  serviceFee.loading || serviceFee.errored || serviceFee.data
+                    ? undefined
+                    : 'none',
+              })}
+            </p>
+          </div>
+
+          <InputErrorMessage
+            error={errors?.newValenceAccount?.acknowledgedServiceFee}
+          />
+        </div>
+      )}
+
       <div className="flex max-w-prose flex-col gap-5">
         <div className="flex flex-col gap-2">
           <InputLabel name={t('form.baseToken')} primary />
@@ -598,7 +799,7 @@ export const ConfigureRebalancerComponent: ActionComponent<
                     numericValue
                     register={register}
                     setValue={setValue}
-                    sizing="auto"
+                    sizing="md"
                     step={0.01}
                     unit="%"
                     validation={[validateRequired, validatePositive]}
@@ -629,7 +830,7 @@ export const ConfigureRebalancerComponent: ActionComponent<
             </p>
           </div>
 
-          {nativeBalances.loading ||
+          {currentValenceBalances.loading ||
           prices.loading ||
           denomWhitelistTokens.loading ? (
             <Loader />
@@ -643,7 +844,7 @@ export const ConfigureRebalancerComponent: ActionComponent<
                     ({ denomOrAddress }) => denomOrAddress === denom
                   )
                   const { balance: _balance } =
-                    nativeBalances.data.find(
+                    currentValenceBalances.data.find(
                       ({ token }) => token.denomOrAddress === denom
                     ) ?? {}
                   const balance = HugeDecimal.from(_balance || 0)

@@ -1,4 +1,5 @@
 import { useQueries } from '@tanstack/react-query'
+import { usePlausible } from 'next-plausible'
 import { useCallback, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -21,6 +22,7 @@ import {
 } from '@dao-dao/stateless'
 import {
   BaseStakingModalProps,
+  PlausibleEvents,
   StakingMode,
   TokenInputOption,
 } from '@dao-dao/types'
@@ -55,6 +57,7 @@ const InnerStakingModal = ({
   const { t } = useTranslation()
   const { address = '', isWalletConnected, refreshBalances } = useWallet()
   const votingModule = useVotingModule()
+  const plausible = usePlausible<PlausibleEvents>()
 
   const { loadingVaults } = useVotingModuleInfo()
   const realVaults =
@@ -96,7 +99,7 @@ const InnerStakingModal = ({
               chainId,
               type,
               denomOrAddress,
-              address: address,
+              address,
             })
           )
         )
@@ -170,6 +173,16 @@ const InnerStakingModal = ({
             amount.toCoins(selectedVault.bondToken.denomOrAddress)
           )
 
+          plausible('daoVotingStake', {
+            props: {
+              chainId: votingModule.chainId,
+              dao: votingModule.dao.coreAddress,
+              walletAddress: address,
+              votingModule: votingModule.address,
+              votingModuleType: votingModule.contractName,
+            },
+          })
+
           // New balances will not appear until the next block.
           await awaitNextBlock()
 
@@ -204,6 +217,16 @@ const InnerStakingModal = ({
         try {
           await doUnstake({
             amount: amount.toFixed(0),
+          })
+
+          plausible('daoVotingUnstake', {
+            props: {
+              chainId: votingModule.chainId,
+              dao: votingModule.dao.coreAddress,
+              walletAddress: address,
+              votingModule: votingModule.address,
+              votingModuleType: votingModule.contractName,
+            },
           })
 
           // New balances will not appear until the next block.

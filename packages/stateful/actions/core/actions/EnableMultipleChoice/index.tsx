@@ -2,7 +2,6 @@ import { HugeDecimal } from '@dao-dao/math'
 import { tokenQueries } from '@dao-dao/state/query'
 import { ActionBase, NumbersEmoji } from '@dao-dao/stateless'
 import {
-  ContractVersion,
   DepositRefundPolicy,
   Feature,
   TokenType,
@@ -25,6 +24,7 @@ import {
   convertCosmosVetoConfigToVeto,
   convertDurationToDurationWithUnits,
   getNativeTokenForChainId,
+  isNeutronForkVersion,
   makeExecuteSmartContractMessage,
   objectMatchesStructure,
 } from '@dao-dao/utils'
@@ -56,13 +56,11 @@ export class EnableMultipleChoiceAction extends ActionBase<{}> {
     //   support approval flow right now and that would be confusing.
     if (
       options.context.type !== ActionContextType.Dao ||
-      !options.context.dao.info.supportedFeatures[
-        Feature.MultipleChoiceProposals
-      ] ||
+      !options.context.dao.supports(Feature.MultipleChoiceProposals) ||
       // Neutron fork SubDAOs don't support multiple choice proposals due to the
       // timelock/overrule system only being designed for single choice
       // proposals.
-      options.context.dao.coreVersion === ContractVersion.V2AlphaNeutronFork ||
+      isNeutronForkVersion(options.context.dao.coreVersion) ||
       options.chainContext.type !== ActionChainContextType.Supported
     ) {
       throw new Error('Invalid context for enabling multiple choice proposals')
@@ -122,7 +120,7 @@ export class EnableMultipleChoiceAction extends ActionBase<{}> {
                 depositInfo,
                 token: await this.options.queryClient.fetchQuery(
                   tokenQueries.info(this.options.queryClient, {
-                    chainId: this.options.chain.chain_id,
+                    chainId: this.options.chain.chainId,
                     type:
                       'cw20' in depositInfo.denom
                         ? TokenType.Cw20
@@ -147,7 +145,7 @@ export class EnableMultipleChoiceAction extends ActionBase<{}> {
             percent: '0.2',
           }
 
-    const newDao = makeDefaultNewDao(this.options.chain.chain_id)
+    const newDao = makeDefaultNewDao(this.options.chain.chainId)
     const info = DaoProposalMultipleAdapter.daoCreation.getInstantiateInfo(
       this.options.chainContext.config,
       {
@@ -177,7 +175,7 @@ export class EnableMultipleChoiceAction extends ActionBase<{}> {
               ? 'cw20' in depositInfoWithToken.depositInfo.denom
                 ? depositInfoWithToken.depositInfo.denom.cw20
                 : depositInfoWithToken.depositInfo.denom.native
-              : getNativeTokenForChainId(this.options.chain.chain_id)
+              : getNativeTokenForChainId(this.options.chain.chainId)
                   .denomOrAddress,
             token: depositInfoWithToken.token,
             refundPolicy:
@@ -199,7 +197,7 @@ export class EnableMultipleChoiceAction extends ActionBase<{}> {
         },
       },
       {
-        ...makeDefaultNewDao(this.options.chain.chain_id).votingConfig,
+        ...makeDefaultNewDao(this.options.chain.chainId).votingConfig,
         enableMultipleChoice: true,
         overrideContractVersion: this.options.context.dao.coreVersion,
       },
@@ -207,7 +205,7 @@ export class EnableMultipleChoiceAction extends ActionBase<{}> {
     )
 
     return makeExecuteSmartContractMessage({
-      chainId: this.options.chain.chain_id,
+      chainId: this.options.chain.chainId,
       contractAddress: this.options.address,
       sender: this.options.address,
       msg: {

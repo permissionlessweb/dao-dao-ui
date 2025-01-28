@@ -11,7 +11,10 @@ import {
   LoadingData,
   StatefulEntityDisplayProps,
 } from '@dao-dao/types'
-import { formatDate } from '@dao-dao/utils'
+import {
+  extractProposalDescriptionAndMetadata,
+  formatDate,
+} from '@dao-dao/utils'
 
 import { ApprovalBadge } from '../ApprovalBadge'
 import { CopyToClipboardUnderline } from '../CopyToClipboard'
@@ -75,7 +78,7 @@ export const ProposalContentDisplay = ({
               />
             )}
 
-            <p className="header-text sm:hero-text break-words">{title}</p>
+            <p className="header-text sm:hero-text break-all">{title}</p>
           </div>
 
           {approvalContext &&
@@ -173,7 +176,9 @@ export const ProposalContentDisplay = ({
           EntityDisplay={EntityDisplay}
           addAnchors
           className="max-w-full !overflow-hidden"
-          markdown={description}
+          markdown={
+            extractProposalDescriptionAndMetadata(description).description
+          }
         />
 
         {innerContentDisplay && (

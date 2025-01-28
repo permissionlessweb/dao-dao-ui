@@ -1,10 +1,10 @@
-import { Chain } from '@chain-registry/types'
 import { QueryClient } from '@tanstack/react-query'
 import { CSSProperties, ComponentType, ReactNode } from 'react'
 import { FieldPath, FieldValues } from 'react-hook-form'
 import { RecoilValueReadOnly } from 'recoil'
 
 import { ActionMaker } from './actions'
+import { AnyChain } from './chain'
 import { IProposalModuleBase } from './clients'
 import {
   DaoInfoCard,
@@ -108,7 +108,7 @@ export type IProposalModuleAdapter<Vote extends unknown = any> = {
 export type ProposalModuleAdapter<
   DaoCreationExtraVotingConfig extends FieldValues = any,
   Vote extends unknown = any,
-  FormData extends FieldValues = any
+  FormData extends FieldValues = any,
 > = {
   id: string
   contractNames: string[]
@@ -152,7 +152,7 @@ export type IProposalModuleAdapterOptions = {
   /**
    * The DAO's native chain.
    */
-  chain: Chain
+  chain: AnyChain
   /**
    * The DAO's core contract address.
    */
@@ -302,7 +302,7 @@ export type BasePreProposeProposalStatusAndInfoProps = Pick<
 >
 
 export type BaseProposalInnerContentDisplayProps<
-  FormData extends FieldValues = any
+  FormData extends FieldValues = any,
 > = {
   // Once proposal messages are loaded, the inner component is responsible for
   // setting the duplicate form data for the duplicate button in the header.

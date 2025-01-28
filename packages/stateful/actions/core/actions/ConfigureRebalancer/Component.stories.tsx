@@ -9,6 +9,7 @@ import {
 import { ChainId, TokenType } from '@dao-dao/types'
 import { getNativeIbcUsdc, getNativeTokenForChainId } from '@dao-dao/utils'
 
+import { Trans } from '../../../../components'
 import {
   ConfigureRebalancerComponent,
   ConfigureRebalancerData,
@@ -20,6 +21,10 @@ export default {
   component: ConfigureRebalancerComponent,
   decorators: [
     makeReactHookFormDecorator<ConfigureRebalancerData>({
+      newValenceAccount: {
+        creating: true,
+        funds: [],
+      },
       chainId: ChainId.NeutronMainnet,
       baseDenom: getNativeIbcUsdc(ChainId.NeutronMainnet)!.denomOrAddress,
       tokens: [
@@ -56,6 +61,54 @@ Default.args = {
   index: 0,
   options: {
     nativeBalances: {
+      loading: false,
+      data: [
+        {
+          token: getNativeTokenForChainId(ChainId.NeutronMainnet),
+          balance: '46252349169321',
+        },
+        {
+          token: {
+            chainId: ChainId.NeutronMainnet,
+            type: TokenType.Native,
+            denomOrAddress: getNativeIbcUsdc(ChainId.NeutronMainnet)!
+              .denomOrAddress,
+            decimals: 6,
+            symbol: 'USDC',
+            imageUrl: '',
+            source: {
+              chainId: ChainId.NeutronMainnet,
+              type: TokenType.Native,
+              denomOrAddress: getNativeIbcUsdc(ChainId.NeutronMainnet)!
+                .denomOrAddress,
+            },
+          },
+          balance: '102948124125',
+        },
+        {
+          token: {
+            chainId: ChainId.NeutronMainnet,
+            type: TokenType.Native,
+            denomOrAddress: 'uatom',
+            decimals: 6,
+            symbol: 'ATOM',
+            imageUrl: '',
+            source: {
+              chainId: ChainId.NeutronMainnet,
+              type: TokenType.Native,
+              denomOrAddress: 'uatom',
+            },
+          },
+          balance: '1284135723893',
+        },
+      ],
+    },
+    serviceFee: {
+      loading: false,
+      errored: false,
+      data: null,
+    },
+    currentValenceBalances: {
       loading: false,
       data: [
         {
@@ -212,6 +265,7 @@ Default.args = {
     },
     minBalanceToken: undefined,
     AddressInput,
+    Trans,
   },
   isCreating: true,
   errors: {},

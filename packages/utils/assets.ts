@@ -1,3 +1,5 @@
+import { Asset } from '@chain-registry/types'
+
 import { GenericToken, TokenType } from '@dao-dao/types'
 
 import { getChainForChainId } from './chain'
@@ -21,47 +23,56 @@ export const getChainAssets = (chainId: string) => {
       assets
         .find(
           ({ chain_name }) =>
-            chain_name === getChainForChainId(chainId).chain_name
+            chain_name === getChainForChainId(chainId).chainName
         )
-        ?.assets.map(
-          ({
-            base,
-            symbol,
-            logo_URIs: { png, svg, jpeg } = {},
-            name,
-            display,
-            denom_units,
-            type_asset,
-          }) => ({
-            chainId,
-            id: display,
-            type: type_asset === 'cw20' ? TokenType.Cw20 : TokenType.Native,
-            denomOrAddress:
-              type_asset === 'cw20' ? base.replace('cw20:', '') : base,
-            denomAliases:
-              denom_units.find(({ denom }) => denom === base)?.aliases ?? [],
-            symbol,
-            decimals:
-              denom_units.find(({ denom }) => denom === display)?.exponent ??
-              denom_units.find(({ exponent }) => exponent > 0)?.exponent ??
-              denom_units[0]?.exponent ??
-              0,
-            imageUrl: svg || png || jpeg || getFallbackImage(base),
-            description: symbol === name ? undefined : name,
-            // This will be wrong when this is an IBC asset.
-            source: {
-              chainId,
-              type: type_asset === 'cw20' ? TokenType.Cw20 : TokenType.Native,
-              denomOrAddress:
-                type_asset === 'cw20' ? base.replace('cw20:', '') : base,
-            },
-          })
+        ?.assets.map((asset) =>
+          convertChainRegistryAssetToGenericToken(chainId, asset)
         )
         .sort((a, b) => a.symbol.localeCompare(b.symbol)) ?? []
   }
 
   return chainAssetsMap[chainId]!
 }
+
+/**
+ * Convert chain registry asset to GenericToken.
+ */
+export const convertChainRegistryAssetToGenericToken = (
+  chainId: string,
+  {
+    base,
+    symbol,
+    logo_URIs: { png, svg, jpeg } = {},
+    name,
+    display,
+    denom_units,
+    type_asset,
+  }: Asset
+): GenericToken & {
+  id: string
+  description?: string
+  denomAliases?: string[]
+} => ({
+  chainId,
+  id: display,
+  type: type_asset === 'cw20' ? TokenType.Cw20 : TokenType.Native,
+  denomOrAddress: type_asset === 'cw20' ? base.replace('cw20:', '') : base,
+  denomAliases: denom_units.find(({ denom }) => denom === base)?.aliases ?? [],
+  symbol,
+  decimals:
+    denom_units.find(({ denom }) => denom === display)?.exponent ??
+    denom_units.find(({ exponent }) => exponent > 0)?.exponent ??
+    denom_units[0]?.exponent ??
+    0,
+  imageUrl: svg || png || jpeg || getFallbackImage(base),
+  description: symbol === name ? undefined : name,
+  // This will be wrong when this is an IBC asset.
+  source: {
+    chainId,
+    type: type_asset === 'cw20' ? TokenType.Cw20 : TokenType.Native,
+    denomOrAddress: type_asset === 'cw20' ? base.replace('cw20:', '') : base,
+  },
+})
 
 /**
  * Valid native denom if it follows cosmos SDK validation logic. Specifically,
@@ -98,11 +109,11 @@ export const shortenTokenSymbol = (
   const tokenSymbol = isIbc
     ? abbreviateString(symbol, 7, 3)
     : isFactory
-    ? // Truncate address in middle.
-      `factory/${abbreviateAddress(symbol.split('/')[1], 3)}/${
-        symbol.split('/')[2]
-      }`
-    : symbol
+      ? // Truncate address in middle.
+        `factory/${abbreviateAddress(symbol.split('/')[1], 3)}/${
+          symbol.split('/')[2]
+        }`
+      : symbol
 
   return {
     isShortened: isIbc || isFactory,

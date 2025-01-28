@@ -173,7 +173,7 @@ export const UploadNftMetadata: ActionComponent = ({
                     'metadata.properties.audio') as 'metadata.properties.audio'
                 }
                 register={register}
-                validation={[(v) => !v || validateUrlWithIpfs(v)]}
+                validation={[validateUrlWithIpfs]}
               />
 
               <InputErrorMessage error={errors?.metadata?.properties?.audio} />
@@ -189,7 +189,7 @@ export const UploadNftMetadata: ActionComponent = ({
                     'metadata.properties.video') as 'metadata.properties.video'
                 }
                 register={register}
-                validation={[(v) => !v || validateUrlWithIpfs(v)]}
+                validation={[validateUrlWithIpfs]}
               />
 
               <InputErrorMessage error={errors?.metadata?.properties?.video} />

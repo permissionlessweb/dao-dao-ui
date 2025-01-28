@@ -34,7 +34,10 @@ export class UpdatePostAction extends ActionBase<UpdatePostData> {
   private createPostAction: CreatePostAction
   private deletePostAction: DeletePostAction
 
-  constructor(options: ActionOptions, private pressData: PressData) {
+  constructor(
+    options: ActionOptions,
+    private pressData: PressData
+  ) {
     super(options, {
       Icon: PencilEmoji,
       label: options.t('title.updatePost'),
@@ -65,7 +68,7 @@ export class UpdatePostAction extends ActionBase<UpdatePostData> {
           contractAddress: pressData.contract,
           // The chain that Press is set up on. If chain ID is undefined,
           // default to native DAO chain for backwards compatibility.
-          chainId: pressData.chainId || options.chain.chain_id,
+          chainId: pressData.chainId || options.chain.chainId,
         }),
         []
       )

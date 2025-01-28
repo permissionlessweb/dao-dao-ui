@@ -1,8 +1,11 @@
 import { toBase64, toUtf8 } from '@cosmjs/encoding'
-import { ArrowBack } from '@mui/icons-material'
+import { ArrowBack, Clear } from '@mui/icons-material'
 import { useQueryClient } from '@tanstack/react-query'
+import clsx from 'clsx'
 import cloneDeep from 'lodash.clonedeep'
 import merge from 'lodash.merge'
+import { nanoid } from 'nanoid'
+import { usePlausible } from 'next-plausible'
 import { useEffect, useMemo, useState } from 'react'
 import {
   FormProvider,
@@ -28,9 +31,11 @@ import {
   CreateDaoStart,
   CreateDaoVoting,
   DaoHeader,
+  IconButton,
   ImageSelector,
   Loader,
   StatusCard,
+  Tooltip,
   TooltipInfoIcon,
   useAppContext,
   useCachedLoadable,
@@ -49,6 +54,7 @@ import {
   DaoTabId,
   GovernanceProposalActionData,
   NewDao,
+  PlausibleEvents,
   ProposalModuleAdapter,
   SecretModuleInstantiateInfo,
 } from '@dao-dao/types'
@@ -74,6 +80,7 @@ import {
   getSupportedChains,
   getWidgetStorageItemKey,
   instantiateSmartContract,
+  isErrorWithSubstring,
   isSecretNetwork,
   makeWasmMessage,
   parseContractVersion,
@@ -172,6 +179,7 @@ export const InnerCreateDaoForm = ({
   const { t } = useTranslation()
   const dao = useDaoIfAvailable()
   const queryClient = useQueryClient()
+  const plausible = usePlausible<PlausibleEvents>()
 
   const chainContext = useSupportedChainContext()
   const {
@@ -180,7 +188,7 @@ export const InnerCreateDaoForm = ({
       name: chainGovName,
       factoryContractAddress,
       latestVersion,
-      codeIds: { DaoCore: daoCoreCodeId },
+      codeIds: { DaoDaoCore: daoDaoCoreCodeId },
       codeHashes,
       createViaGovernance,
       noInstantiate2Create,
@@ -275,9 +283,18 @@ export const InnerCreateDaoForm = ({
       cached.votingConfig
     )
 
-    // Ensure UUID is set.
-    if (!cached.uuid) {
-      cached.uuid = defaultNewDao.uuid
+    // If no UUID is set, or no widgets are configured, randomize the uuid.
+    // Sometimes uuid gets stuck in local storage, not cleared from a previous
+    // DAO creation, and it needs to be reset. However, this uuid controls the
+    // predicted DAO address which gets used when setting up widgets, so we can
+    // only randomize it if no widgets have been set up yet.
+    if (
+      !cached.uuid ||
+      !cached.widgets ||
+      Object.keys(cached.widgets).length === 0 ||
+      Object.values(cached.widgets).every((v) => v === null)
+    ) {
+      cached.uuid = nanoid()
     }
 
     return merge(
@@ -299,6 +316,7 @@ export const InnerCreateDaoForm = ({
     name,
     description,
     imageUrl,
+    bannerImageUrl,
     creator: { id: creatorId, data: creatorData },
     proposalModuleAdapters,
     votingConfig,
@@ -326,6 +344,12 @@ export const InnerCreateDaoForm = ({
     return () => clearTimeout(timeout)
   }, [newDao, setNewDaoAtom, daoCreatedCardProps])
 
+  const onClear = () => {
+    const newDao = makeDefaultNewDao(chainId)
+    form.reset(newDao)
+    setNewDaoAtom(cloneDeep(newDao))
+  }
+
   // Set accent color based on image provided.
   const { setAccentColor } = useThemeContext()
   // Get average color of image URL.
@@ -352,18 +376,18 @@ export const InnerCreateDaoForm = ({
     pageIndex < CreateDaoPages.length - 2
       ? CreateDaoSubmitValue.Continue
       : // Second to last links to the Review page.
-      pageIndex === CreateDaoPages.length - 2
-      ? CreateDaoSubmitValue.Review
-      : // Last page creates the DAO.
-        CreateDaoSubmitValue.Create
+        pageIndex === CreateDaoPages.length - 2
+        ? CreateDaoSubmitValue.Review
+        : // Last page creates the DAO.
+          CreateDaoSubmitValue.Create
   const submitLabel =
     // Override with continue button if necessary.
     submitValue === CreateDaoSubmitValue.Create && createViaGovernance
       ? t('button.continue')
       : // Override with SubDAO button if necessary.
-      submitValue === CreateDaoSubmitValue.Create && makingSubDao
-      ? t('button.createSubDao')
-      : t(submitValue)
+        submitValue === CreateDaoSubmitValue.Create && makingSubDao
+        ? t('button.createSubDao')
+        : t(submitValue)
 
   //! Adapters and message generators
 
@@ -397,7 +421,7 @@ export const InnerCreateDaoForm = ({
 
   // Get available widgets.
   const availableWidgets: CreateDaoContext['availableWidgets'] = useMemo(
-    () => getWidgets(chainId),
+    () => getWidgets(chainId).filter((w) => w.supportsDaoCreation),
     [chainId]
   )
 
@@ -426,25 +450,36 @@ export const InnerCreateDaoForm = ({
         )
       )
 
+    const initialItems: InitialItem[] = [
+      // Add banner image if set.
+      ...(bannerImageUrl?.trim()
+        ? [
+            {
+              key: 'banner',
+              value: bannerImageUrl.trim(),
+            },
+          ]
+        : []),
+      // Add widgets if configured.
+      ...(widgets && Object.keys(widgets).length > 0
+        ? Object.entries(widgets).flatMap(([id, values]): InitialItem | [] =>
+            values
+              ? {
+                  key: getWidgetStorageItemKey(id),
+                  value: JSON.stringify(values),
+                }
+              : []
+          )
+        : []),
+    ]
+
     const commonConfig = {
       // If parentDao exists, let's make a subDAO :D
       admin: parentDao?.coreAddress ?? null,
       name: name.trim(),
       description,
       imageUrl,
-      // Add widgets if configured.
-      ...(widgets &&
-        Object.keys(widgets).length > 0 && {
-          initialItems: Object.entries(widgets).flatMap(
-            ([id, values]): InitialItem | [] =>
-              values
-                ? {
-                    key: getWidgetStorageItemKey(id),
-                    value: JSON.stringify(values),
-                  }
-                : []
-          ),
-        }),
+      initialItems: initialItems.length > 0 ? initialItems : undefined,
     }
 
     if (isSecretNetwork(chainId)) {
@@ -497,7 +532,7 @@ export const InnerCreateDaoForm = ({
   const predictedDaoAddress = useGenerateInstantiate2({
     chainId,
     creator: factoryContractAddress,
-    codeId: daoCoreCodeId,
+    codeId: daoDaoCoreCodeId,
     salt: uuid,
   })
 
@@ -550,7 +585,7 @@ export const InnerCreateDaoForm = ({
       return await instantiateSmartContract(
         getSigningClient,
         walletAddress,
-        daoCoreCodeId,
+        daoDaoCoreCodeId,
         contractLabel,
         instantiateMsg,
         instantiateFunds,
@@ -560,15 +595,15 @@ export const InnerCreateDaoForm = ({
         supportsInstantiate2 ? toUtf8(uuid) : undefined
       )
     } else if (isSecret) {
-      if (!codeHashes?.DaoCore) {
+      if (!codeHashes?.DaoDaoCore) {
         throw new Error('Code hash not found for DAO core contract')
       }
 
       const { events } = await secretInstantiateWithSelfAdmin(
         {
           instantiateMsg: encodeJsonToBase64(instantiateMsg),
-          codeId: daoCoreCodeId,
-          codeHash: codeHashes.DaoCore,
+          codeId: daoDaoCoreCodeId,
+          codeHash: codeHashes.DaoDaoCore,
           label: contractLabel,
         },
         SECRET_GAS.DAO_CREATION,
@@ -589,7 +624,7 @@ export const InnerCreateDaoForm = ({
       const { events } = await (supportsInstantiate2
         ? instantiate2WithSelfAdmin(
             {
-              codeId: daoCoreCodeId,
+              codeId: daoDaoCoreCodeId,
               instantiateMsg: encodeJsonToBase64(instantiateMsg),
               label: contractLabel,
               salt: toBase64(toUtf8(uuid)),
@@ -601,7 +636,7 @@ export const InnerCreateDaoForm = ({
           )
         : instantiateWithSelfAdmin(
             {
-              codeId: daoCoreCodeId,
+              codeId: daoDaoCoreCodeId,
               instantiateMsg: encodeJsonToBase64(instantiateMsg),
               label: contractLabel,
             },
@@ -691,7 +726,7 @@ export const InnerCreateDaoForm = ({
                               ? 'instantiate2'
                               : 'instantiate']: {
                               admin: instantiateMsg.admin,
-                              code_id: daoCoreCodeId,
+                              code_id: daoDaoCoreCodeId,
                               funds:
                                 getFundsFromDaoInstantiateMsg(instantiateMsg),
                               label: contractLabel,
@@ -724,7 +759,7 @@ export const InnerCreateDaoForm = ({
                                 [supportsInstantiate2
                                   ? 'instantiate2_contract_with_self_admin'
                                   : 'instantiate_contract_with_self_admin']: {
-                                  code_id: daoCoreCodeId,
+                                  code_id: daoDaoCoreCodeId,
                                   instantiate_msg:
                                     encodeJsonToBase64(instantiateMsg),
                                   label: contractLabel,
@@ -745,13 +780,37 @@ export const InnerCreateDaoForm = ({
                 ],
           } as Partial<GovernanceProposalActionData>),
         })
-      } else if (isWalletConnected) {
+      } else if (isWalletConnected && walletAddress) {
         setCreating(true)
         try {
           const coreAddress = await toast.promise(doCreateDao(), {
             loading: t('info.creatingDao'),
             success: t('success.daoCreatedPleaseWait'),
-            error: (err) => processError(err),
+            error: (err) => {
+              // If instantiate2 collision error, redirect to the first creation
+              // page and tell them to clear and restart.
+              if (
+                isErrorWithSubstring(err, [
+                  'contract address already exists, try a different combination of creator, checksum and salt',
+                  'instance with this code id, sender and label exists: try a different label',
+                ])
+              ) {
+                setPageIndex(initialPageIndex)
+
+                return t('error.daoCreationCollision')
+              }
+
+              return processError(err)
+            },
+          })
+
+          plausible('daoCreate', {
+            props: {
+              chainId,
+              dao: coreAddress,
+              daoType: values.creator.id,
+              walletAddress,
+            },
           })
 
           const { info } = await queryClient
@@ -792,26 +851,26 @@ export const InnerCreateDaoForm = ({
                           NEW_DAO_TOKEN_DECIMALS
                         )
                       : // If using existing token but no token info loaded (should
-                      // be impossible), just display 0.
-                      !daoVotingTokenBasedCreatorData.existingToken ||
-                        daoVotingTokenBasedCreatorData.existingTokenSupply ===
-                          undefined
-                      ? HugeDecimal.zero
-                      : HugeDecimal.from(
-                          daoVotingTokenBasedCreatorData.existingTokenSupply
-                        ),
+                        // be impossible), just display 0.
+                        !daoVotingTokenBasedCreatorData.existingToken ||
+                          daoVotingTokenBasedCreatorData.existingTokenSupply ===
+                            undefined
+                        ? HugeDecimal.zero
+                        : HugeDecimal.from(
+                            daoVotingTokenBasedCreatorData.existingTokenSupply
+                          ),
                   tokenSymbol:
                     daoVotingTokenBasedCreatorData.govTokenType ===
                     GovernanceTokenType.New
                       ? daoVotingTokenBasedCreatorData.newInfo.symbol
                       : // If using existing token but no token info loaded (should
-                      // be impossible), the tokenBalance above will be set to
-                      // 0, so use the native token here so this value is
-                      // accurate.
-                      !daoVotingTokenBasedCreatorData.existingToken
-                      ? nativeToken.symbol
-                      : daoVotingTokenBasedCreatorData.existingToken.symbol ||
-                        t('info.token').toLocaleUpperCase(),
+                        // be impossible), the tokenBalance above will be set to
+                        // 0, so use the native token here so this value is
+                        // accurate.
+                        !daoVotingTokenBasedCreatorData.existingToken
+                        ? nativeToken.symbol
+                        : daoVotingTokenBasedCreatorData.existingToken.symbol ||
+                          t('info.token').toLocaleUpperCase(),
                   tokenDecimals:
                     daoVotingTokenBasedCreatorData.govTokenType ===
                       GovernanceTokenType.Existing &&
@@ -841,8 +900,6 @@ export const InnerCreateDaoForm = ({
               description,
               imageUrl: imageUrl || getFallbackImage(coreAddress),
               parentDao: parentDao || null,
-              // Unused.
-              supportedFeatures: {} as any,
               created: Date.now(),
               votingModuleAddress: '',
               votingModuleInfo: {
@@ -1002,25 +1059,47 @@ export const InnerCreateDaoForm = ({
       >
         {/* Show image selector or DAO header depending on page. */}
         {pageIndex === 0 ? (
-          <div className="flex flex-col items-center pb-10">
-            <ImageSelector
-              Trans={Trans}
-              className="md:mt-10"
-              error={form.formState.errors.imageUrl}
-              fieldName="imageUrl"
-              register={form.register}
-              setValue={form.setValue}
-              watch={form.watch}
-            />
+          <div className="relative flex flex-col items-center pb-10">
+            <Tooltip title={t('button.clear')}>
+              <IconButton
+                Icon={Clear}
+                circular
+                className="absolute -top-2 right-0"
+                confirm
+                onClick={onClear}
+                variant="ghost"
+              />
+            </Tooltip>
 
-            <p className="primary-text text-text-tertiary mt-6">
-              {t('form.addAnImage')}
-            </p>
+            <div className="relative flex flex-col justify-end items-center h-48 self-stretch mb-6 mt-10">
+              <ImageSelector
+                Trans={Trans}
+                className="absolute top-0 left-0 right-0 bottom-0"
+                error={form.formState.errors.bannerImageUrl}
+                fieldName="bannerImageUrl"
+                register={form.register}
+                setValue={form.setValue}
+                style="banner"
+                watch={form.watch}
+              />
+
+              <ImageSelector
+                Trans={Trans}
+                className="-mb-8 relative"
+                error={form.formState.errors.imageUrl}
+                fieldName="imageUrl"
+                register={form.register}
+                setValue={form.setValue}
+                style="avatar"
+                watch={form.watch}
+              />
+            </div>
           </div>
         ) : (
           <DaoHeader
             LinkWrapper={LinkWrapper}
-            className="mb-8 md:mt-4 md:mb-12"
+            bannerImageUrl={bannerImageUrl}
+            className={clsx('mb-8 md:mb-12', !bannerImageUrl && 'md:mt-4')}
             description={description}
             imageUrl={imageUrl}
             name={name}

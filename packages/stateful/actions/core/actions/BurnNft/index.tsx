@@ -1,9 +1,9 @@
+import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { useFormContext } from 'react-hook-form'
-import { constSelector } from 'recoil'
 
+import { nftQueries } from '@dao-dao/state/query'
 import {
   lazyNftCardInfosForDaoSelector,
-  nftCardInfoSelector,
   walletLazyNftCardInfosSelector,
 } from '@dao-dao/state/recoil'
 import {
@@ -26,6 +26,7 @@ import {
 import {
   combineLoadingDataWithErrors,
   getChainAddressForActionOptions,
+  makeCombineQueryResultsIntoLoadingDataWithError,
   makeExecuteSmartContractMessage,
   maybeMakePolytoneExecuteMessages,
   objectMatchesStructure,
@@ -39,17 +40,14 @@ const Component: ActionComponent = (props) => {
   const {
     context,
     address,
-    chain: { chain_id: currentChainId },
+    chain: { chainId: currentChainId },
   } = useActionOptions()
+  const queryClient = useQueryClient()
   const { watch } = useFormContext<BurnNftData>()
   const { denomOrAddress: governanceCollectionAddress } =
     useCw721CommonGovernanceTokenInfoIfExists() ?? {}
 
-  const chainId = watch((props.fieldNamePrefix + 'chainId') as 'chainId')
-  const tokenId = watch((props.fieldNamePrefix + 'tokenId') as 'tokenId')
-  const collection = watch(
-    (props.fieldNamePrefix + 'collection') as 'collection'
-  )
+  const nfts = watch((props.fieldNamePrefix + 'nfts') as 'nfts')
 
   const options = useCachedLoadingWithError(
     props.isCreating
@@ -65,11 +63,14 @@ const Component: ActionComponent = (props) => {
           })
       : undefined
   )
-  const nftInfo = useCachedLoadingWithError(
-    !!tokenId && !!collection
-      ? nftCardInfoSelector({ chainId, collection, tokenId })
-      : constSelector(undefined)
-  )
+  const nftInfos = useQueries({
+    queries: nfts.length
+      ? nfts.map(({ chainId, collection, tokenId }) =>
+          nftQueries.cardInfo(queryClient, { chainId, collection, tokenId })
+        )
+      : [],
+    combine: makeCombineQueryResultsIntoLoadingDataWithError(),
+  })
 
   const allChainOptions =
     options.loading || options.errored
@@ -85,7 +86,7 @@ const Component: ActionComponent = (props) => {
       {...props}
       options={{
         options: allChainOptions,
-        nftInfo,
+        nftInfos: nfts.length ? nftInfos : undefined,
         NftSelectionModal,
       }}
     />
@@ -97,64 +98,132 @@ export class BurnNftAction extends ActionBase<BurnNftData> {
   public readonly Component = Component
 
   protected _defaults: BurnNftData = {
-    chainId: '',
-    collection: '',
-    tokenId: '',
+    nfts: [],
   }
 
   constructor(options: ActionOptions) {
     super(options, {
       Icon: FireEmoji,
-      label: options.t('title.burnNft'),
-      description: options.t('info.burnNftDescription'),
+      label: options.t('title.burnNfts'),
+      description: options.t('info.burnNftsDescription'),
       // This must be after the Press widget's Delete Post action.
       matchPriority: -80,
     })
   }
 
-  encode({ chainId, collection, tokenId }: BurnNftData): UnifiedCosmosMsg[] {
-    return maybeMakePolytoneExecuteMessages(
-      this.options.chain.chain_id,
-      chainId,
-      makeExecuteSmartContractMessage({
+  encode({ nfts }: BurnNftData): UnifiedCosmosMsg[] {
+    // Group NFTs by chain.
+    const nftsByChain = Object.entries(
+      nfts.reduce(
+        (acc, nft) => ({
+          ...acc,
+          [nft.chainId]: [...(acc[nft.chainId] ?? []), nft],
+        }),
+        {} as Record<string, BurnNftData['nfts']>
+      )
+    )
+
+    return nftsByChain.flatMap(([chainId, nfts]) =>
+      maybeMakePolytoneExecuteMessages(
+        this.options.chain.chainId,
         chainId,
-        sender: getChainAddressForActionOptions(this.options, chainId) || '',
-        contractAddress: collection,
-        msg: {
-          burn: {
-            token_id: tokenId,
-          },
-        },
-      })
+        nfts.map(({ collection, tokenId }) =>
+          makeExecuteSmartContractMessage({
+            chainId,
+            sender:
+              getChainAddressForActionOptions(this.options, chainId) || '',
+            contractAddress: collection,
+            msg: {
+              burn: {
+                token_id: tokenId,
+              },
+            },
+          })
+        )
+      )
     )
   }
 
-  match([{ decodedMessage }]: ProcessedMessage[]): ActionMatch {
-    return objectMatchesStructure(decodedMessage, {
-      wasm: {
-        execute: {
-          contract_addr: {},
-          funds: {},
-          msg: {
-            burn: {
-              token_id: {},
+  // This should match one or more burns, including wrapped/cross-chain messages
+  // with one or more burns.
+  handleMessages(messages: ProcessedMessage[]) {
+    const all = messages.map(
+      ({ isWrapped, decodedMessages, account: { chainId } }) => {
+        const burns = decodedMessages.map((decodedMessage) =>
+          objectMatchesStructure(decodedMessage, {
+            wasm: {
+              execute: {
+                contract_addr: {},
+                funds: {},
+                msg: {
+                  burn: {
+                    token_id: {},
+                  },
+                },
+              },
             },
-          },
-        },
-      },
-    })
+          })
+            ? {
+                chainId,
+                collection: decodedMessage.wasm.execute.contract_addr,
+                tokenId: decodedMessage.wasm.execute.msg.burn.token_id,
+              }
+            : null
+        )
+
+        // All messages must be burns for this to match. Otherwise, we may match
+        // a cross-chain execute and accidentally conceal other messages.
+        return burns.every(Boolean)
+          ? {
+              isWrapped,
+              burns: burns as {
+                chainId: string
+                collection: any
+                tokenId: any
+              }[],
+            }
+          : null
+      }
+    )
+
+    // If the first is not a burn, match none.
+    if (!all.length || !all[0]) {
+      return []
+    }
+
+    // Select all adjacent burns starting with the first.
+    const burns = [all[0]]
+    for (const burn of all.slice(1)) {
+      if (!burn) {
+        break
+      }
+
+      burns.push(burn)
+    }
+
+    return burns
   }
 
-  decode([
-    {
-      decodedMessage,
-      account: { chainId },
-    },
-  ]: ProcessedMessage[]): BurnNftData {
+  match(messages: ProcessedMessage[]): ActionMatch {
+    const burns = this.handleMessages(messages)
+    return burns.reduce(
+      // If wrapped execute, only match the one wrapped execute that contains
+      // the other burns.
+      (acc, group) => acc + (group.isWrapped ? 1 : group.burns.length),
+      0
+    )
+  }
+
+  decode(messages: ProcessedMessage[]): BurnNftData {
+    const burns = this.handleMessages(messages)
     return {
-      chainId,
-      collection: decodedMessage.wasm.execute.contract_addr,
-      tokenId: decodedMessage.wasm.execute.msg.burn.token_id,
+      nfts: burns.flatMap(({ burns }) =>
+        burns.map(({ chainId, collection, tokenId }) => ({
+          chainId,
+          collection,
+          tokenId,
+        }))
+      ),
     }
   }
 }

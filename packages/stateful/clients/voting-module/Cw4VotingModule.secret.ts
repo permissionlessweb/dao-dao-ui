@@ -59,7 +59,7 @@ export class SecretCw4VotingModule extends VotingModuleBase<SecretCwDao> {
       code_hash: codeHashes.DaoVotingCw4,
       label: `dao-voting-cw4_${Date.now()}`,
       msg: encodeJsonToBase64({
-        dao_code_hash: codeHashes.DaoCore,
+        dao_code_hash: codeHashes.DaoDaoCore,
         group_contract:
           'existingCw4GroupContract' in config
             ? {

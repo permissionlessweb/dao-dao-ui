@@ -26,7 +26,7 @@ import {
 const Component: ActionComponent = (props) => {
   const {
     address,
-    chain: { chain_id: chainId },
+    chain: { chainId },
   } = useActionOptions()
 
   const currentSubDaos = useRecoilValue(
@@ -66,7 +66,7 @@ export class ManageSubDaosAction extends ActionBase<ManageSubDaosData> {
       throw new Error('Only DAOs can manage their subDAOs.')
     }
 
-    if (!options.context.dao.info.supportedFeatures[Feature.SubDaos]) {
+    if (!options.context.dao.supports(Feature.SubDaos)) {
       throw new Error("This DAO's version doesn't support subDAOs.")
     }
 
@@ -79,7 +79,7 @@ export class ManageSubDaosAction extends ActionBase<ManageSubDaosData> {
 
   encode({ toAdd, toRemove }: ManageSubDaosData): UnifiedCosmosMsg {
     return makeExecuteSmartContractMessage({
-      chainId: this.options.chain.chain_id,
+      chainId: this.options.chain.chainId,
       sender: this.options.address,
       contractAddress: this.options.address,
       msg: {

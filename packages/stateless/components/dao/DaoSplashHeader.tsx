@@ -100,6 +100,7 @@ export const DaoSplashHeader = ({
 
       <DaoHeader
         LinkWrapper={LinkWrapper}
+        bannerImageUrl={dao.bannerImageUrl}
         coreAddress={dao.coreAddress}
         description={dao.description}
         follow={follow}

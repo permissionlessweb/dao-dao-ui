@@ -50,6 +50,12 @@ export type ExecuteMsg =
       }
     }
   | {
+      unsafe_force_withdraw: {
+        amount: Uint128
+        denom: UncheckedDenom
+      }
+    }
+  | {
       update_ownership: Action
     }
 export type NftStakeChangedHookMsg =

@@ -1,0 +1,16 @@
+syntax = "proto3";
+package Switcheo.carbon.cdp;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/Switcheo/carbon/x/cdp/types";
+
+message StablecoinInterestInfo {
+  google.protobuf.Timestamp last_updated_time = 1
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  string stablecoin_interest_rate = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}

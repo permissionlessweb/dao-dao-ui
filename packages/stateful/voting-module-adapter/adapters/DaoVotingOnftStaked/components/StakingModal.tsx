@@ -1,4 +1,5 @@
 import { toUtf8 } from '@cosmjs/encoding'
+import { usePlausible } from 'next-plausible'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +11,7 @@ import {
   BaseStakingModalProps,
   LazyNftCardInfo,
   LoadingDataWithError,
+  PlausibleEvents,
   StakingMode,
 } from '@dao-dao/types'
 import { MsgExecuteContract } from '@dao-dao/types/protobuf/codegen/cosmwasm/wasm/v1/tx'
@@ -51,6 +53,7 @@ const InnerStakingModal = ({
   } = useWallet({
     chainId: dao.chainId,
   })
+  const plausible = usePlausible<PlausibleEvents>()
 
   const [mode, setMode] = useState<StakingMode>(initialMode)
 
@@ -156,6 +159,16 @@ const InnerStakingModal = ({
             CHAIN_GAS_MULTIPLIER
           )
 
+          plausible('daoVotingStake', {
+            props: {
+              chainId: dao.chainId,
+              dao: dao.coreAddress,
+              walletAddress,
+              votingModule: dao.votingModule.address,
+              votingModuleType: dao.votingModule.contractName,
+            },
+          })
+
           // New balances will not appear until the next block.
           await awaitNextBlock()
 
@@ -202,6 +215,16 @@ const InnerStakingModal = ({
             CHAIN_GAS_MULTIPLIER
           )
 
+          plausible('daoVotingUnstake', {
+            props: {
+              chainId: dao.chainId,
+              dao: dao.coreAddress,
+              walletAddress,
+              votingModule: dao.votingModule.address,
+              votingModuleType: dao.votingModule.contractName,
+            },
+          })
+
           // New balances will not appear until the next block.
           await awaitNextBlock()
 
@@ -247,15 +270,16 @@ const InnerStakingModal = ({
 
   const onDeselectAll = () => setCurrentTokenIds([])
 
-  const nfts =
-    (mode === StakingMode.Stake
-      ? loadingWalletUnstakedNfts
-      : mode === StakingMode.Unstake
+  const nfts: LoadingDataWithError<LazyNftCardInfo[]> = (mode ===
+  StakingMode.Stake
+    ? loadingWalletUnstakedNfts
+    : mode === StakingMode.Unstake
       ? loadingWalletStakedNfts
-      : undefined) ??
-    ({ loading: false, errored: true } as LoadingDataWithError<
-      LazyNftCardInfo[]
-    >)
+      : undefined) ?? {
+    loading: false,
+    errored: true,
+    error: new Error('Unexpected failure to load NFTs'),
+  }
 
   const onSelectAll = () =>
     setCurrentTokenIds(
@@ -270,8 +294,8 @@ const InnerStakingModal = ({
           mode === StakingMode.Stake
             ? t('button.stake')
             : mode === StakingMode.Unstake
-            ? t('title.unstake')
-            : '',
+              ? t('title.unstake')
+              : '',
         onClick: onAction,
       }}
       header={{
@@ -282,8 +306,8 @@ const InnerStakingModal = ({
           mode === StakingMode.Stake
             ? t('title.stakingModeNfts.stakeHeaderSubtitle')
             : mode === StakingMode.Unstake
-            ? t('title.stakingModeNfts.unstakeHeaderSubtitle')
-            : '',
+              ? t('title.stakingModeNfts.unstakeHeaderSubtitle')
+              : '',
       }}
       headerDisplay={
         !(

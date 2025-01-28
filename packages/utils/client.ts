@@ -3,6 +3,7 @@ import { Event, StargateClient } from '@cosmjs/stargate'
 import {
   Comet38Client,
   HttpBatchClient,
+  HttpBatchClientOptions,
   Tendermint34Client,
   Tendermint37Client,
   connectComet,
@@ -74,6 +75,11 @@ class ChainClientRouter<T, P> {
   }
 }
 
+const httpBatchClientOptions: Partial<HttpBatchClientOptions> = {
+  // Some RPCs set a batch size limit of 10.
+  batchSizeLimit: 10,
+}
+
 /**
  * Router for connecting to CosmWasmClient for the appropriate chain.
  *
@@ -86,7 +92,7 @@ export const cosmWasmClientRouter = new ChainClientRouter({
     retry(10, async (attempt) => {
       const rpc = getRpcForChainId(chainId, attempt - 1)
 
-      const httpClient = new HttpBatchClient(rpc)
+      const httpClient = new HttpBatchClient(rpc, httpBatchClientOptions)
       const tmClient = await (
         (
           await connectComet(rpc)
@@ -113,7 +119,7 @@ export const secretCosmWasmClientRouter = new ChainClientRouter({
     retry(10, async (attempt) => {
       const rpc = getRpcForChainId(chainId, attempt - 1)
 
-      const httpClient = new HttpBatchClient(rpc)
+      const httpClient = new HttpBatchClient(rpc, httpBatchClientOptions)
       const tmClient = await (
         (
           await connectComet(rpc)

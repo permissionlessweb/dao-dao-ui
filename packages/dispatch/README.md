@@ -4,8 +4,8 @@ DAO DAO Dispatch. Control center for DAO DAO.
 
 ## Usage
 
-Make sure to copy `.env.example` to `.env` and set the environment variables
-correctly.
+Make sure to copy `config.toml.example` to `config.toml` and configure it
+appropriately.
 
 ### Deploy
 
@@ -20,11 +20,12 @@ behalf of the granter you pass to `-a`.
 Usage: yarn deploy [options]
 
 Options:
-  -c, --chain <ID>            chain ID
-  -p, --polytone              only deploy polytone contracts
-  -a, --authz <granter>       upload contracts via authz exec as this granter
-  -x, --exclude <substrings>  ignore contracts containing any of these comma-separated substrings (e.g. cw721)
-  -h, --help                  display help for command
+  -c, --chain <ID>              chain ID
+  -m, --mode <mode>             deploy mode (dao = deploy DAO contracts and instantiate admin factory, polytone = deploy Polytone contracts, factory = instantiate admin factory) (default: "dao")
+  -v, --version <version>       contract version to save code IDs under in the config when deploying DAO contracts (e.g. 1.0.0)
+  -a, --authz <granter>         upload contracts via authz exec as this granter
+  -r, --restrict-instantiation  restrict instantiation to only the uploader; this must be used on some chains to upload contracts, like Kujira
+  -h, --help                    display help for command
 ```
 
 ### Polytone

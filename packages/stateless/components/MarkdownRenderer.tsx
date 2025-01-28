@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import { HeadingComponent } from 'react-markdown/lib/ast-to-react'
 import { NormalComponents } from 'react-markdown/lib/complex-types'
+import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
 import { Transformer } from 'unified'
@@ -60,6 +61,8 @@ export const MarkdownRenderer = forwardRef<
       ref={ref}
     >
       <ReactMarkdown
+        // eslint-disable-next-line react/no-children-prop
+        children={markdown}
         components={{
           table: TableRenderer,
           ...(addAnchors
@@ -81,6 +84,7 @@ export const MarkdownRenderer = forwardRef<
         linkTarget="_blank"
         rawSourcePos
         rehypePlugins={[
+          rehypeRaw,
           rehypeSanitize,
           ...(EntityDisplay ? [remarkEntityDisplay] : []),
         ]}
@@ -89,9 +93,7 @@ export const MarkdownRenderer = forwardRef<
           // Support IPFS images.
           (src, alt) => transformIpfsUrlToHttpsIfNecessary(src || alt)
         }
-      >
-        {markdown}
-      </ReactMarkdown>
+      />
     </div>
   )
 })

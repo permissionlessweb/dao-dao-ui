@@ -73,7 +73,7 @@ export const TreasuryTab = <T extends TokenCardInfo, N extends object>({
 }: TreasuryTabProps<T, N>) => {
   const { t } = useTranslation()
   const {
-    chain: { chain_id: currentChainId },
+    chain: { chainId: currentChainId },
     config: { noIndexer },
   } = useSupportedChainContext()
   const { chainId: daoChainId, coreAddress, accounts } = useDao()
@@ -92,24 +92,24 @@ export const TreasuryTab = <T extends TokenCardInfo, N extends object>({
           errored: false,
         }
       : chainTokens.every((l) => l?.errored)
-      ? {
-          loading: false,
-          errored: true,
-          // First error.
-          error:
-            // Type-check, will always be defined.
-            (chainTokens[0]?.errored && chainTokens[0].error) || new Error(),
-        }
-      : {
-          loading: false,
-          errored: false,
-          updating: chainTokens.some(
-            (l) => l && !l.loading && !l.errored && l.updating
-          ),
-          data: chainTokens.flatMap((l) =>
-            l && !l.loading && !l.errored ? l.data : []
-          ),
-        }
+        ? {
+            loading: false,
+            errored: true,
+            // First error.
+            error:
+              // Type-check, will always be defined.
+              (chainTokens[0]?.errored && chainTokens[0].error) || new Error(),
+          }
+        : {
+            loading: false,
+            errored: false,
+            updating: chainTokens.some(
+              (l) => l && !l.loading && !l.errored && l.updating
+            ),
+            data: chainTokens.flatMap((l) =>
+              l && !l.loading && !l.errored ? l.data : []
+            ),
+          }
 
     return {
       nonValenceTokens:
@@ -152,24 +152,24 @@ export const TreasuryTab = <T extends TokenCardInfo, N extends object>({
           errored: false,
         }
       : chainNfts.every((l) => l?.errored)
-      ? {
-          loading: false,
-          errored: true,
-          // First error.
-          error:
-            // Type-check, will always be defined.
-            (chainNfts[0]?.errored && chainNfts[0].error) || new Error(),
-        }
-      : {
-          loading: false,
-          errored: false,
-          updating: chainNfts.some(
-            (l) => l && (l.loading || (!l.errored && l.updating))
-          ),
-          data: chainNfts.flatMap((l) =>
-            l && !l.loading && !l.errored ? l.data : []
-          ),
-        }
+        ? {
+            loading: false,
+            errored: true,
+            // First error.
+            error:
+              // Type-check, will always be defined.
+              (chainNfts[0]?.errored && chainNfts[0].error) || new Error(),
+          }
+        : {
+            loading: false,
+            errored: false,
+            updating: chainNfts.some(
+              (l) => l && (l.loading || (!l.errored && l.updating))
+            ),
+            data: chainNfts.flatMap((l) =>
+              l && !l.loading && !l.errored ? l.data : []
+            ),
+          }
   }, [nfts])
 
   const [depositFiatChainId, setDepositFiatChainId] = useState<
@@ -341,10 +341,7 @@ export const TreasuryTab = <T extends TokenCardInfo, N extends object>({
         />
       )}
 
-      {/* OmniFlix Hub NFTs are not yet supported. */}
-      {currentChainId !== ChainId.OmniflixHubMainnet && (
-        <NftSection NftCard={NftCard} className="mt-10" nfts={allNfts} />
-      )}
+      <NftSection NftCard={NftCard} className="mt-10" nfts={allNfts} />
 
       {connected && !!depositFiatChainId && (
         <FiatDepositModal

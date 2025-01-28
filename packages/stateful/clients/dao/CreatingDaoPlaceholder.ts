@@ -1,4 +1,3 @@
-import { Chain } from '@chain-registry/types'
 import {
   FetchQueryOptions,
   QueryClient,
@@ -7,6 +6,7 @@ import {
 
 import {
   AccountType,
+  AnyChain,
   ContractVersion,
   DaoInfo,
   IProposalModuleBase,
@@ -17,7 +17,7 @@ import {
   TotalPowerAtHeightResponse,
   VotingPowerAtHeightResponse,
 } from '@dao-dao/types/contracts/DaoDaoCore'
-import { getChainForChainId, getSupportedFeatures } from '@dao-dao/utils'
+import { getChainForChainId } from '@dao-dao/utils'
 
 import { DaoBase } from './base'
 
@@ -44,7 +44,6 @@ export class CreatingDaoPlaceholder extends DaoBase {
       chainId: options.chainId,
       coreAddress: options.coreAddress,
       coreVersion: options.coreVersion,
-      supportedFeatures: getSupportedFeatures(options.coreVersion),
       votingModuleAddress: '',
       votingModuleInfo: {
         contract: '',
@@ -90,7 +89,7 @@ export class CreatingDaoPlaceholder extends DaoBase {
     return this.options.chainId
   }
 
-  get chain(): Chain {
+  get chain(): AnyChain {
     return getChainForChainId(this.chainId)
   }
 

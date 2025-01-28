@@ -41,6 +41,9 @@ export const createRPCMsgClient = async ({
     ccv: {
       consumer: {
         v1: new (await import("./ccv/consumer/v1/tx.rpc.msg")).MsgClientImpl(rpc)
+      },
+      provider: {
+        v1: new (await import("./ccv/provider/v1/tx.rpc.msg")).MsgClientImpl(rpc)
       }
     }
   }

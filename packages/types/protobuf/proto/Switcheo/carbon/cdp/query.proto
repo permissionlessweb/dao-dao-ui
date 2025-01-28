@@ -1,0 +1,460 @@
+syntax = "proto3";
+package Switcheo.carbon.cdp;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+
+import "Switcheo/carbon/cdp/params.proto";
+import "Switcheo/carbon/cdp/rate_strategy_params.proto";
+import "Switcheo/carbon/cdp/asset_params.proto";
+import "Switcheo/carbon/cdp/debt_info.proto";
+import "Switcheo/carbon/cdp/stablecoin_debt_info.proto";
+import "Switcheo/carbon/cdp/reward_scheme.proto";
+import "Switcheo/carbon/cdp/e_mode_category.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "Switcheo/carbon/cdp/stablecoin_interest_info.proto";
+import "Switcheo/carbon/cdp/cdp_liquidations.proto";
+// this line is used by starport scaffolding # 1
+
+option go_package = "github.com/Switcheo/carbon/x/cdp/types";
+option (gogoproto.goproto_getters_all) = false;
+
+// Query defines the gRPC querier service.
+service Query {
+  // Parameters queries the parameters of the module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/params";
+  }
+  // Queries a RateStrategy item.
+  rpc RateStrategy(QueryRateStrategyRequest)
+      returns (QueryRateStrategyResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/rate_strategy/{name}";
+  }
+
+  // Queries a list of RateStrategy items.
+  rpc RateStrategyAll(QueryRateStrategyAllRequest)
+      returns (QueryRateStrategyAllResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/rate_strategy";
+  }
+
+  // Queries a AccountData items.
+  rpc AccountData(QueryAccountDataRequest) returns (QueryAccountDataResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/account_data/{address}";
+  }
+
+  // Queries a list of AccountCollateral items.
+  rpc AccountCollateral(QueryAccountCollateralRequest)
+      returns (QueryAccountCollateralResponse) {
+    option (google.api.http).get =
+        "/carbon/cdp/v1/account_collateral/{address}/{cibt_denom}";
+  }
+
+  // Queries a list of AccountCollaterals items.
+  rpc AccountCollateralAll(QueryAccountCollateralAllRequest)
+      returns (QueryAccountCollateralAllResponse) {
+    option (google.api.http).get =
+        "/carbon/cdp/v1/account_collateral/{address}";
+  }
+
+  // Queries a list of AccountDebt items.
+  rpc AccountDebt(QueryAccountDebtRequest) returns (QueryAccountDebtResponse) {
+    option (google.api.http).get =
+        "/carbon/cdp/v1/account_debt/{address}/{denom}";
+  }
+
+  // Queries a list of AccountDebtAll items.
+  rpc AccountDebtAll(QueryAccountDebtAllRequest)
+      returns (QueryAccountDebtAllResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/account_debt/{address}";
+  }
+
+  // Queries a list of AccountStablecoin items.
+  rpc AccountStablecoin(QueryAccountStablecoinRequest)
+      returns (QueryAccountStablecoinResponse) {
+    option (google.api.http).get =
+        "/carbon/cdp/v1/account_stablecoin/{address}";
+  }
+
+  // Queries a list of Asset items.
+  rpc Asset(QueryAssetRequest) returns (QueryAssetResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/asset/{denom}";
+  }
+
+  // Queries a list of AssetsAll items.
+  rpc AssetAll(QueryAssetAllRequest) returns (QueryAssetAllResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/asset";
+  }
+
+  // Queries a list of TokenDebt items.
+  rpc TokenDebt(QueryTokenDebtRequest) returns (QueryTokenDebtResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/token_debt/{denom}";
+  }
+
+  // Queries a list of TokenDebtsAll items.
+  rpc TokenDebtAll(QueryTokenDebtAllRequest)
+      returns (QueryTokenDebtAllResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/token_debt";
+  }
+
+  // Queries a list of StablecoinDebt items.
+  rpc StablecoinDebt(QueryStablecoinDebtRequest)
+      returns (QueryStablecoinDebtResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/stablecoin_debt";
+  }
+
+  // Queries a list of all RewardSchemes.
+  rpc RewardSchemesAll(QueryRewardSchemesAllRequest)
+      returns (QueryRewardSchemesAllResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/reward_schemes";
+  }
+
+  // Queries a list of RewardDebt items for an address
+  rpc RewardDebts(QueryRewardDebtsRequest) returns (QueryRewardDebtsResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/reward_debts/{address}";
+  }
+
+  // Queries a list of all RewardDebts
+  rpc RewardDebtsAll(QueryRewardDebtsAllRequest)
+      returns (QueryRewardDebtsResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/reward_debts";
+  }
+
+  // Queries a list of CDP Positions
+  rpc PositionsAll(QueryCdpPositionsRequest)
+      returns (QueryCdpPositionsResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/positions";
+  }
+
+  rpc Position(QueryCdpPositionRequest) returns (QueryCdpPositionResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/positions/{address}";
+  }
+
+  rpc HealthFactor(QueryHealthFactorRequest)
+      returns (QueryHealthFactorResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/health_factor/{address}";
+  }
+
+  // Queries a list of EMode items.
+  rpc EMode(QueryEModeRequest) returns (QueryEModeResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/e_mode/{name}";
+  }
+
+  // Queries a list of EModeAll items.
+  rpc EModeAll(QueryEModeAllRequest) returns (QueryEModeAllResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/e_mode";
+  }
+
+  // Queries a list of AccountEMode items.
+  rpc AccountEMode(QueryAccountEModeRequest)
+      returns (QueryAccountEModeResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/e_mode/address/{address}";
+  }
+
+  // Queries StablecoinInterest.
+  rpc StablecoinInterest(QueryStablecoinInterestRequest)
+      returns (QueryStablecoinInterestResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/stablecoin_interest";
+  }
+
+  // Queries a list of CDPLiquidations items.
+  rpc CDPLiquidationsAll(QueryCDPLiquidationsAllRequest)
+      returns (QueryCDPLiquidationsAllResponse) {
+    option (google.api.http).get = "/carbon/cdp/v1/cdp_liquidations";
+  }
+
+  // this line is used by starport scaffolding # 2
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryRateStrategyRequest { string name = 1; }
+
+message QueryRateStrategyResponse {
+  RateStrategyParams rate_strategy_params = 1;
+}
+
+message QueryRateStrategyAllRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryRateStrategyAllResponse {
+  repeated RateStrategyParams rate_strategy_params_all = 1
+      [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryAccountDataRequest { string address = 1; }
+
+message QueryAccountDataResponse {
+  string total_collaterals_usd = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+  string total_debts_usd = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+  string available_borrows_usd = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+  string curr_liquidation_threshold = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryAccountCollateralRequest {
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string cibt_denom = 2;
+}
+
+message QueryAccountCollateralResponse { Collateral collateral = 1; }
+
+message QueryAccountCollateralAllRequest {
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryAccountCollateralAllResponse {
+  repeated Collateral collaterals = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message Collateral {
+  string denom = 1;
+  string cibt_denom = 2;
+  string collateral_amount = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryAccountDebtRequest {
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string denom = 2;
+}
+
+message QueryAccountDebtResponse { Debt debt = 1; }
+
+message QueryAccountDebtAllRequest {
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryAccountDebtAllResponse {
+  repeated Debt debts = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message Debt {
+  string denom = 1;
+  string principal = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string initial_cumulative_interest_multiplier = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryAccountStablecoinRequest { string address = 1; }
+
+message QueryAccountStablecoinResponse {
+  string principal = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string interest = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string initial_cumulative_interest_multiplier = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryAssetRequest { string denom = 1; }
+
+message QueryAssetResponse { AssetParamsAPI asset_params = 1; }
+
+message QueryAssetAllRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAssetAllResponse {
+  repeated AssetParamsAPI asset_params_all = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryTokenDebtRequest { string denom = 1; }
+
+message QueryTokenDebtResponse { DebtInfo debt_info = 1; }
+
+message QueryTokenDebtAllRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryTokenDebtAllResponse {
+  repeated DebtInfo debt_infos_all = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryStablecoinDebtRequest {}
+
+message QueryStablecoinDebtResponse {
+  StablecoinDebtInfo stablecoin_debt_info = 1;
+}
+
+message CdpPositionItem {
+  string address = 1 [
+    (gogoproto.moretags) = "db:\"address\"",
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  string denom = 2 [ (gogoproto.moretags) = "db:\"denom\"" ];
+  string cibt_denom = 3 [ (gogoproto.moretags) = "db:\"cibt_denom\"" ];
+  string health_factor = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "db:\"health_factor\""
+  ];
+  string collateral_amount = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "db:\"collateral_amount\""
+  ];
+  string borrow_amount = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "db:\"borrow_amount\""
+  ];
+  string mint_denom = 7 [ (gogoproto.moretags) = "db:\"mint_denom\"" ];
+  string mint_amount = 8 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "db:\"mint_amount\""
+  ];
+}
+
+message CdpPosition {
+  string address = 1 [
+    (gogoproto.moretags) = "db:\"address\"",
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  string health_factor = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "db:\"health_factor\""
+  ];
+  repeated cosmos.base.v1beta1.Coin collateral = 3 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.nullable) = false
+  ];
+  repeated cosmos.base.v1beta1.Coin borrow = 4 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.nullable) = false
+  ];
+  repeated cosmos.base.v1beta1.Coin mint = 5 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryCdpPositionRequest {
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}
+
+message QueryCdpPositionResponse { CdpPosition position = 1; }
+
+message QueryCdpPositionsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  string max_health_factor = 2 [ (gogoproto.nullable) = true ];
+  string min_health_factor = 3 [ (gogoproto.nullable) = true ];
+}
+
+message QueryCdpPositionsResponse {
+  repeated CdpPosition positions = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryRewardSchemesAllRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryRewardSchemesAllResponse {
+  repeated RewardScheme reward_schemes = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryRewardDebtsRequest {
+  string address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryRewardDebtsResponse {
+  repeated RewardDebt reward_debts = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryRewardDebtsAllRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryEModeAllRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryEModeAllResponse {
+  repeated EModeCategory e_mode_categories = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryStablecoinInterestRequest {}
+
+message QueryStablecoinInterestResponse {
+  StablecoinInterestInfo stablecoin_interest_info = 1;
+}
+
+message QueryEModeRequest { string name = 1; }
+
+message QueryEModeResponse {
+  EModeCategory e_mode_category = 1 [ (gogoproto.nullable) = false ];
+}
+message QueryHealthFactorRequest {
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}
+message QueryHealthFactorResponse {
+  string health_factor = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryAccountEModeRequest {
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}
+
+message QueryAccountEModeResponse { string e_mode_category_name = 1; }
+
+message QueryCDPLiquidationsAllRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryCDPLiquidationsAllResponse {
+  repeated CDPLiquidations cdp_liquidations_all = 1
+      [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// this line is used by starport scaffolding # 3

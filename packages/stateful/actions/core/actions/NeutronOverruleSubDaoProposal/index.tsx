@@ -3,7 +3,7 @@ import {
   neutronCwdSubdaoTimelockSingleQueries,
 } from '@dao-dao/state'
 import { ActionBase, ThumbDownEmoji } from '@dao-dao/stateless'
-import { ChainId, ContractVersion, PreProposeModuleType } from '@dao-dao/types'
+import { ChainId, PreProposeModuleType } from '@dao-dao/types'
 import {
   ActionComponent,
   ActionContextType,
@@ -12,7 +12,11 @@ import {
   ActionOptions,
   ProcessedMessage,
 } from '@dao-dao/types/actions'
-import { ContractName, objectMatchesStructure } from '@dao-dao/utils'
+import {
+  ContractName,
+  isNeutronForkVersion,
+  objectMatchesStructure,
+} from '@dao-dao/utils'
 
 import { EntityDisplay, ProposalLine } from '../../../../components'
 import { daoQueries } from '../../../../queries'
@@ -46,9 +50,9 @@ export class NeutronOverruleSubDaoProposalAction extends ActionBase<NeutronOverr
   constructor(options: ActionOptions) {
     // Only usable in Neutron-fork SubDAOs.
     if (
-      options.chain.chain_id !== ChainId.NeutronMainnet ||
+      options.chain.chainId !== ChainId.NeutronMainnet ||
       options.context.type !== ActionContextType.Dao ||
-      options.context.dao.coreVersion !== ContractVersion.V2AlphaNeutronFork
+      !isNeutronForkVersion(options.context.dao.coreVersion)
     ) {
       throw new Error('Only Neutron-forked SubDAOs can overrule proposals.')
     }
@@ -93,7 +97,7 @@ export class NeutronOverruleSubDaoProposalAction extends ActionBase<NeutronOverr
         } ||
           !(await this.options.queryClient.fetchQuery(
             contractQueries.isContract(this.options.queryClient, {
-              chainId: this.options.chain.chain_id,
+              chainId: this.options.chain.chainId,
               address: decodedMessage.wasm.execute.contract_addr,
               nameOrNames: ContractName.NeutronCwdSubdaoTimelockSingle,
             })

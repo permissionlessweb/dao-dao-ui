@@ -1,4 +1,5 @@
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
+import { EncodeObject } from '@cosmjs/proto-signing'
 import { FetchQueryOptions, QueryClient } from '@tanstack/react-query'
 
 import {
@@ -6,11 +7,13 @@ import {
   Coin,
   ContractVersion,
   Duration,
+  Feature,
   IDaoBase,
   IProposalModuleBase,
   PreProposeModule,
   ProposalModuleInfo,
 } from '@dao-dao/types'
+import { isFeatureSupportedByVersion } from '@dao-dao/utils'
 
 export abstract class ProposalModuleBase<
   Dao extends IDaoBase = IDaoBase,
@@ -19,7 +22,7 @@ export abstract class ProposalModuleBase<
   VoteResponse = any,
   VoteInfo = any,
   Vote = any,
-  Config = any
+  Config = any,
 > implements
     IProposalModuleBase<
       Dao,
@@ -85,10 +88,21 @@ export abstract class ProposalModuleBase<
   }
 
   /**
+   * Check whether or not the proposal module supports a given feature.
+   */
+  supports(feature: Feature): boolean {
+    return isFeatureSupportedByVersion(feature, this.version)
+  }
+
+  /**
    * Make a proposal.
    */
   abstract propose(options: {
     data: Proposal
+    /**
+     * Cast a vote with the proposal.
+     */
+    vote?: Vote
     getSigningClient: () => Promise<SigningCosmWasmClient>
     sender: string
     funds?: Coin[]
@@ -115,6 +129,7 @@ export abstract class ProposalModuleBase<
     getSigningClient: () => Promise<SigningCosmWasmClient>
     sender: string
     memo?: string
+    nonCriticalExtensionOptions?: EncodeObject[]
   }): Promise<void>
 
   /**

@@ -15,5 +15,6 @@ export const RetroactiveCompensationWidget: Widget = {
   IconFilled: HistoryRounded,
   location: WidgetLocation.Tab,
   visibilityContext: WidgetVisibilityContext.Always,
+  supportsDaoCreation: true,
   Renderer,
 }

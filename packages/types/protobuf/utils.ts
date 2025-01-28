@@ -6,13 +6,12 @@
 // to @dao-dao/utils when telescope internally handles a type registry that can
 // encode the nested types like we do below.
 
-import { Chain } from '@chain-registry/types'
 import { AminoMsg } from '@cosmjs/amino'
 import { fromBase64, fromBech32, toBase64, toBech32 } from '@cosmjs/encoding'
 import { EncodeObject, GeneratedType, Registry } from '@cosmjs/proto-signing'
 import { AminoTypes } from '@cosmjs/stargate'
 
-import { ChainId, DecodedStargateMsg } from '../chain'
+import { AnyChain, ChainId, DecodedStargateMsg } from '../chain'
 import {
   VoteOption as CwVoteOption,
   StargateMsg,
@@ -34,6 +33,8 @@ import {
   google,
   ibcAminoConverters,
   ibcProtoRegistry,
+  interchainSecurityAminoConverters,
+  interchainSecurityProtoRegistry,
   junoAminoConverters,
   junoProtoRegistry,
   kujiraAminoConverters,
@@ -52,6 +53,8 @@ import {
   secretProtoRegistry,
   publicawesomeAminoConverters as stargazeAminoConverters,
   publicawesomeProtoRegistry as stargazeProtoRegistry,
+  switcheoAminoConverters,
+  switcheoProtoRegistry,
 } from './codegen'
 import {
   MsgCreateAllianceProposal,
@@ -79,6 +82,7 @@ import {
   MsgMigrateContract,
   MsgUpdateAdmin,
 } from './codegen/cosmwasm/wasm/v1/tx'
+import { ExtensionData } from './codegen/gaia/metaprotocols/extensions'
 import { Any } from './codegen/google/protobuf/any'
 import { UploadCosmWasmPoolCodeAndWhiteListProposal } from './codegen/osmosis/cosmwasmpool/v1beta1/gov'
 import {
@@ -102,7 +106,7 @@ export const cwMsgToProtobuf = (
 
 // Convert protobuf to its CosmWasm message equivalent.
 export const protobufToCwMsg = (
-  chain: Chain,
+  chain: AnyChain,
   ...params: Parameters<typeof decodeRawProtobufMsg>
 ): {
   msg: UnifiedCosmosMsg
@@ -403,7 +407,7 @@ export const cwMsgToEncodeObject = (
 // `makeStargateMessage` needs a non-recursively encoded message due to
 // technicalities with nested protobufs.
 export const decodedStargateMsgToCw = (
-  chain: Chain,
+  chain: AnyChain,
   { typeUrl, value }: DecodedStargateMsg['stargate']
 ): {
   msg: UnifiedCosmosMsg
@@ -494,13 +498,13 @@ export const decodedStargateMsgToCw = (
         wasm: {
           execute: {
             code_hash: value.callbackCodeHash,
-            contract_addr: toBech32(chain.bech32_prefix, value.contract),
+            contract_addr: toBech32(chain.bech32Prefix, value.contract),
             msg: toBase64(value.msg),
             send: value.sentFunds,
           },
         },
       }
-      sender = toBech32(chain.bech32_prefix, value.sender)
+      sender = toBech32(chain.bech32Prefix, value.sender)
       break
     case MsgInstantiateContract.typeUrl:
       msg = {
@@ -529,7 +533,7 @@ export const decodedStargateMsgToCw = (
           },
         },
       }
-      sender = toBech32(chain.bech32_prefix, value.sender)
+      sender = toBech32(chain.bech32Prefix, value.sender)
       break
     case MsgInstantiateContract2.typeUrl:
       msg = {
@@ -613,6 +617,11 @@ export const decodedStargateMsgToCw = (
           value,
         },
       })
+      // Attempt to decode the sender from the message.
+      if ('sender' in value && typeof value.sender === 'string') {
+        sender = value.sender
+      }
+      // Cannot decode the sender from any arbitrary message.
       break
   }
 
@@ -694,6 +703,8 @@ export const getProtobufTypes = (): ReadonlyArray<[string, GeneratedType]> => [
   ...bitsongProtoRegistry,
   ...secretProtoRegistry,
   ...omniFlixProtoRegistry,
+  ...interchainSecurityProtoRegistry,
+  ...switcheoProtoRegistry,
   // Not a query or TX so it isn't included in any of the registries. But we
   // want to decode this because it appears in gov props. We need to find a
   // better way to collect all generated types in a single registry...
@@ -715,6 +726,8 @@ export const getProtobufTypes = (): ReadonlyArray<[string, GeneratedType]> => [
     MsgDeleteAllianceProposal.typeUrl,
     MsgDeleteAllianceProposal as GeneratedType,
   ],
+  // gaia.metaprotocols
+  [ExtensionData.typeUrl, ExtensionData as GeneratedType],
 ]
 export const getTypesRegistry = () => new Registry(getProtobufTypes())
 
@@ -736,6 +749,16 @@ export const getAminoTypes = () =>
     ...bitsongAminoConverters,
     ...secretAminoConverters,
     ...omniFlixAminoConverters,
+    ...interchainSecurityAminoConverters,
+    ...switcheoAminoConverters,
+    // gaia.metaprotocols
+    [ExtensionData.typeUrl]: {
+      // the Amino type is the same as the protobuf type URL, deviating from
+      // convention for some reason...
+      aminoType: ExtensionData.typeUrl,
+      toAmino: ExtensionData.toAmino,
+      fromAmino: ExtensionData.fromAmino,
+    },
   })
 
 // Encodes a protobuf message value from its JSON representation into a byte
@@ -812,6 +835,31 @@ export const makeStargateMessage = ({
   },
 })
 
+// Encodes a message from its Amino JSON representation into a `StargateMsg`
+// that `CosmWasm` understands.
+export const makeStargateMessageFromAmino = (msg: AminoMsg): StargateMsg => {
+  if (!('type' in msg)) {
+    throw new Error(
+      '`type` field missing from Amino message, formatted like `cosmos-sdk/...`'
+    )
+  }
+  if (!('value' in msg)) {
+    throw new Error('`value` field missing from Amino message')
+  }
+
+  const { typeUrl, value } = getAminoTypes().fromAmino({
+    type: msg.type,
+    value: prepareProtobufJson(msg.value),
+  })
+
+  return {
+    stargate: {
+      type_url: typeUrl,
+      value: toBase64(encodeProtobufValue(typeUrl, value)),
+    },
+  }
+}
+
 // Decodes an encoded protobuf message from CosmWasm's `StargateMsg` into its
 // JSON representation.
 export const decodeStargateMessage = (
@@ -833,19 +881,19 @@ export const prepareProtobufJson = (msg: any): any =>
   msg instanceof Uint8Array
     ? msg
     : Array.isArray(msg)
-    ? msg.map(prepareProtobufJson)
-    : // Rule (1)
-    typeof msg === 'string' && msg.startsWith('DATE:')
-    ? new Date(msg.replace('DATE:', ''))
-    : typeof msg !== 'object' || msg === null || msg.constructor !== Object
-    ? msg
-    : Object.entries(msg).reduce(
-        (acc, [key, value]) => ({
-          ...acc,
-          [key]: prepareProtobufJson(value),
-        }),
-        {} as Record<string, any>
-      )
+      ? msg.map(prepareProtobufJson)
+      : // Rule (1)
+        typeof msg === 'string' && msg.startsWith('DATE:')
+        ? new Date(msg.replace('DATE:', ''))
+        : typeof msg !== 'object' || msg === null || msg.constructor !== Object
+          ? msg
+          : Object.entries(msg).reduce(
+              (acc, [key, value]) => ({
+                ...acc,
+                [key]: prepareProtobufJson(value),
+              }),
+              {} as Record<string, any>
+            )
 
 export const cwVoteOptionToGovVoteOption = (
   cwVote: CwVoteOption
@@ -853,12 +901,12 @@ export const cwVoteOptionToGovVoteOption = (
   cwVote === 'yes'
     ? GovVoteOption.VOTE_OPTION_YES
     : cwVote === 'no'
-    ? GovVoteOption.VOTE_OPTION_NO
-    : cwVote === 'abstain'
-    ? GovVoteOption.VOTE_OPTION_ABSTAIN
-    : cwVote === 'no_with_veto'
-    ? GovVoteOption.VOTE_OPTION_NO_WITH_VETO
-    : GovVoteOption.VOTE_OPTION_UNSPECIFIED
+      ? GovVoteOption.VOTE_OPTION_NO
+      : cwVote === 'abstain'
+        ? GovVoteOption.VOTE_OPTION_ABSTAIN
+        : cwVote === 'no_with_veto'
+          ? GovVoteOption.VOTE_OPTION_NO_WITH_VETO
+          : GovVoteOption.VOTE_OPTION_UNSPECIFIED
 
 export const govVoteOptionToCwVoteOption = (
   govVote: GovVoteOption
@@ -867,12 +915,12 @@ export const govVoteOptionToCwVoteOption = (
     govVote === GovVoteOption.VOTE_OPTION_YES
       ? 'yes'
       : govVote === GovVoteOption.VOTE_OPTION_NO
-      ? 'no'
-      : govVote === GovVoteOption.VOTE_OPTION_ABSTAIN
-      ? 'abstain'
-      : govVote === GovVoteOption.VOTE_OPTION_NO_WITH_VETO
-      ? 'no_with_veto'
-      : undefined
+        ? 'no'
+        : govVote === GovVoteOption.VOTE_OPTION_ABSTAIN
+          ? 'abstain'
+          : govVote === GovVoteOption.VOTE_OPTION_NO_WITH_VETO
+            ? 'no_with_veto'
+            : undefined
   if (!cwVote) {
     throw new Error('Invalid vote option')
   }

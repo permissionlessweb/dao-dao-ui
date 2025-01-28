@@ -38,6 +38,10 @@ export type UseTokenBalancesOptions = {
    * before they can be used in actions, so this defaults to excluding them.
    */
   excludeAccountTypes?: AccountType[]
+  /**
+   * Include only these chain IDs.
+   */
+  includeChainIds?: string[]
 }
 
 // Get native and cw20 token unstaked balances for the current context account.
@@ -46,12 +50,13 @@ export const useTokenBalances = ({
   additionalTokens,
   includeAccountTypes,
   excludeAccountTypes = [AccountType.Valence],
+  includeChainIds,
 }: UseTokenBalancesOptions = {}): LoadingData<
   GenericTokenBalanceWithOwner[]
 > => {
   const {
     address,
-    chain: { chain_id: chainId },
+    chain: { chainId },
     context,
   } = useActionOptions()
 
@@ -78,6 +83,7 @@ export const useTokenBalances = ({
           ignoreStaked: true,
           includeAccountTypes,
           excludeAccountTypes,
+          includeChainIds,
         }),
     [],
     (error) => console.error(error)

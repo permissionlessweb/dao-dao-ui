@@ -3,8 +3,9 @@ import clsx from 'clsx'
 import { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { LoadingData } from '@dao-dao/types'
+import { LoadingDataWithError } from '@dao-dao/types'
 
+import { ErrorPage } from '../../error'
 import { GridCardContainer } from '../../GridCardContainer'
 import { Dropdown, DropdownProps } from '../../inputs/Dropdown'
 import { NftCardLoader } from '../../nft/NftCard'
@@ -15,8 +16,8 @@ export interface NftsTabProps<N = any> {
   page: number
   setPage: (page: number) => void
   pageSize: number
-  nfts: LoadingData<(N & { key: string })[]>
-  numNfts: LoadingData<number>
+  nfts: LoadingDataWithError<(N & { key: string })[]>
+  numNfts: LoadingDataWithError<number>
   NftCard: ComponentType<N>
   description?: string
   // If present, will show a dropdown to filter the NFTs.
@@ -35,9 +36,13 @@ export const NftsTab = <N extends object>({
 }: NftsTabProps<N>) => {
   const { t } = useTranslation()
 
-  return nfts.loading || numNfts.loading || numNfts.data > 0 ? (
+  return nfts.errored ? (
+    <ErrorPage error={nfts.error} />
+  ) : numNfts.errored ? (
+    <ErrorPage error={numNfts.error} />
+  ) : nfts.loading || numNfts.loading || numNfts.data > 0 ? (
     <>
-      <div className="flex min-h-[3.5rem] flex-col gap-y-4 gap-x-16 pb-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-h-[3.5rem] flex-col gap-x-16 gap-y-4 pb-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-row flex-wrap items-end gap-x-4 gap-y-2">
           <p className="title-text">
             {nfts.loading || numNfts.loading

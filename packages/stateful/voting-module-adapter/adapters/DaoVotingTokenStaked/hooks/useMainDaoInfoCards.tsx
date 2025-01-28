@@ -7,6 +7,7 @@ import { TokenAmountDisplay, useVotingModule } from '@dao-dao/stateless'
 import { DaoInfoCard } from '@dao-dao/types'
 import {
   convertDurationToHumanReadableString,
+  formatPercentOf100,
   isSecretNetwork,
 } from '@dao-dao/utils'
 
@@ -56,8 +57,8 @@ export const useMainDaoInfoCards = (): DaoInfoCard[] => {
             value: loadingMembers.loading
               ? undefined
               : loadingMembers.errored
-              ? '<error>'
-              : loadingMembers.data?.length ?? '<error>',
+                ? '<error>'
+                : (loadingMembers.data?.length ?? '<error>'),
           },
         ]),
     {
@@ -80,12 +81,16 @@ export const useMainDaoInfoCards = (): DaoInfoCard[] => {
       }),
       value: (
         <TokenAmountDisplay
-          amount={
-            loadingTotalStakedValue.loading
-              ? { loading: true }
-              : HugeDecimal.from(loadingTotalStakedValue.data)
-          }
+          amount={loadingTotalStakedValue}
           decimals={decimals}
+          suffix={
+            loadingTotalStakedValue.loading
+              ? undefined
+              : ` (${formatPercentOf100(
+                  loadingTotalStakedValue.data.div(supply).times(100).toNumber()
+                )})`
+          }
+          suffixClassName="text-text-secondary"
           symbol={symbol}
         />
       ),

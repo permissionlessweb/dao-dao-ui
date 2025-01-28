@@ -106,7 +106,7 @@ const InnerProposalStatusAndInfo = ({
 }) => {
   const { t } = useTranslation()
   const {
-    chain: { chain_id: chainId },
+    chain: { chainId },
     config: { explorerUrlTemplates },
   } = useConfiguredChainContext()
   const { coreAddress } = useDao()
@@ -135,6 +135,7 @@ const InnerProposalStatusAndInfo = ({
     loadingTxHash: loadingExecutionTxHash,
   })
   const { action, footer } = useProposalActionState({
+    description: winningChoice?.description || '',
     statusKey,
     relayState,
     loadingExecutionTxHash,
@@ -159,8 +160,8 @@ const InnerProposalStatusAndInfo = ({
       statusKey === ProposalStatusEnum.Open
         ? timestampInfo.expirationDate
         : statusKey === 'veto_timelock'
-        ? vetoTimelockExpiration
-        : undefined,
+          ? vetoTimelockExpiration
+          : undefined,
   })
 
   const { vetoEnabled, canBeVetoed, vetoOrEarlyExecute, vetoInfoItems } =
@@ -318,24 +319,24 @@ const InnerProposalStatusAndInfo = ({
           statusKey === ProposalStatusEnum.Passed
             ? 'passed'
             : statusKey === ProposalStatusEnum.Executed
-            ? 'executed'
-            : statusKey === ProposalStatusEnum.ExecutionFailed
-            ? 'executionFailed'
-            : statusKey === ProposalStatusEnum.Rejected
-            ? 'rejected'
-            : statusKey === ProposalStatusEnum.Closed
-            ? 'closed'
-            : statusKey === ProposalStatusEnum.Vetoed
-            ? hasWinner
-              ? 'vetoedWinner'
-              : 'vetoedNoWinner'
-            : statusKey === 'veto_timelock'
-            ? 'vetoTimelock'
-            : statusKey === ProposalStatusEnum.NeutronOverruled
-            ? 'overruled'
-            : statusKey === ProposalStatusEnum.NeutronTimelocked
-            ? 'overruleTimelock'
-            : undefined,
+              ? 'executed'
+              : statusKey === ProposalStatusEnum.ExecutionFailed
+                ? 'executionFailed'
+                : statusKey === ProposalStatusEnum.Rejected
+                  ? 'rejected'
+                  : statusKey === ProposalStatusEnum.Closed
+                    ? 'closed'
+                    : statusKey === ProposalStatusEnum.Vetoed
+                      ? hasWinner
+                        ? 'vetoedWinner'
+                        : 'vetoedNoWinner'
+                      : statusKey === 'veto_timelock'
+                        ? 'vetoTimelock'
+                        : statusKey === ProposalStatusEnum.NeutronOverruled
+                          ? 'overruled'
+                          : statusKey === ProposalStatusEnum.NeutronTimelocked
+                            ? 'overruleTimelock'
+                            : undefined,
         turnoutPercent: formatPercentOf100(turnoutPercent),
         turnoutWinningPercent: hasWinner
           ? formatPercentOf100(winningChoice.turnoutVotePercentage)

@@ -16,6 +16,7 @@ export const makeRewardsActionCategory: ActionCategoryMaker = ({
         label: t('actionCategory.rewardsLabel'),
         description: t('actionCategory.rewardsDescription'),
         actionKeys: [
+          ActionKey.FixRewardDistributor,
           ActionKey.CreateRewardDistribution,
           ActionKey.UpdateRewardDistribution,
           ActionKey.FundRewardDistribution,

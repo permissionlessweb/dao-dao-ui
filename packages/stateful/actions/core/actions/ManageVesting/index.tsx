@@ -124,7 +124,7 @@ const getVestingSourcesFromWidgetData = (
       // same chain as the DAO. If widget data is undefined, this is being
       // used by a wallet.
       {
-        [options.chain.chain_id]: {
+        [options.chain.chainId]: {
           owner: options.address,
           factory: widgetData.factory,
           version: widgetData.version,
@@ -151,12 +151,12 @@ const getVestingInfosOwnedByEntityQueries = (
           chainId,
         })
       : // Fallback to factory query for this chain if no indexer. This is limited as vesting payments created by other entities will not load, even if the current entity has the power to cancel.
-      sources?.[chainId]?.factory
-      ? cwVestingExtraQueries.vestingInfosForFactory(options.queryClient, {
-          chainId,
-          address: sources[chainId].factory!,
-        })
-      : []
+        sources?.[chainId]?.factory
+        ? cwVestingExtraQueries.vestingInfosForFactory(options.queryClient, {
+            chainId,
+            address: sources[chainId].factory!,
+          })
+        : []
   )
 }
 
@@ -183,7 +183,7 @@ const Component: ComponentType<
 > = ({ widgetData, ...props }) => {
   const { t } = useTranslation()
   const {
-    chain: { chain_id: nativeChainId },
+    chain: { chainId: nativeChainId },
   } = useActionOptions()
 
   const { setValue, watch, setError, clearErrors, trigger } =
@@ -193,13 +193,15 @@ const Component: ComponentType<
     mode === 'begin'
       ? watch((props.fieldNamePrefix + 'begin.chainId') as 'begin.chainId')
       : mode === 'registerSlash'
-      ? watch(
-          (props.fieldNamePrefix +
-            'registerSlash.chainId') as 'registerSlash.chainId'
-        )
-      : mode === 'cancel'
-      ? watch((props.fieldNamePrefix + 'cancel.chainId') as 'cancel.chainId')
-      : undefined
+        ? watch(
+            (props.fieldNamePrefix +
+              'registerSlash.chainId') as 'registerSlash.chainId'
+          )
+        : mode === 'cancel'
+          ? watch(
+              (props.fieldNamePrefix + 'cancel.chainId') as 'cancel.chainId'
+            )
+          : undefined
   const selectedAddress =
     mode === 'registerSlash'
       ? watch(
@@ -207,8 +209,8 @@ const Component: ComponentType<
             'registerSlash.address') as 'registerSlash.address'
         )
       : mode === 'cancel'
-      ? watch((props.fieldNamePrefix + 'cancel.address') as 'cancel.address')
-      : undefined
+        ? watch((props.fieldNamePrefix + 'cancel.address') as 'cancel.address')
+        : undefined
   const beginOwnerMode = watch(
     (props.fieldNamePrefix + 'begin.ownerMode') as 'begin.ownerMode'
   )
@@ -499,10 +501,10 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
       // Cannot use begin if no widget setup, so default to cancel if no data.
       mode: this.widgetData ? 'begin' : 'cancel',
       begin: {
-        chainId: this.options.chain.chain_id,
+        chainId: this.options.chain.chainId,
         amount: '1',
         type: TokenType.Native,
-        denomOrAddress: getNativeTokenForChainId(this.options.chain.chain_id)
+        denomOrAddress: getNativeTokenForChainId(this.options.chain.chainId)
           .denomOrAddress,
         recipient: '',
         startDate: `${start.toISOString().split('T')[0]} 12:00 AM`,
@@ -529,11 +531,11 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
         ],
       },
       cancel: {
-        chainId: this.options.chain.chain_id,
+        chainId: this.options.chain.chainId,
         address: '',
       },
       registerSlash: {
-        chainId: this.options.chain.chain_id,
+        chainId: this.options.chain.chainId,
         address: '',
         validator: '',
         time: '',
@@ -587,7 +589,7 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
             ? this.options.queryClient
                 .fetchQuery(
                   cwPayrollFactoryQueries.ownership(this.options.queryClient, {
-                    chainId: this.options.chain.chain_id,
+                    chainId: this.options.chain.chainId,
                     contractAddress: this.widgetData.factory,
                   })
                 )
@@ -617,19 +619,19 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
           !vestingSource.version
             ? preV1VestingFactoryOwner
             : // V1 and later can set the owner, or no widget data (when used by a wallet).
-            !this.widgetData ||
-              (vestingSource.version &&
-                vestingSource.version >= VestingContractVersion.V1)
-            ? begin.ownerMode === 'none'
-              ? undefined
-              : begin.ownerMode === 'me'
-              ? vestingSource.owner
-              : begin.ownerMode === 'other'
-              ? begin.otherOwner
-              : begin.ownerMode === 'many'
-              ? begin.manyOwnersCw1WhitelistContract
-              : vestingSource.owner
-            : vestingSource.owner,
+              !this.widgetData ||
+                (vestingSource.version &&
+                  vestingSource.version >= VestingContractVersion.V1)
+              ? begin.ownerMode === 'none'
+                ? undefined
+                : begin.ownerMode === 'me'
+                  ? vestingSource.owner
+                  : begin.ownerMode === 'other'
+                    ? begin.otherOwner
+                    : begin.ownerMode === 'many'
+                      ? begin.manyOwnersCw1WhitelistContract
+                      : vestingSource.owner
+              : vestingSource.owner,
         recipient: begin.recipient,
         schedule:
           begin.steps.length === 1
@@ -638,39 +640,43 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
                 piecewise_linear: [
                   // First point must be 0 amount at 1 second.
                   [1, '0'],
-                  ...(begin.steps.reduce((acc, { percent, delay }, index) => {
-                    const delaySeconds = Math.max(
-                      // Ensure this is at least 1 second since it can't have
-                      // overlapping points.
-                      1,
-                      convertDurationWithUnitsToSeconds(delay) -
-                        // For the first step, subtract 1 second since the first
-                        // point must start at 1 second and is hardcoded above.
-                        (index === 0 ? 1 : 0)
-                    )
+                  ...(begin.steps.reduce(
+                    (acc, { percent, delay }, index) => {
+                      const delaySeconds = Math.max(
+                        // Ensure this is at least 1 second since it can't have
+                        // overlapping points.
+                        1,
+                        convertDurationWithUnitsToSeconds(delay) -
+                          // For the first step, subtract 1 second since the first
+                          // point must start at 1 second and is hardcoded above.
+                          (index === 0 ? 1 : 0)
+                      )
 
-                    // For the first step, start at 1 second since the first
-                    // point must start at 1 second and is hardcoded above.
-                    const lastSeconds = index === 0 ? 1 : acc[acc.length - 1][0]
-                    const lastAmount =
-                      index === 0 ? '0' : acc[acc.length - 1][1]
+                      // For the first step, start at 1 second since the first
+                      // point must start at 1 second and is hardcoded above.
+                      const lastSeconds =
+                        index === 0 ? 1 : acc[acc.length - 1][0]
+                      const lastAmount =
+                        index === 0 ? '0' : acc[acc.length - 1][1]
 
-                    return [
-                      ...acc,
-                      [
-                        lastSeconds + delaySeconds,
-                        HugeDecimal.from(
-                          // For the last step, use total to avoid rounding
-                          // issues.
-                          index === begin.steps.length - 1
-                            ? total
-                            : HugeDecimal.from(lastAmount).plus(
-                                total.times(percent / 100)
-                              )
-                        ).toString(),
-                      ],
-                    ]
-                  }, [] as [number, string][]) as [number, string][]),
+                      return [
+                        ...acc,
+                        [
+                          lastSeconds + delaySeconds,
+                          HugeDecimal.from(
+                            // For the last step, use total to avoid rounding
+                            // issues.
+                            index === begin.steps.length - 1
+                              ? total
+                              : HugeDecimal.from(lastAmount).plus(
+                                  total.times(percent / 100)
+                                )
+                          ).toString(),
+                        ],
+                      ]
+                    },
+                    [] as [number, string][]
+                  ) as [number, string][]),
                 ],
               },
         start_time:
@@ -785,7 +791,7 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
     }
 
     return maybeMakePolytoneExecuteMessages(
-      this.options.chain.chain_id,
+      this.options.chain.chainId,
       chainId,
       cosmosMsg
     )
@@ -931,11 +937,11 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
       const ownerMode = !instantiateMsg.owner
         ? 'none'
         : instantiateMsg.owner ===
-          getChainAddressForActionOptions(this.options, chainId)
-        ? 'me'
-        : cw1WhitelistAdmins
-        ? 'many'
-        : 'other'
+            getChainAddressForActionOptions(this.options, chainId)
+          ? 'me'
+          : cw1WhitelistAdmins
+            ? 'many'
+            : 'other'
 
       return {
         mode: 'begin',

@@ -106,7 +106,12 @@ export const ASTROPORT_PRICES_API =
 export const INDEXER_URL = 'https://indexer.daodao.zone'
 
 // Snapper API
-export const SNAPPER_API_BASE = 'https://snapper.daodao.zone'
+export const SNAPPER_API_BASE = 'https://snapper.indexer.zone'
+
+// WebSockets API
+export const WEB_SOCKET_PUSHER_APP_KEY = 'daodao'
+export const WEB_SOCKET_PUSHER_HOST = 'ws.indexer.zone'
+export const WEB_SOCKET_PUSHER_PORT = 443
 
 // KVPK prefix for saved Me page transactions.
 export const ME_SAVED_TX_PREFIX = 'savedTx:'
@@ -195,14 +200,6 @@ export const INVALID_CONTRACT_ERROR_SUBSTRINGS = [
 export const VALENCE_INSTANTIATE2_SALT = 'valence'
 
 /**
- * DAOs allowed to use the Valence Rebalancer.
- */
-export const VALENCE_ALLOWLIST = [
-  // NEWT DAO
-  'neutron1lqhw66n563pr2vszv4zqhjp7akwpd74vfj5gukh2crw45t5kfmvsa96ujv',
-]
-
-/**
  * Gas prices for Secret transactions.
  */
 export const SECRET_GAS = {
@@ -232,3 +229,18 @@ export const DAOS_HIDDEN_FROM_SEARCH = [
   // Lion DAO
   'terra1a9ur9jyvg9kqfsl6euqdkv02v2klqnppzv4jpw93xzp5tr0xhkvschdnm5',
 ]
+
+/**
+ * Separator used between proposal description and additional metadata JSON
+ * stored at the end of the description field.
+ */
+export const PROPOSAL_DESCRIPTION_METADATA_SEPARATOR = '\n~@~@~@~\n'
+
+// Wallet account secp256k1 public keys are expected to be 33 bytes starting
+// with 0x02 or 0x03. This will be used when simulating requests, but not when
+// signing since we intercept messages. This may cause problems with some dApps
+// if simulation fails...
+export const EMPTY_PUB_KEY = new Uint8Array([
+  0x02,
+  ...[...new Array(32)].map(() => 0),
+])

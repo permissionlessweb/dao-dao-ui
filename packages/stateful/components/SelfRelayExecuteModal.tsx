@@ -1,4 +1,3 @@
-import { Chain } from '@chain-registry/types'
 import { AckWithMetadata } from '@confio/relayer'
 import { PacketWithMetadata } from '@confio/relayer/build/lib/endpoint'
 import { IbcClient } from '@confio/relayer/build/lib/ibcclient'
@@ -50,6 +49,7 @@ import {
   useUpdatingRef,
 } from '@dao-dao/stateless'
 import {
+  AnyChain,
   ChainId,
   GenericToken,
   SelfRelayExecuteModalProps,
@@ -106,7 +106,7 @@ const RELAYER_FUNDS_NEEDED: Partial<Record<ChainId | string, number>> = {
 }
 
 type Relayer = {
-  chain: Chain
+  chain: AnyChain
   chainImageUrl: string
   feeToken: GenericToken
   wallet: {
@@ -133,7 +133,7 @@ export const SelfRelayExecuteModal = ({
 
   // Current chain.
   const {
-    chain: { chain_id: currentChainId },
+    chain: { chainId: currentChainId },
   } = useSupportedChainContext()
 
   // All chains, including current.
@@ -249,7 +249,7 @@ export const SelfRelayExecuteModal = ({
   const walletFunds = useCachedLoadingWithError(
     relayers
       ? waitForAll(
-          relayers.map(({ chain: { chain_id: chainId }, feeToken, wallet }) =>
+          relayers.map(({ chain: { chainId }, feeToken, wallet }) =>
             genericTokenBalanceSelector({
               chainId,
               type: feeToken.type,
@@ -265,20 +265,19 @@ export const SelfRelayExecuteModal = ({
       ? walletFunds.data.map(
           ({ balance }, index) =>
             Number(balance) >=
-            getRelayerFundsRef.current(relayers[index].chain.chain_id)
+            getRelayerFundsRef.current(relayers[index].chain.chainId)
         )
       : undefined
 
   const relayerFunds = useCachedLoadingWithError(
     relayers
       ? waitForAll(
-          relayers.map(
-            ({ chain: { chain_id: chainId }, feeToken, relayerAddress }) =>
-              nativeDenomBalanceSelector({
-                chainId,
-                walletAddress: relayerAddress,
-                denom: feeToken.denomOrAddress,
-              })
+          relayers.map(({ chain: { chainId }, feeToken, relayerAddress }) =>
+            nativeDenomBalanceSelector({
+              chainId,
+              walletAddress: relayerAddress,
+              denom: feeToken.denomOrAddress,
+            })
           )
         )
       : undefined
@@ -293,7 +292,7 @@ export const SelfRelayExecuteModal = ({
       .every(
         ({ amount }, index) =>
           Number(amount) >=
-          getRelayerFundsRef.current(relayers[index + 1].chain.chain_id)
+          getRelayerFundsRef.current(relayers[index + 1].chain.chainId)
       )
 
   const setupRelayer = async () => {
@@ -309,7 +308,7 @@ export const SelfRelayExecuteModal = ({
         t('error.unsupportedChains', {
           count: unsupportedChains.length,
           chains: unsupportedChains
-            .map(({ chain_id }) => getDisplayNameForChainId(chain_id))
+            .map(({ chainId }) => getDisplayNameForChainId(chainId))
             .join(', '),
         })
       )
@@ -346,17 +345,17 @@ export const SelfRelayExecuteModal = ({
       const relayers = await Promise.all(
         chains.map(async (chain, index): Promise<Relayer> => {
           const chainImageUrl =
-            getImageUrlForChainId(chain.chain_id) ||
-            getFallbackImage(chain.chain_id)
+            getImageUrlForChainId(chain.chainId) ||
+            getFallbackImage(chain.chainId)
 
-          const feeDenom = chain.fees?.fee_tokens[0]?.denom
+          const feeDenom = chain.chainRegistry?.fees?.fee_tokens[0]?.denom
           if (!feeDenom) {
             throw new Error(t('error.feeTokenNotFound'))
           }
 
           const feeToken = await queryClient.fetchQuery(
             tokenQueries.info(queryClient, {
-              chainId: chain.chain_id,
+              chainId: chain.chainId,
               type: TokenType.Native,
               denomOrAddress: feeDenom,
             })
@@ -373,14 +372,14 @@ export const SelfRelayExecuteModal = ({
 
           // Create relayer signer.
           const signer = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
-            prefix: chain.bech32_prefix,
+            prefix: chain.bech32Prefix,
           })
           const relayerAddress = (await signer.getAccounts())[0].address
 
           // Create IBC client with newly created signer.
           const client = await retry(10, (attempt) =>
             IbcClient.connectWithSigner(
-              getRpcForChainId(chain.chain_id, attempt - 1),
+              getRpcForChainId(chain.chainId, attempt - 1),
               signer,
               relayerAddress,
               {
@@ -425,14 +424,14 @@ export const SelfRelayExecuteModal = ({
 
   // Send fee tokens to relayer wallet.
   const fundRelayer = async (chainId: string, withExecuteRelay = false) => {
-    const relayer = relayers?.find(({ chain }) => chainId === chain.chain_id)
+    const relayer = relayers?.find(({ chain }) => chainId === chain.chainId)
     if (!relayers || !relayer) {
       toast.error(t('error.relayerNotSetUp'))
       return
     }
 
     // Should never happen, but just to be safe.
-    if (withExecuteRelay && relayer.chain.chain_id !== currentChainId) {
+    if (withExecuteRelay && relayer.chain.chainId !== currentChainId) {
       toast.error(
         t('error.unexpectedError') +
           ' Relay can only happen when funding the current chain.'
@@ -633,7 +632,7 @@ export const SelfRelayExecuteModal = ({
 
         // Get packets for this chain that need relaying.
         const packets = crossChainPackets.filter(
-          ({ data: { chainId } }) => chainId === chain.chain_id
+          ({ data: { chainId } }) => chainId === chain.chainId
         )
 
         // Choose TX packets that match packets we want to relay.
@@ -678,25 +677,28 @@ export const SelfRelayExecuteModal = ({
         const connections = (
           await Promise.all(
             srcConnections
-              .reduce((acc, { channel, connection }) => {
-                let existing = acc.find((a) => a.src === connection)
-                if (!existing) {
-                  existing = {
-                    src: connection,
-                    packets: [],
+              .reduce(
+                (acc, { channel, connection }) => {
+                  let existing = acc.find((a) => a.src === connection)
+                  if (!existing) {
+                    existing = {
+                      src: connection,
+                      packets: [],
+                    }
+                    acc.push(existing)
                   }
-                  acc.push(existing)
-                }
 
-                // Find packets coming from the same channel.
-                existing.packets.push(
-                  ...chainPackets.filter(
-                    ({ packet }) => packet.sourceChannel === channel
+                  // Find packets coming from the same channel.
+                  existing.packets.push(
+                    ...chainPackets.filter(
+                      ({ packet }) => packet.sourceChannel === channel
+                    )
                   )
-                )
 
-                return acc
-              }, [] as { src: string; packets: PacketWithMetadata[] }[])
+                  return acc
+                },
+                [] as { src: string; packets: PacketWithMetadata[] }[]
+              )
               .map(async (data) => ({
                 ...data,
                 dst: (
@@ -805,7 +807,7 @@ export const SelfRelayExecuteModal = ({
 
               console.error(
                 t('error.failedToRelayPackets', {
-                  chain: getDisplayNameForChainId(chain.chain_id),
+                  chain: getDisplayNameForChainId(chain.chainId),
                 }) + (tries > 0 ? ' ' + t('info.tryingAgain') : ''),
                 err
               )
@@ -912,7 +914,7 @@ export const SelfRelayExecuteModal = ({
 
               console.error(
                 t('error.failedToRelayAcks', {
-                  chain: getDisplayNameForChainId(chain.chain_id),
+                  chain: getDisplayNameForChainId(chain.chainId),
                 }) + (tries > 0 ? ' ' + t('info.tryingAgain') : ''),
                 err
               )
@@ -976,7 +978,7 @@ export const SelfRelayExecuteModal = ({
     setStatus(RelayStatus.Refunding)
     try {
       await Promise.all(
-        relayers.map(({ chain }) => refundRelayer(chain.chain_id))
+        relayers.map(({ chain }) => refundRelayer(chain.chainId))
       )
 
       // Clear mnemonic from local storage since all wallets should be empty now
@@ -996,14 +998,14 @@ export const SelfRelayExecuteModal = ({
 
   // Return remaining tokens from IBC client relayer wallet back to user.
   const refundRelayer = async (chainId: string) => {
-    const relayer = relayers?.find(({ chain }) => chain.chain_id === chainId)
+    const relayer = relayers?.find(({ chain }) => chain.chainId === chainId)
     if (!relayer) {
       throw new Error(t('error.relayerNotSetUp'))
     }
 
     const { chain, client, relayerAddress, wallet } = relayer
 
-    const feeDenom = chain.fees?.fee_tokens[0]?.denom
+    const feeDenom = chain.chainRegistry?.fees?.fee_tokens[0]?.denom
     if (!feeDenom) {
       throw new Error(t('error.feeTokenNotFound'))
     }
@@ -1022,7 +1024,7 @@ export const SelfRelayExecuteModal = ({
         relayerAddress,
         [
           cwMsgToEncodeObject(
-            chain.chain_id,
+            chain.chainId,
             {
               bank: makeBankMessage(
                 remainingTokens.amount,
@@ -1091,14 +1093,14 @@ export const SelfRelayExecuteModal = ({
           status === RelayStatus.Initializing
             ? 0
             : status === RelayStatus.Funding || status === RelayStatus.Executing
-            ? 1
-            : status === RelayStatus.Relaying ||
-              status === RelayStatus.RelayErrored
-            ? 2
-            : status === RelayStatus.Refunding ||
-              status === RelayStatus.RefundingErrored
-            ? 3
-            : 4
+              ? 1
+              : status === RelayStatus.Relaying ||
+                  status === RelayStatus.RelayErrored
+                ? 2
+                : status === RelayStatus.Refunding ||
+                    status === RelayStatus.RefundingErrored
+                  ? 3
+                  : 4
         }
         steps={[
           {
@@ -1154,7 +1156,7 @@ export const SelfRelayExecuteModal = ({
                     ...(relayers?.slice(1) ?? []),
                     // Current chain last. This includes the execute.
                     ...(relayers ? [relayers[0]] : []),
-                  ].map(({ chain: { chain_id }, chainImageUrl }, index) => {
+                  ].map(({ chain: { chainId }, chainImageUrl }, index) => {
                     // Adjust the index to reflect the reordering above.
                     index = (index + 1) % relayers!.length
 
@@ -1171,11 +1173,11 @@ export const SelfRelayExecuteModal = ({
                       !relayerFunds.loading && !relayerFunds.errored
                         ? HugeDecimal.from(relayerFunds.data[index])
                         : // Use the previously funded amount if the step is past.
-                          fundedAmount[chain_id] ?? HugeDecimal.zero
+                          (fundedAmount[chainId] ?? HugeDecimal.zero)
                     const empty = funds.isZero()
 
                     const funded = funds.gte(
-                      getRelayerFundsRef.current(chain_id)
+                      getRelayerFundsRef.current(chainId)
                     )
 
                     const isExecute = index === 0
@@ -1188,7 +1190,7 @@ export const SelfRelayExecuteModal = ({
                       stepStatus === 'current' && (!funded || isExecute)
 
                     return (
-                      <Fragment key={chain_id}>
+                      <Fragment key={chainId}>
                         <div className="flex flex-row items-center gap-2">
                           <div
                             className="h-6 w-6 bg-contain bg-center bg-no-repeat"
@@ -1198,7 +1200,7 @@ export const SelfRelayExecuteModal = ({
                           ></div>
 
                           <p className="primary-text shrink-0">
-                            {getDisplayNameForChainId(chain_id)}
+                            {getDisplayNameForChainId(chainId)}
                           </p>
                         </div>
 
@@ -1217,10 +1219,10 @@ export const SelfRelayExecuteModal = ({
                                       fundTokenWithBalance.token.symbol,
                                   })
                                 : cannotExecuteUntilFunded
-                                ? `Fund the other relayer${
-                                    chains.length > 2 ? 's' : ''
-                                  } before executing.`
-                                : undefined
+                                  ? `Fund the other relayer${
+                                      chains.length > 2 ? 's' : ''
+                                    } before executing.`
+                                  : undefined
                             }
                           >
                             <Button
@@ -1230,11 +1232,11 @@ export const SelfRelayExecuteModal = ({
                                 walletCannotAfford || cannotExecuteUntilFunded
                               }
                               loading={
-                                !!fundingRelayer[chain_id] ||
+                                !!fundingRelayer[chainId] ||
                                 walletFunds.loading ||
                                 walletFunds.errored
                               }
-                              onClick={() => fundRelayer(chain_id, isExecute)}
+                              onClick={() => fundRelayer(chainId, isExecute)}
                             >
                               {isExecute
                                 ? funded
@@ -1242,11 +1244,11 @@ export const SelfRelayExecuteModal = ({
                                     ? t('button.execute')
                                     : t('button.relay')
                                   : transaction.type === 'execute'
-                                  ? t('button.fundAndExecute')
-                                  : t('button.fundAndRelay')
+                                    ? t('button.fundAndExecute')
+                                    : t('button.fundAndRelay')
                                 : empty
-                                ? t('button.fund')
-                                : t('button.topUp')}
+                                  ? t('button.fund')
+                                  : t('button.topUp')}
                             </Button>
                           </Tooltip>
                         ) : (
@@ -1308,7 +1310,7 @@ export const SelfRelayExecuteModal = ({
                     destination={
                       <Tooltip
                         title={getDisplayNameForChainId(
-                          relaying.relayer.chain.chain_id
+                          relaying.relayer.chain.chainId
                         )}
                       >
                         <div className="bg-background-base flex items-center justify-center rounded-l-full p-1">
@@ -1329,7 +1331,7 @@ export const SelfRelayExecuteModal = ({
                       // First chain is current source chain.
                       <Tooltip
                         title={getDisplayNameForChainId(
-                          relayers[0].chain.chain_id
+                          relayers[0].chain.chainId
                         )}
                       >
                         <div className="bg-background-base flex items-center justify-center rounded-r-full p-1">
@@ -1369,7 +1371,7 @@ export const SelfRelayExecuteModal = ({
                     ...(relayers ? [relayers[0]] : []),
                   ].map(
                     (
-                      { chain: { chain_id }, chainImageUrl, feeToken },
+                      { chain: { chainId }, chainImageUrl, feeToken },
                       index
                     ) => {
                       // Adjust the index to reflect the reordering above.
@@ -1382,10 +1384,10 @@ export const SelfRelayExecuteModal = ({
                       const empty = funds.isZero()
 
                       const refunded =
-                        refundedAmount[chain_id] ?? HugeDecimal.zero
+                        refundedAmount[chainId] ?? HugeDecimal.zero
 
                       return (
-                        <Fragment key={chain_id}>
+                        <Fragment key={chainId}>
                           <div className="flex flex-row items-center gap-2">
                             <div
                               className="h-6 w-6 bg-contain bg-center bg-no-repeat"
@@ -1395,12 +1397,13 @@ export const SelfRelayExecuteModal = ({
                             ></div>
 
                             <p className="primary-text shrink-0">
-                              {getDisplayNameForChainId(chain_id)}
+                              {getDisplayNameForChainId(chainId)}
                             </p>
                           </div>
 
                           <div className="flex items-center justify-end gap-2">
                             <TokenAmountDisplay
+                              amount={empty ? refunded : funds}
                               amount={empty ? refunded : funds}
                               decimals={feeToken.decimals}
                               symbol={feeToken.symbol}

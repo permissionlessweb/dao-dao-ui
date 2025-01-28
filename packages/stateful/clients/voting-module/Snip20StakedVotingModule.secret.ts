@@ -103,7 +103,7 @@ export class SecretSnip20StakedVotingModule extends VotingModuleBase<SecretCwDao
       label: `dao-voting-snip20-staked_${Date.now()}`,
       msg: encodeJsonToBase64({
         active_threshold: config.activeThreshold,
-        dao_code_hash: codeHashes.DaoCore,
+        dao_code_hash: codeHashes.DaoDaoCore,
         token_info:
           'existing' in config.token
             ? {

@@ -18,6 +18,10 @@ export interface IconButtonifierProps {
   focused?: boolean
   className?: string
   iconClassName?: string
+  /**
+   * Whether or not to prompt for confirmation before clicking.
+   */
+  confirm?: boolean
   children?: ReactNode
 }
 

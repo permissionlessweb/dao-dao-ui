@@ -3,9 +3,9 @@ import {
   ContractVersion,
   Duration,
   GenericToken,
+  LazyNftCardInfo,
   LoadingData,
   LoadingDataWithError,
-  NftCardInfo,
 } from '@dao-dao/types'
 import { NftClaim } from '@dao-dao/types/contracts/DaoVotingCw721Staked'
 
@@ -33,8 +33,8 @@ export interface UseStakingInfoResponse {
   loadingTotalStakedValue?: LoadingData<HugeDecimal>
   // Wallet staked value
   loadingWalletStakedValue?: LoadingData<HugeDecimal>
-  loadingWalletStakedNfts?: LoadingDataWithError<NftCardInfo[]>
-  loadingWalletUnstakedNfts?: LoadingDataWithError<NftCardInfo[]>
+  loadingWalletStakedNfts?: LoadingDataWithError<LazyNftCardInfo[]>
+  loadingWalletUnstakedNfts?: LoadingDataWithError<LazyNftCardInfo[]>
 }
 
 export interface UseGovernanceCollectionInfoOptions {

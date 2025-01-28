@@ -114,7 +114,7 @@ export const GovernanceProposalComponent: ActionComponent<
 
   const {
     chainId,
-    chain: { bech32_prefix: bech32Prefix },
+    chain: { bech32Prefix },
     nativeToken,
   } = useChainContext()
 
@@ -445,11 +445,11 @@ export const GovernanceProposalComponent: ActionComponent<
                     minDeposits.loading
                       ? { loading: true }
                       : minDeposits.errored
-                      ? { loading: false, data: [] }
-                      : {
-                          loading: false,
-                          data: minDeposits.data.map(({ token }) => token),
-                        }
+                        ? { loading: false, data: [] }
+                        : {
+                            loading: false,
+                            data: minDeposits.data.map(({ token }) => token),
+                          }
                   }
                 />
                 <InputErrorMessage error={errors?.deposit?.[0]?.amount} />

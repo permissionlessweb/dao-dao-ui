@@ -1,10 +1,5 @@
 import { uniqBy } from 'lodash'
-import {
-  selectorFamily,
-  waitForAll,
-  waitForAllSettled,
-  waitForAny,
-} from 'recoil'
+import { selectorFamily, waitForAll, waitForAllSettled } from 'recoil'
 
 import { HugeDecimal } from '@dao-dao/math'
 import {
@@ -32,13 +27,11 @@ import {
 
 import { chainQueries, tokenQueries } from '../../query'
 import { queryClientAtom, refreshTokenCardLazyInfoAtom } from '../atoms'
-import { astroportUsdPriceSelector } from './astroport'
 import {
   denomMetadataSelector,
   ibcRpcClientForChainSelector,
   nativeBalancesSelector,
   nativeDelegatedBalanceSelector,
-  nativeDenomBalanceSelector,
   nativeUnstakingDurationSecondsSelector,
 } from './chain'
 import { isDaoSelector } from './contract'
@@ -49,10 +42,8 @@ import {
   DaoVotingNativeStakedSelectors,
 } from './contracts'
 import { queryGenericIndexerSelector, querySnapperSelector } from './indexer'
-import { osmosisUsdPriceSelector } from './osmosis'
 import { skipAssetSelector } from './skip'
 import { walletCw20BalancesSelector } from './wallet'
-import { whiteWhaleUsdPriceSelector } from './whale'
 
 export const genericTokenSelector = selectorFamily<
   GenericToken,
@@ -105,43 +96,22 @@ export const coinGeckoUsdPriceSelector = selectorFamily<
     },
 })
 
-const priceSelectors = [
-  coinGeckoUsdPriceSelector,
-  osmosisUsdPriceSelector,
-  astroportUsdPriceSelector,
-  whiteWhaleUsdPriceSelector,
-]
-
 export const usdPriceSelector = selectorFamily<
   GenericTokenWithUsdPrice | undefined,
-  Pick<GenericToken, 'chainId' | 'type' | 'denomOrAddress'>
+  GenericTokenSource
 >({
   key: 'usdPrice',
   get:
     (params) =>
-    ({ get }) => {
+    async ({ get }) => {
       if (!MAINNET) {
         return
       }
 
-      const selectors = priceSelectors.map((selector) => selector(params))
-
-      // Load in parallel.
-      const priceLoadables = get(waitForAny(selectors))
-      // Get first loaded price.
-      const anyPrice = priceLoadables
-        .find((loadable) => loadable.valueMaybe())
-        ?.valueMaybe()
-
-      // If any price is loaded right away, use it.
-      if (anyPrice) {
-        return anyPrice
-      }
-
-      // If no price is loaded yet, wait for all to finish before returning
-      // undefined from this selector. This forces the above to load which will
-      // return the first one that is available.
-      get(waitForAllSettled(selectors))
+      const queryClient = get(queryClientAtom)
+      return await queryClient
+        .fetchQuery(tokenQueries.usdPrice(queryClient, params))
+        .catch(() => undefined)
     },
 })
 
@@ -231,33 +201,36 @@ export const genericTokenBalancesSelector = selectorFamily<
                           }
                         ),
                       ]
-                    : // Get polytone cw20s if they exist.
-                    chainId !== mainChainId
+                    : // Get cross-chain cw20s if they exist.
+                      chainId !== mainChainId
+                      ? [
+                          DaoDaoCoreSelectors.crossChainCw20TokensWithBalancesSelector(
+                            {
+                              chainId: mainChainId,
+                              contractAddress: mainAddress,
+                              crossChainId: chainId,
+                              crossChainAddress: address,
+                            }
+                          ),
+                        ]
+                      : []
+                  : isValidWalletAddress(
+                        address,
+                        getChainForChainId(chainId).bech32Prefix
+                      )
                     ? [
-                        DaoDaoCoreSelectors.polytoneCw20TokensWithBalancesSelector(
-                          {
-                            chainId: mainChainId,
-                            contractAddress: mainAddress,
-                            polytoneChainId: chainId,
-                          }
-                        ),
+                        walletCw20BalancesSelector({
+                          walletAddress: address,
+                          chainId,
+                        }),
                       ]
                     : []
-                  : isValidWalletAddress(
-                      address,
-                      getChainForChainId(chainId).bech32_prefix
-                    )
-                  ? [
-                      walletCw20BalancesSelector({
-                        walletAddress: address,
-                        chainId,
-                      }),
-                    ]
-                  : []
               )
             )
           : []
       )[0]
+
+      console.log(address, cw20TokenBalances)
 
       return [
         ...nativeTokenBalances.map((native) => ({
@@ -274,43 +247,16 @@ export const genericTokenBalancesSelector = selectorFamily<
 
 export const genericTokenBalanceSelector = selectorFamily<
   GenericTokenBalance,
-  Parameters<typeof genericTokenSelector>[0] & {
-    address: string
-  }
+  Parameters<typeof tokenQueries.balance>[1]
 >({
   key: 'genericTokenBalance',
   get:
-    ({ address, ...params }) =>
+    (params) =>
     async ({ get }) => {
-      const token = get(genericTokenSelector(params))
-
-      let balance = '0'
-      if (token.type === TokenType.Native) {
-        balance = get(
-          nativeDenomBalanceSelector({
-            chainId: params.chainId,
-            walletAddress: address,
-            denom: params.denomOrAddress,
-          })
-        ).amount
-      } else if (token.type === TokenType.Cw20) {
-        balance = get(
-          Cw20BaseSelectors.balanceSelector({
-            contractAddress: params.denomOrAddress,
-            chainId: params.chainId,
-            params: [
-              {
-                address,
-              },
-            ],
-          })
-        ).balance
-      }
-
-      return {
-        token,
-        balance,
-      }
+      const queryClient = get(queryClientAtom)
+      return await queryClient.fetchQuery(
+        tokenQueries.balance(queryClient, params)
+      )
     },
 })
 
@@ -507,7 +453,7 @@ export const genericTokenSourceSelector = selectorFamily<
                   getChainForChainName(
                     getIbcTransferInfoFromChannel(currentChainId, channel)
                       .destinationChain.chain_name
-                  ).chain_id,
+                  ).chainId,
                 chainId
               )
 
@@ -690,15 +636,18 @@ export const tokenCardLazyInfoSelector = selectorFamily<
 
       if (owner) {
         daosGoverned = get(
-          tokenDaosWithStakedBalanceSelector({
-            chainId,
-            type: token.type,
-            denomOrAddress: token.denomOrAddress,
-            walletAddress: owner,
-          })
-        )
+          waitForAllSettled([
+            tokenDaosWithStakedBalanceSelector({
+              chainId,
+              type: token.type,
+              denomOrAddress: token.denomOrAddress,
+              walletAddress: owner,
+            }),
+          ])
+        )[0]
+          .valueMaybe()
           // Only include DAOs this owner has staked with.
-          .filter(({ stakedBalance }) => stakedBalance.isPositive())
+          ?.filter(({ stakedBalance }) => stakedBalance.isPositive())
       }
 
       const totalBalance = HugeDecimal.from(unstakedBalance)

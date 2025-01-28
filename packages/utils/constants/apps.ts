@@ -1,8 +1,13 @@
-import { DaoApp as DaoApp } from '@dao-dao/types'
+import { App as App } from '@dao-dao/types'
 
 import { MAINNET } from './env'
 
-export const DAO_APPS: DaoApp[] = [
+export const APPS: App[] = [
+  {
+    name: 'DAO DAO',
+    imageUrl: '/apps/daodao.png',
+    url: 'https://daodao.zone',
+  },
   {
     name: 'Osmosis',
     imageUrl: 'https://app.osmosis.zone/images/preview.jpg',
@@ -26,6 +31,11 @@ export const DAO_APPS: DaoApp[] = [
     url: MAINNET
       ? 'https://studio.stargaze.zone'
       : 'https://studio.publicawesome.dev',
+  },
+  {
+    name: 'Stardex',
+    imageUrl: '/apps/stardex.jpg',
+    url: 'https://swap.stargaze.zone/swap',
   },
   {
     name: 'Mars Protocol',

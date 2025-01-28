@@ -14,7 +14,11 @@ export type DaoSupportedChainPickerInputProps = {
   /**
    * The name of the chain ID form field.
    */
-  fieldName: string
+  fieldName?: string
+  /**
+   * The selected chain ID, instead of using the form context.
+   */
+  selected?: string
   /**
    * Handler for when the selected chain changes.
    */
@@ -60,6 +64,7 @@ export type DaoSupportedChainPickerInputProps = {
  */
 export const DaoSupportedChainPickerInput = ({
   fieldName,
+  selected,
   onChange,
   includeChainIds: _includeChainIds,
   excludeChainIds,
@@ -73,10 +78,10 @@ export const DaoSupportedChainPickerInput = ({
 }: DaoSupportedChainPickerInputProps) => {
   const { t } = useTranslation()
   const {
-    chain: { chain_id: chainId },
+    chain: { chainId },
     config,
   } = useChainContext()
-  const { watch, setValue } = useFormContext()
+  const { watch, setValue } = useFormContext() ?? {}
   const dao = useDaoIfAvailable()
 
   const includeChainIds =
@@ -120,7 +125,7 @@ export const DaoSupportedChainPickerInput = ({
     return null
   }
 
-  const selectedChainId = watch(fieldName)
+  const selectedChainId = fieldName && watch ? watch(fieldName) : selected
 
   return (
     <div className={clsx('flex flex-col items-start gap-1', className)}>
@@ -143,7 +148,10 @@ export const DaoSupportedChainPickerInput = ({
             return
           }
 
-          setValue(fieldName, chainId)
+          if (fieldName && setValue) {
+            setValue(fieldName, chainId)
+          }
+
           onChange?.(chainId)
         }}
         selectedChainId={selectedChainId}

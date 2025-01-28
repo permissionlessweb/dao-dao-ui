@@ -1,14 +1,15 @@
-import { Chain } from '@chain-registry/types'
 import { FetchQueryOptions, QueryClient } from '@tanstack/react-query'
 
 import { daoQueries } from '@dao-dao/state/query'
 import {
   Account,
   AmountWithTimestamp,
+  AnyChain,
   ContractVersion,
   DaoCardLazyData,
   DaoInfo,
   DaoSource,
+  Feature,
   IDaoBase,
   IProposalModuleBase,
   IVotingModuleBase,
@@ -17,6 +18,7 @@ import {
   TotalPowerAtHeightResponse,
   VotingPowerAtHeightResponse,
 } from '@dao-dao/types/contracts/DaoDaoCore'
+import { isFeatureSupportedByVersion } from '@dao-dao/utils'
 
 export abstract class DaoBase implements IDaoBase {
   constructor(protected readonly queryClient: QueryClient) {}
@@ -46,7 +48,7 @@ export abstract class DaoBase implements IDaoBase {
   /**
    * Chain of the DAO.
    */
-  abstract get chain(): Chain
+  abstract get chain(): AnyChain
 
   /**
    * Core address of the DAO.
@@ -121,6 +123,20 @@ export abstract class DaoBase implements IDaoBase {
    */
   get imageUrl(): string {
     return this.info.imageUrl
+  }
+
+  /**
+   * DAO banner image URL.
+   */
+  get bannerImageUrl(): string | undefined {
+    return this.info.items['banner']
+  }
+
+  /**
+   * Check whether or not the DAO supports a given feature.
+   */
+  supports(feature: Feature): boolean {
+    return isFeatureSupportedByVersion(feature, this.coreVersion)
   }
 
   /**

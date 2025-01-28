@@ -28,7 +28,7 @@ import { ProfileAddChains } from '../profile/ProfileAddChains'
 export const WalletDaos = ({ address }: StatefulWalletDaosProps) => {
   const { t } = useTranslation()
 
-  const { chain_id: chainId } = useChain()
+  const { chainId } = useChain()
   const { connected, chains, uniquePublicKeys } = useProfile({
     address,
   })
@@ -40,38 +40,38 @@ export const WalletDaos = ({ address }: StatefulWalletDaosProps) => {
     chains.loading || uniquePublicKeys.loading
       ? undefined
       : // If no chains and an address is passed, just use the current chain.
-      chains.data.length === 0 && address
-      ? waitForAll([
-          waitForAny([
-            lazyWalletDaosSelector({
-              chainId,
-              address,
-            }),
-          ]),
-          // Can't load following DAOs if there are no chains and thus no public
-          // key to load from.
-          constSelector([]),
-        ])
-      : waitForAll([
-          waitForAny(
-            chains.data.map(({ chainId, address }) =>
+        chains.data.length === 0 && address
+        ? waitForAll([
+            waitForAny([
               lazyWalletDaosSelector({
                 chainId,
                 address,
-              })
-            )
-          ),
-          // If wallet connected, load following.
-          connected
-            ? waitForAll(
-                uniquePublicKeys.data.map(({ publicKey }) =>
-                  lazyWalletFollowingDaosSelector({
-                    walletPublicKey: publicKey,
-                  })
-                )
+              }),
+            ]),
+            // Can't load following DAOs if there are no chains and thus no public
+            // key to load from.
+            constSelector([]),
+          ])
+        : waitForAll([
+            waitForAny(
+              chains.data.map(({ chainId, address }) =>
+                lazyWalletDaosSelector({
+                  chainId,
+                  address,
+                })
               )
-            : constSelector([]),
-        ]),
+            ),
+            // If wallet connected, load following.
+            connected
+              ? waitForAll(
+                  uniquePublicKeys.data.map(({ publicKey }) =>
+                    lazyWalletFollowingDaosSelector({
+                      walletPublicKey: publicKey,
+                    })
+                  )
+                )
+              : constSelector([]),
+          ]),
     ([memberOfLoadable, allFollowing]) => {
       const memberOf = memberOfLoadable.flatMap((l) => l.valueMaybe() || [])
       const following = allFollowing.flat()

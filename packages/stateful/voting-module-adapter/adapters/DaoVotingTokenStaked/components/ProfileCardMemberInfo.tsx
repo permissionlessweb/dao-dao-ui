@@ -1,3 +1,4 @@
+import { usePlausible } from 'next-plausible'
 import { useCallback, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -9,9 +10,10 @@ import {
   blocksPerYearSelector,
   stakingLoadingAtom,
 } from '@dao-dao/state'
-import { useCachedLoadable, useDao, useVotingModule } from '@dao-dao/stateless'
+import { useCachedLoadable, useDao } from '@dao-dao/stateless'
 import {
   BaseProfileCardMemberInfoProps,
+  PlausibleEvents,
   UnstakingTask,
   UnstakingTaskStatus,
 } from '@dao-dao/types'
@@ -35,13 +37,13 @@ export const ProfileCardMemberInfo = ({
   ...props
 }: BaseProfileCardMemberInfoProps) => {
   const { t } = useTranslation()
-  const { name: daoName } = useDao()
-  const votingModule = useVotingModule()
+  const { chainId, coreAddress, name: daoName, votingModule } = useDao()
   const {
-    address: walletAddress,
+    address: walletAddress = '',
     isWalletConnected,
     refreshBalances,
   } = useWallet()
+  const plausible = usePlausible<PlausibleEvents>()
 
   const [showStakingModal, setShowStakingModal] = useState(false)
   const [claimingLoading, setClaimingLoading] = useState(false)
@@ -69,7 +71,7 @@ export const ProfileCardMemberInfo = ({
 
   const doClaim = DaoVotingTokenStakedHooks.useClaim({
     contractAddress: votingModule.address,
-    sender: walletAddress ?? '',
+    sender: walletAddress,
   })
 
   const awaitNextBlock = useAwaitNextBlock()
@@ -84,6 +86,16 @@ export const ProfileCardMemberInfo = ({
     setClaimingLoading(true)
     try {
       await doClaim()
+
+      plausible('daoVotingClaim', {
+        props: {
+          chainId,
+          dao: coreAddress,
+          walletAddress,
+          votingModule: votingModule.address,
+          votingModuleType: votingModule.contractName,
+        },
+      })
 
       // New balances will not appear until the next block.
       await awaitNextBlock()
@@ -107,16 +119,22 @@ export const ProfileCardMemberInfo = ({
       setClaimingLoading(false)
     }
   }, [
-    awaitNextBlock,
     isWalletConnected,
-    doClaim,
-    governanceToken.decimals,
-    governanceToken.symbol,
-    refreshBalances,
-    refreshClaims,
-    refreshTotals,
     sumClaimsAvailable,
     t,
+    doClaim,
+    plausible,
+    chainId,
+    coreAddress,
+    walletAddress,
+    votingModule.address,
+    votingModule.contractName,
+    awaitNextBlock,
+    refreshBalances,
+    refreshTotals,
+    refreshClaims,
+    governanceToken.decimals,
+    governanceToken.symbol,
   ])
 
   const blockHeightLoadable = useCachedLoadable(

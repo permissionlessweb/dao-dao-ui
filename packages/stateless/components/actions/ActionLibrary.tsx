@@ -187,12 +187,12 @@ export const ActionLibrary = ({
     a.metadata.listOrder !== undefined && b.metadata.listOrder !== undefined
       ? a.metadata.listOrder - b.metadata.listOrder
       : // Prioritize the action with an order set.
-      a.metadata.listOrder
-      ? -1
-      : b.metadata.listOrder
-      ? 1
-      : // Leave them sorted by the original order in the category definition.
-        0
+        a.metadata.listOrder
+        ? -1
+        : b.metadata.listOrder
+          ? 1
+          : // Leave them sorted by the original order in the category definition.
+            0
   )
 
   // Ensure selected item is scrolled into view.
@@ -280,7 +280,7 @@ export const ActionLibrary = ({
 
   return (
     <Collapsible
-      containerClassName="mt-2 flex flex-col gap-4 rounded-md border border-dashed border-border-primary p-4 relative"
+      containerClassName="flex flex-col gap-4 rounded-md border border-dashed border-border-primary p-4 relative"
       defaultCollapsed={!defaultOpen}
       dropdownContainerClassName="!ml-0"
       label={t('title.actionLibrary')}
@@ -388,9 +388,11 @@ export const ActionLibraryRow = ({
       variant="ghost"
     >
       {action.metadata.Icon && (
-        <p className="text-3xl">
-          <action.metadata.Icon />
-        </p>
+        <div className="flex items-center justify-center w-9 h-9">
+          <p className="text-3xl">
+            <action.metadata.Icon />
+          </p>
+        </div>
       )}
 
       <div className="flex grow flex-col items-start gap-1">
@@ -401,7 +403,13 @@ export const ActionLibraryRow = ({
       {action.status === 'error' &&
         action.error &&
         action.error instanceof Error && (
-          <TooltipInfoIcon size="lg" title={action.error} warning />
+          <TooltipInfoIcon
+            size="lg"
+            title={processError(action.error, {
+              forceCapture: false,
+            })}
+            warning
+          />
         )}
 
       {action.status === 'loading' && <Loader fill={false} size={32} />}

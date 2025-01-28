@@ -823,8 +823,8 @@ export const daoDaoCoreQueries = {
             formula: 'daoCore/votingPowerAtHeight',
             args: {
               address: args.address,
+              height: args.height,
             },
-            ...(args.height && { height: args.height }),
           })
         )
       } catch (error) {
@@ -864,7 +864,9 @@ export const daoDaoCoreQueries = {
             chainId,
             contractAddress,
             formula: 'daoCore/totalPowerAtHeight',
-            ...(args.height && { height: args.height }),
+            args: {
+              height: args.height,
+            },
           })
         )
       } catch (error) {

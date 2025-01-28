@@ -1,4 +1,5 @@
 import { FlagOutlined, Timelapse } from '@mui/icons-material'
+import { usePlausible } from 'next-plausible'
 import { useFormContext } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -15,14 +16,18 @@ import {
   NewProposalProps as StatelessNewProposalProps,
   useActionsContext,
   useCachedLoadable,
-  useChain,
   useDao,
 } from '@dao-dao/stateless'
-import { BaseNewProposalProps, IProposalModuleBase } from '@dao-dao/types'
+import {
+  BaseNewProposalProps,
+  IProposalModuleBase,
+  PlausibleEvents,
+} from '@dao-dao/types'
 import {
   MAX_NUM_PROPOSAL_CHOICES,
   convertExpirationToDate,
   dateToWdhms,
+  descriptionWithPotentialProposalMetadata,
   encodeActions,
   processError,
 } from '@dao-dao/utils'
@@ -51,14 +56,13 @@ export const NewProposal = ({
   ...props
 }: NewProposalProps) => {
   const { t } = useTranslation()
-  const { chain_id: chainId } = useChain()
   const {
     name: daoName,
     imageUrl: daoImageUrl,
     coreAddress,
     info: { isActive, activeThreshold },
   } = useDao()
-  const { isWalletConnecting, isWalletConnected, getStargateClient } =
+  const { address, isWalletConnecting, isWalletConnected, getStargateClient } =
     useWallet()
 
   const { watch } = useFormContext<NewProposalForm>()
@@ -72,7 +76,7 @@ export const NewProposal = ({
   // re-renders.
   const pauseInfo = useCachedLoadable(
     DaoDaoCoreSelectors.pauseInfoSelector({
-      chainId,
+      chainId: proposalModule.chainId,
       contractAddress: coreAddress,
       params: [],
     })
@@ -85,7 +89,7 @@ export const NewProposal = ({
 
   const blocksPerYearLoadable = useRecoilValueLoadable(
     blocksPerYearSelector({
-      chainId,
+      chainId: proposalModule.chainId,
     })
   )
 
@@ -97,10 +101,11 @@ export const NewProposal = ({
     simulationBypassExpiration,
   } = usePublishProposal()
 
+  const plausible = usePlausible<PlausibleEvents>()
   const createProposal = useRecoilCallback(
     ({ snapshot }) =>
       async (newProposalData: NewProposalData) => {
-        if (!isWalletConnected) {
+        if (!isWalletConnected || !address) {
           toast.error(t('error.logInToContinue'))
           return
         }
@@ -121,6 +126,19 @@ export const NewProposal = ({
             }
           )
 
+          plausible('daoProposalCreate', {
+            props: {
+              chainId: proposalModule.chainId,
+              dao: proposalModule.dao.coreAddress,
+              walletAddress: address,
+              proposalModule: proposalModule.address,
+              proposalModuleType: proposalModule.contractName,
+              proposalNumber,
+              proposalId,
+              approval: false,
+            },
+          })
+
           const proposalInfo = await makeGetProposalInfo({
             chain: proposalModule.dao.chain,
             coreAddress: proposalModule.dao.coreAddress,
@@ -140,7 +158,7 @@ export const NewProposal = ({
           const proposal = (
             await snapshot.getPromise(
               DaoProposalMultipleSelectors.proposalSelector({
-                chainId,
+                chainId: proposalModule.chainId,
                 contractAddress: proposalModule.address,
                 params: [
                   {
@@ -203,12 +221,13 @@ export const NewProposal = ({
       proposalModule,
       blocksPerYearLoadable,
       getStargateClient,
-      chainId,
       processQ,
       onCreateSuccess,
       daoName,
       coreAddress,
       daoImageUrl,
+      plausible,
+      address,
     ]
   )
 
@@ -222,6 +241,7 @@ export const NewProposal = ({
     title,
     description,
     choices,
+    vote,
   }) => ({
     title,
     description,
@@ -229,7 +249,10 @@ export const NewProposal = ({
       options: await Promise.all(
         choices.map(async (option) => ({
           title: option.title,
-          description: option.description,
+          description: descriptionWithPotentialProposalMetadata(
+            option.description,
+            option.metadata
+          ),
           // Type mismatch between Cosmos msgs and Secret Network Cosmos msgs.
           // The contract execution will fail if the messages are invalid, so
           // this is safe. The UI should ensure that the correct messages are
@@ -242,6 +265,7 @@ export const NewProposal = ({
         }))
       ),
     },
+    vote,
   })
 
   return (
@@ -251,10 +275,10 @@ export const NewProposal = ({
         choices.length < 2
           ? t('error.tooFewChoices')
           : choices.length > MAX_NUM_PROPOSAL_CHOICES
-          ? t('error.tooManyChoices', {
-              count: MAX_NUM_PROPOSAL_CHOICES,
-            })
-          : undefined
+            ? t('error.tooManyChoices', {
+                count: MAX_NUM_PROPOSAL_CHOICES,
+              })
+            : undefined
       }
       cannotProposeReason={cannotProposeReason}
       connected={isWalletConnected}

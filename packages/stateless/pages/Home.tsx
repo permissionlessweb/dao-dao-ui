@@ -6,6 +6,7 @@ import {
   PeopleOutlined,
   Public,
   Search,
+  WarningRounded,
 } from '@mui/icons-material'
 import clsx from 'clsx'
 import { ComponentType, useState } from 'react'
@@ -13,17 +14,28 @@ import { useTranslation } from 'react-i18next'
 
 import {
   DaoDaoIndexerAllStats,
+  LazyDaoCardProps,
   LoadingData,
+  LoadingDataWithError,
   StatefulDaoCardProps,
 } from '@dao-dao/types'
-import { UNDO_PAGE_PADDING_HORIZONTAL_CLASSES } from '@dao-dao/utils'
+import {
+  UNDO_PAGE_PADDING_HORIZONTAL_CLASSES,
+  UNDO_PAGE_PADDING_TOP_CLASSES,
+} from '@dao-dao/utils'
 
 import {
   Button,
+  DaoCardLoader,
   DaoInfoCards,
+  ErrorPage,
+  GridCardContainer,
   HorizontalScroller,
+  NoContent,
+  SearchBar,
   SegmentedControls,
 } from '../components'
+import { UseInfiniteScrollReturn } from '../hooks'
 
 export type HomeProps = {
   /**
@@ -35,13 +47,48 @@ export type HomeProps = {
    */
   DaoCard: ComponentType<StatefulDaoCardProps>
   /**
+   * Optionally show chain x/gov DAO cards.
+   */
+  chainGovDaos?: LoadingData<StatefulDaoCardProps[]>
+  /**
    * Featured DAO cards to display on the home page.
    */
   featuredDaos: LoadingData<StatefulDaoCardProps[]>
   /**
-   * Optionally show chain x/gov DAO cards.
+   * DAO search stuff.
+   *
+   * Only defined if search should be shown.
    */
-  chainGovDaos?: LoadingData<StatefulDaoCardProps[]>
+  search?: {
+    /**
+     * The lazy DAO card to render.
+     */
+    LazyDaoCard: ComponentType<LazyDaoCardProps>
+    /**
+     * DAOs to show in searchable list.
+     */
+    searchedDaos: LoadingDataWithError<LazyDaoCardProps[]>
+    /**
+     * Whether or not there are more DAOs to load.
+     */
+    hasMore: boolean
+    /**
+     * Count of hits found.
+     */
+    totalHits?: number
+    /**
+     * Search query.
+     *
+     * Only defined if search should be shown.
+     */
+    query: string
+    /**
+     * Function to set the search query.
+     *
+     * Only defined if search should be shown.
+     */
+    setQuery: (query: string) => void
+  } & UseInfiniteScrollReturn
   /**
    * Function to open the search modal.
    */
@@ -55,6 +102,7 @@ export const Home = ({
   DaoCard,
   chainGovDaos,
   featuredDaos,
+  search,
   openSearch,
 }: HomeProps) => {
   const { t } = useTranslation()
@@ -62,9 +110,14 @@ export const Home = ({
   const [statsMode, setStatsMode] = useState<StatsMode>('all')
 
   return (
-    <>
+    <div
+      className={clsx(
+        'flex flex-col gap-8 pt-6 pb-2',
+        UNDO_PAGE_PADDING_TOP_CLASSES
+      )}
+    >
       <SegmentedControls<StatsMode>
-        className="w-max mb-4"
+        className="w-max"
         onSelect={setStatsMode}
         selected={statsMode}
         tabs={[
@@ -136,14 +189,14 @@ export const Home = ({
               ]
             : []),
         ]}
-        className="mb-8"
+        className="-mt-4"
         valueClassName="text-text-interactive-valid font-semibold font-mono"
         wrap
       />
 
       {/* Chain governance DAOs */}
       {chainGovDaos && (
-        <div className="flex flex-col items-center gap-4 mb-8">
+        <div className="flex flex-col items-center gap-4">
           <div className="flex-row items-center xs:items-end flex gap-2 justify-between self-stretch">
             <p className="title-text text-lg">{t('title.chainGovernance')}</p>
 
@@ -178,39 +231,99 @@ export const Home = ({
       )}
 
       {/* Featured DAOs */}
-      <div className="flex flex-col items-center gap-4 mb-2">
-        <div className="flex-row items-center xs:items-end flex gap-2 justify-between self-stretch">
-          <p className="title-text text-lg">{t('title.featuredDaos')}</p>
+      {(featuredDaos.loading || featuredDaos.data.length > 0) && (
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex-row items-center xs:items-end flex gap-2 justify-between self-stretch">
+            <p className="title-text text-lg">{t('title.featuredDaos')}</p>
 
-          <Button
-            contentContainerClassName="!gap-1.5 xs:!gap-2"
-            onClick={openSearch}
-            variant="none"
-          >
-            <Search
-              className="!text-icon-secondary !h-6 !w-6 xs:!h-5 xs:!w-5"
+            <Button
+              contentContainerClassName="!gap-1.5 xs:!gap-2"
               onClick={openSearch}
-            />
-            <p className="secondary-text xs:block hidden">
-              {t('button.findAnotherDao')}
-            </p>
-          </Button>
-        </div>
+              variant="none"
+            >
+              <Search
+                className="!text-icon-secondary !h-6 !w-6 xs:!h-5 xs:!w-5"
+                onClick={openSearch}
+              />
+              <p className="secondary-text xs:block hidden">
+                {t('button.findAnotherDao')}
+              </p>
+            </Button>
+          </div>
 
-        <HorizontalScroller
-          // Margin offsets container padding.
-          Component={DaoCard}
-          containerClassName={clsx(
-            'self-stretch px-[1px]',
-            (featuredDaos.loading || featuredDaos.data.length > 0) &&
-              UNDO_PAGE_PADDING_HORIZONTAL_CLASSES
+          <HorizontalScroller
+            // Margin offsets container padding.
+            Component={DaoCard}
+            containerClassName={clsx(
+              'self-stretch px-[1px]',
+              (featuredDaos.loading || featuredDaos.data.length > 0) &&
+                UNDO_PAGE_PADDING_HORIZONTAL_CLASSES
+            )}
+            contentContainerClassName="px-6"
+            itemClassName="w-64"
+            items={featuredDaos}
+            shadowClassName="w-6"
+          />
+        </div>
+      )}
+
+      {/* DAO search */}
+      {search && (
+        <div className="flex flex-col gap-4" ref={search.infiniteScrollRef}>
+          <p className="title-text text-lg">{t('title.allDaos')}</p>
+
+          <SearchBar
+            containerClassName="-mt-2 mb-2"
+            onInput={(e) => search.setQuery(e.currentTarget.value)}
+            placeholder={t('info.searchForDao')}
+            value={search.query}
+          />
+
+          {search.searchedDaos.errored ? (
+            <ErrorPage error={search.searchedDaos.error} />
+          ) : search.searchedDaos.loading ||
+            search.searchedDaos.data.length > 0 ? (
+            <>
+              {!!search.totalHits && (
+                <p className="caption-text italic -mb-2">
+                  {search.totalHits === 1000
+                    ? t('info.atLeastNumDaosFound', {
+                        count: search.totalHits,
+                      })
+                    : t('info.numDaosFound', {
+                        count: search.totalHits,
+                      })}
+                </p>
+              )}
+
+              <GridCardContainer>
+                {search.searchedDaos.loading ? (
+                  [...Array(3)].map((_, index) => <DaoCardLoader key={index} />)
+                ) : (
+                  <>
+                    {search.searchedDaos.data.map((props) => (
+                      <search.LazyDaoCard
+                        key={props.info.chainId + ':' + props.info.coreAddress}
+                        {...props}
+                      />
+                    ))}
+                    {search.hasMore &&
+                      [...Array(3)].map((_, index) => (
+                        <DaoCardLoader key={index} />
+                      ))}
+                  </>
+                )}
+              </GridCardContainer>
+            </>
+          ) : (
+            <NoContent
+              Icon={WarningRounded}
+              body={t('info.nothingFound')}
+              // className="h-full w-full justify-center border-0"
+            />
           )}
-          contentContainerClassName="px-6"
-          itemClassName="w-64"
-          items={featuredDaos}
-          shadowClassName="w-6"
-        />
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   )
 }

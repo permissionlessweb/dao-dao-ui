@@ -27,7 +27,10 @@ export class DeletePostAction extends ActionBase<DeletePostData> {
   private burnNftAction: BurnNftAction
   private pressChainId: string
 
-  constructor(options: ActionOptions, private pressData: PressData) {
+  constructor(
+    options: ActionOptions,
+    private pressData: PressData
+  ) {
     super(options, {
       Icon: TrashEmoji,
       label: options.t('title.deletePost'),
@@ -38,7 +41,7 @@ export class DeletePostAction extends ActionBase<DeletePostData> {
 
     // The chain that Press is set up on. If chain ID is undefined, default to
     // native DAO chain for backwards compatibility.
-    const pressChainId = pressData.chainId || options.chain.chain_id
+    const pressChainId = pressData.chainId || options.chain.chainId
     this.pressChainId = pressChainId
 
     this.Component = function DeletePostActionComponent(props) {
@@ -79,16 +82,20 @@ export class DeletePostAction extends ActionBase<DeletePostData> {
 
   encode({ id }: DeletePostData): UnifiedCosmosMsg[] {
     return this.burnNftAction.encode({
-      chainId: this.pressChainId,
-      collection: this.pressData.contract,
-      tokenId: id,
+      nfts: [
+        {
+          chainId: this.pressChainId,
+          collection: this.pressData.contract,
+          tokenId: id,
+        },
+      ],
     })
   }
 
-  match(messages: ProcessedMessage[]): ActionMatch {
+  match([message]: ProcessedMessage[]): ActionMatch {
     return (
-      this.burnNftAction.match(messages) &&
-      messages[0].decodedMessage.wasm.execute.contract_addr ===
+      this.burnNftAction.match([message]) &&
+      message.decodedMessage.wasm.execute.contract_addr ===
         this.pressData.contract
     )
   }

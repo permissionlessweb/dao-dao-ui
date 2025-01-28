@@ -1,6 +1,7 @@
 import { constSelector, selectorFamily, waitForAll } from 'recoil'
 
-import { CommonNftSelectors, nftUriDataSelector } from '@dao-dao/state/recoil'
+import { nftQueries } from '@dao-dao/state/query'
+import { CommonNftSelectors, queryClientAtom } from '@dao-dao/state/recoil'
 import { WithChainId } from '@dao-dao/types'
 
 import { Post, PostVersion } from './types'
@@ -60,8 +61,11 @@ export const postSelector = selectorFamily<
   key: 'pressPost',
   get:
     ({ id, metadataUri }) =>
-    ({ get }) => {
-      const data = get(nftUriDataSelector(metadataUri))
+    async ({ get }) => {
+      const queryClient = get(queryClientAtom)
+      const data = await queryClient
+        .fetchQuery(nftQueries.metadataFromUri({ tokenUri: metadataUri }))
+        .catch(() => undefined)
       if (!data || !('properties' in data)) {
         return
       }

@@ -1,6 +1,6 @@
 # TransferNft
 
-Send an NFT owned by the current account.
+Send one or more NFTs owned by the current account.
 
 ## Bulk import format
 
@@ -15,10 +15,15 @@ guide](https://github.com/DA0-DA0/dao-dao-ui/wiki/Bulk-importing-actions).
 
 ```json
 {
-  "collection": "<NFT COLLECTION ADDRESS>",
-  "tokenId": "<NFT TOKEN ID>",
+  "chainId": "<CHAIN ID>",
+  "nfts": [
+    {
+      "collection": "<NFT COLLECTION ADDRESS>",
+      "tokenId": "<NFT TOKEN ID>"
+    },
+    ...
+  ],
   "recipient": "<RECIPIENT ADDRESS>",
-
   "executeSmartContract": <true | false>,
   "smartContractMsg": "<SMART CONTRACT MESSAGE>"
 }

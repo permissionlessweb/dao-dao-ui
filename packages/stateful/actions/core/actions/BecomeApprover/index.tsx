@@ -52,7 +52,7 @@ import {
 const Component: ActionComponent = (props) => {
   const {
     address,
-    chain: { chain_id: chainId },
+    chain: { chainId },
   } = useActionOptions()
 
   const { watch, setValue } = useFormContext<BecomeApproverData>()
@@ -106,7 +106,7 @@ export class BecomeApproverAction extends ActionBase<BecomeApproverData> {
   constructor(options: ActionOptions) {
     if (
       options.context.type !== ActionContextType.Dao ||
-      !options.context.dao.info.supportedFeatures[Feature.Approval]
+      !options.context.dao.supports(Feature.Approval)
     ) {
       throw new Error('Invalid context for becoming an approver')
     }
@@ -186,7 +186,7 @@ export class BecomeApproverAction extends ActionBase<BecomeApproverData> {
     }
 
     return makeExecuteSmartContractMessage({
-      chainId: this.options.chain.chain_id,
+      chainId: this.options.chain.chainId,
       contractAddress: this.options.address,
       sender: this.options.address,
       msg: {

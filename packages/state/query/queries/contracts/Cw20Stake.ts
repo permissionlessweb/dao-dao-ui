@@ -192,9 +192,9 @@ export const cw20StakeQueries = {
             formula: 'cw20Stake/stakedBalanceAtHeight',
             args: {
               address: args.address,
+              height: args.height,
               ...(oraichainStakingToken && { oraichainStakingToken }),
             },
-            ...(args.height && { block: { height: args.height } }),
           })
         )
       } catch (error) {
@@ -254,9 +254,9 @@ export const cw20StakeQueries = {
             contractAddress,
             formula: 'cw20Stake/totalStakedAtHeight',
             args: {
+              height: args.height,
               ...(oraichainStakingToken && { oraichainStakingToken }),
             },
-            ...(args.height && { block: { height: args.height } }),
           })
         )
       } catch (error) {

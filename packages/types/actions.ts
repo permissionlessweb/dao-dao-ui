@@ -1,5 +1,4 @@
 // eslint-disable-next-line regex/invalid
-import { Chain } from '@chain-registry/types'
 import { QueryClient } from '@tanstack/react-query'
 import { ComponentType, ReactNode } from 'react'
 import { FieldErrors } from 'react-hook-form'
@@ -7,6 +6,7 @@ import { TFunction } from 'react-i18next'
 
 import { Account } from './account'
 import {
+  AnyChain,
   ConfiguredChainContext,
   IChainContext,
   SupportedChainContext,
@@ -21,7 +21,7 @@ export enum ActionCategoryKey {
   CommonlyUsed = 'commonlyUsed',
   Authorizations = 'authorizations',
   ChainGovernance = 'chainGovernance',
-  DaoAppearance = 'daoAppearance',
+  Appearance = 'appearance',
   DaoGovernance = 'daoGovernance',
   SubDaos = 'subDaos',
   SmartContracting = 'smartContracting',
@@ -63,7 +63,6 @@ export enum ActionKey {
   GovernanceVote = 'governanceVote',
   GovernanceProposal = 'governanceProposal',
   GovernanceDeposit = 'governanceDeposit',
-  UpgradeV1ToV2 = 'upgradeV1ToV2',
   ConfigureVestingPayments = 'configureVestingPayments',
   EnableRetroactiveCompensation = 'enableRetroactiveCompensation',
   DaoAdminExec = 'daoAdminExec',
@@ -90,6 +89,7 @@ export enum ActionKey {
   UpdatePreProposeConfig = 'updatePreProposeConfig',
   UpdateProposalConfig = 'updateProposalConfig',
   CreateDao = 'createDao',
+
   // Valence
   CreateValenceAccount = 'createValenceAccount',
   ConfigureRebalancer = 'configureRebalancer',
@@ -97,19 +97,24 @@ export enum ActionKey {
   ResumeRebalancer = 'resumeRebalancer',
   FundRebalancer = 'fundRebalancer',
   WithdrawFromRebalancer = 'withdrawFromRebalancer',
+
   // DaoProposalSingle
   UpdatePreProposeSingleConfig = 'updatePreProposeSingleConfig',
   UpdateProposalSingleConfig = 'updateProposalSingleConfig',
+
   // DaoProposalMultiple
   UpdatePreProposeMultipleConfig = 'updatePreProposeMultipleConfig',
   UpdateProposalMultipleConfig = 'updateProposalMultipleConfig',
+
   // Press
   CreatePost = 'createPost',
   UpdatePost = 'updatePost',
   DeletePost = 'deletePost',
+
   // Become SubDAO
   AcceptSubDao = 'acceptSubDao',
   BecomeSubDao = 'becomeSubDao',
+
   // Rewards
   CreateRewardDistribution = 'createRewardDistribution',
   UpdateRewardDistribution = 'updateRewardDistribution',
@@ -119,10 +124,11 @@ export enum ActionKey {
   ResumeRewardDistribution = 'resumeRewardDistribution',
   // Shitstrap
   ManageShitstrap = 'manageShitstrap',
+  FixRewardDistributor = 'fixRewardDistributor',
 }
 
 export type ActionAndData<
-  Data extends Record<string, any> = Record<string, any>
+  Data extends Record<string, any> = Record<string, any>,
 > = {
   action: Action<Data>
   data: Data
@@ -187,8 +193,13 @@ export type ActionComponent<O = undefined, D = any> = ComponentType<
  */
 export type ActionMatch = boolean | number
 
+/**
+ * A successful match result.
+ */
+export type ActionMatchSuccess = true | number
+
 export interface Action<
-  Data extends Record<string, any> = Record<string, any>
+  Data extends Record<string, any> = Record<string, any>,
 > {
   /**
    * The unique key identifying the action.
@@ -336,7 +347,7 @@ export interface Action<
  * and this is the type of a class that implements it.
  */
 export type ImplementedAction<
-  Data extends Record<string, any> = Record<string, any>
+  Data extends Record<string, any> = Record<string, any>,
 > = {
   new (options: ActionOptions): Action<Data>
 }
@@ -389,7 +400,12 @@ export type ActionEncodeContext =
   | {
       type: ActionContextType.Dao
       dao: IDaoBase
-      proposalModule: IProposalModuleBase
+      /**
+       * Proposal module if being used in a DAO proposal. This is undefined, for
+       * example, when a wallet uses AuthzExec to execute something on behalf of
+       * a DAO.
+       */
+      proposalModule?: IProposalModuleBase
     }
   | {
       type: ActionContextType.Wallet
@@ -427,7 +443,7 @@ export type ActionChainContext =
 
 export type ActionOptions<ExtraOptions extends {} = {}> = ExtraOptions & {
   t: TFunction
-  chain: Chain
+  chain: AnyChain
   chainContext: ActionChainContext
   // The address of the sender/actor.
   // DAO core address if context.type === Dao
@@ -440,7 +456,7 @@ export type ActionOptions<ExtraOptions extends {} = {}> = ExtraOptions & {
 
 export type ActionMaker<
   Data extends Record<string, any> = Record<string, any>,
-  ExtraOptions extends {} = {}
+  ExtraOptions extends {} = {},
 > = (options: ActionOptions<ExtraOptions>) => Action<Data> | null
 
 /**
@@ -536,7 +552,7 @@ export type GovActionsProviderProps = ActionsProviderProps & {
  * Action decoder for a single action and set of matched messages.
  */
 export interface IActionDecoder<
-  Data extends Record<string, any> = Record<string, any>
+  Data extends Record<string, any> = Record<string, any>,
 > {
   /**
    * The action that matched the messages.
@@ -616,6 +632,10 @@ export interface IActionMatcher {
    * Error if the matcher errored. Throw an error if not yet errored.
    */
   get error(): Error
+  /**
+   * Messages that are being matched.
+   */
+  get messages(): UnifiedCosmosMsg[]
 }
 
 /**

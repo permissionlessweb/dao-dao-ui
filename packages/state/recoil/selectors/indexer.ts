@@ -17,17 +17,14 @@ import {
 
 import {
   DaoProposalSearchResult,
-  DaoSearchResult,
   QueryIndexerOptions,
   QuerySnapperOptions,
   SearchDaoProposalsOptions,
-  SearchDaosOptions,
   loadMeilisearchClient,
   queryIndexer,
   queryIndexerUpStatus,
   querySnapper,
   searchDaoProposals,
-  searchDaos,
 } from '../../indexer'
 import {
   refreshIndexerUpStatusAtom,
@@ -209,14 +206,6 @@ export type QuerySnapperParams = QuerySnapperOptions & {
 export const querySnapperSelector = selectorFamily<any, QuerySnapperParams>({
   key: 'querySnapper',
   get: (options) => async () => await querySnapper(options),
-})
-
-export const searchDaosSelector = selectorFamily<
-  DaoSearchResult[],
-  SearchDaosOptions
->({
-  key: 'searchDaos',
-  get: (options) => async () => await searchDaos(options),
 })
 
 /**

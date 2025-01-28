@@ -54,7 +54,7 @@ const ProposalDepositInput = ({
 }: DaoCreationVotingConfigItemInputProps<DaoCreationVotingConfigWithProposalDeposit>) => {
   const { t } = useTranslation()
   const {
-    chain: { chain_id: chainId, bech32_prefix: bech32Prefix },
+    chain: { chainId, bech32Prefix },
     nativeToken,
   } = useChainContext()
 
@@ -93,16 +93,16 @@ const ProposalDepositInput = ({
           denomOrAddress,
         })
       : type === 'native'
-      ? genericTokenSelector({
-          chainId,
-          type: TokenType.Native,
-          denomOrAddress,
-        })
-      : type === 'voting_module_token'
-      ? governanceTokenLoadable.state === 'hasValue'
-        ? constSelector(governanceTokenLoadable.contents)
-        : constSelector(undefined)
-      : constSelector(undefined)
+        ? genericTokenSelector({
+            chainId,
+            type: TokenType.Native,
+            denomOrAddress,
+          })
+        : type === 'voting_module_token'
+          ? governanceTokenLoadable.state === 'hasValue'
+            ? constSelector(governanceTokenLoadable.contents)
+            : constSelector(undefined)
+          : constSelector(undefined)
   )
   const tokenLoaded =
     tokenLoadable.state === 'hasValue' ? tokenLoadable.contents : undefined

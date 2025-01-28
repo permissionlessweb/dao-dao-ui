@@ -12,7 +12,7 @@ import { Tooltip } from '../tooltip'
 
 export interface DaoImageProps {
   daoName: string
-  size: 'sm' | 'md' | 'lg'
+  size: 'sm' | 'md' | 'lg' | 'xl'
   imageUrl: string | undefined | null
   // Used to get placeholder image if no `imageUrl` present.
   coreAddress?: string
@@ -51,6 +51,8 @@ export const DaoImage = ({
     'h-7 w-7': size === 'md',
     // DAO home page
     'h-20 w-20 xs:h-24 xs:w-24': size === 'lg',
+    // DAO home page with banner
+    'h-20 w-20 xs:h-24 xs:w-24 sm:h-28 sm:w-28': size === 'xl',
   })
 
   return (

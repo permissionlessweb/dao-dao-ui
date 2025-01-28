@@ -75,7 +75,7 @@ export const fetchProfileInfo = async (
       .catch(() => null)
     if (stargazeName) {
       profile.name =
-        stargazeName + '.' + getChainForChainId(chainId).bech32_prefix
+        stargazeName + '.' + getChainForChainId(chainId).bech32Prefix
       profile.nameSource = 'stargaze'
     }
   }
@@ -285,7 +285,7 @@ export const profileQueries = {
         category: 'profile'
         name: 'pfpk'
         options: { bech32Hash: string } | undefined
-      }
+      },
     ]
   > =>
     // Redirect address queries to bech32 hash queries.

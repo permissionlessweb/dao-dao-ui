@@ -362,8 +362,8 @@ export const daoVotingSgCommunityNftQueries = {
             formula: 'daoVotingSgCommunityNft/votingPowerAtHeight',
             args: {
               address: args.address,
+              height: args.height,
             },
-            ...(args.height && { block: { height: args.height } }),
           })
         )
       } catch (error) {
@@ -403,7 +403,9 @@ export const daoVotingSgCommunityNftQueries = {
             chainId,
             contractAddress,
             formula: 'daoVotingSgCommunityNft/totalPowerAtHeight',
-            ...(args.height && { block: { height: args.height } }),
+            args: {
+              height: args.height,
+            },
           })
         )
       } catch (error) {
@@ -455,7 +457,7 @@ export const daoVotingSgCommunityNftQueries = {
 }
 export interface DaoVotingSgCommunityNftReactQuery<
   TResponse,
-  TData = TResponse
+  TData = TResponse,
 > {
   chainId: string
   contractAddress: string

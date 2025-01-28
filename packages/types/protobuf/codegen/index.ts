@@ -44,6 +44,8 @@ export * from "./regen/bundle";
 export * from "./regen/client";
 export * from "./secret/bundle";
 export * from "./secret/client";
+export * from "./Switcheo/bundle";
+export * from "./Switcheo/client";
 export * from "./noble/bundle";
 export * from "./tendermint/bundle";
 export * from "./varint";

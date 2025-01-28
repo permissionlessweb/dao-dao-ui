@@ -28,7 +28,12 @@ export const useExecuteAt = ({ fn, date }: UseExecuteAtOptions) => {
     }
 
     const msRemaining = dateTime - Date.now()
-    if (msRemaining < 0) {
+    // From `setTimeout` docs: When delay is larger than 2147483647 or less than
+    // 1, the delay will be set to 1.
+    //
+    // Basically, make sure not to trigger if the date is in the past or too far
+    // in the future.
+    if (msRemaining < 0 || msRemaining > 2147483647) {
       return
     }
 

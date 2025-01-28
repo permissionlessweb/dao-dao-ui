@@ -61,7 +61,7 @@ export class SecretTokenStakedVotingModule extends VotingModuleBase<SecretCwDao>
       label: `dao-voting-token-staked_${Date.now()}`,
       msg: encodeJsonToBase64({
         active_threshold: config.activeThreshold,
-        dao_code_hash: codeHashes.DaoCore,
+        dao_code_hash: codeHashes.DaoDaoCore,
         token_info: {
           existing: {
             denom: config.token.existing.denom,

@@ -1,6 +1,6 @@
 import { Buffer } from 'buffer'
 
-import { AssetList, Chain, IBCInfo } from '@chain-registry/types'
+import { AssetList, IBCInfo } from '@chain-registry/types'
 import { fromBech32, fromHex, toBech32 } from '@cosmjs/encoding'
 import uniq from 'lodash.uniq'
 import RIPEMD160 from 'ripemd160'
@@ -9,16 +9,15 @@ import semverGte from 'semver/functions/gte'
 import { HugeDecimal } from '@dao-dao/math'
 import {
   Account,
+  AnyChain,
   BaseChainConfig,
   ChainId,
   ConfiguredChain,
   ContractVersion,
   DaoInfo,
-  Feature,
   GenericToken,
   SupportedChain,
   SupportedChainConfig,
-  SupportedFeatureMap,
   TokenType,
   Validator,
   GenericTokenSource
@@ -28,7 +27,10 @@ import {
   bondStatusToJSON,
 } from '@dao-dao/types/protobuf/codegen/cosmos/staking/v1beta1/staking'
 
-import { getChainAssets } from './assets'
+import {
+  convertChainRegistryAssetToGenericToken,
+  getChainAssets,
+} from './assets'
 import {
   CHAIN_ENDPOINTS,
   CONFIGURED_CHAINS,
@@ -76,9 +78,9 @@ export const getRpcForChainId = (
 
   const rpcs = [
     // Try cosmos.directory RPC first.
-    { address: 'https://rpc.cosmos.directory/' + chain.chain_name },
+    { address: 'https://rpc.cosmos.directory/' + chain.chainName },
     // Fallback to chain registry.
-    ...(chain?.apis?.rpc ?? []),
+    ...(chain?.chainRegistry?.apis?.rpc ?? []),
   ]
 
   return rpcs[offset % rpcs.length].address.replace(/http:\/\//, 'https://')
@@ -118,7 +120,7 @@ export const getLcdForChainId = (
     throw new Error(`Unknown chain ID "${chainId}"`)
   }
 
-  const lcds = chain?.apis?.rest ?? []
+  const lcds = chain?.chainRegistry?.apis?.rest ?? []
   if (lcds.length === 0) {
     throw new Error(`No LCD found for chain ID "${chainId}"`)
   }
@@ -157,8 +159,9 @@ export const getImageUrlForChainId = (chainId: string): string => {
     return overrideUrl
   }
 
-  //Chain logo is sometimes larger and not square.
-  const { logo_URIs, images } = maybeGetChainForChainId(chainId) ?? {}
+  // Chain logo is sometimes larger and not square.
+  const { logo_URIs, images } =
+    maybeGetChainForChainId(chainId)?.chainRegistry ?? {}
   const chainImageUrl =
     logo_URIs?.png ??
     logo_URIs?.jpeg ??
@@ -210,15 +213,15 @@ export const secp256k1PublicKeyToBech32Address = async (
   return toBech32(bech32Prefix, fromHex(ripemd160Hex))
 }
 
-const cachedChainsById: Record<string, Chain | undefined> = {}
-export const maybeGetChainForChainId = (chainId: string): Chain | undefined => {
-  cachedChainsById[chainId] ||= chains.find(
-    ({ chain_id }) => chain_id === chainId
-  )
+const cachedChainsById: Record<string, AnyChain | undefined> = {}
+export const maybeGetChainForChainId = (
+  chainId: string
+): AnyChain | undefined => {
+  cachedChainsById[chainId] ||= chains.find((c) => c.chainId === chainId)
   return cachedChainsById[chainId]
 }
 
-export const getChainForChainId = (chainId: string): Chain => {
+export const getChainForChainId = (chainId: string): AnyChain => {
   const chain = maybeGetChainForChainId(chainId)
   if (!chain) {
     throw new Error(`Chain with ID ${chainId} not found`)
@@ -231,22 +234,21 @@ const cachedAssetListsById: Record<string, AssetList | undefined> = {}
 export const maybeGetAssetListForChainId = (
   chainId: string
 ): AssetList | undefined => {
-  const { chain_name: name } = maybeGetChainForChainId(chainId) ?? {}
-  if (name) {
+  const { chainName } = maybeGetChainForChainId(chainId) ?? {}
+  if (chainName) {
     cachedAssetListsById[chainId] ||= assets.find(
-      ({ chain_name }) => chain_name === name
+      ({ chain_name }) => chain_name === chainName
     )
   }
   return cachedAssetListsById[chainId]
 }
 
-const cachedChainsByName: Record<string, Chain | undefined> = {}
+const cachedChainsByName: Record<string, AnyChain | undefined> = {}
 export const maybeGetChainForChainName = (
   chainName: string
-): Chain | undefined =>
-  chains.find(({ chain_name }) => chain_name === chainName)
+): AnyChain | undefined => chains.find((c) => c.chainName === chainName)
 
-export const getChainForChainName = (chainName: string): Chain => {
+export const getChainForChainName = (chainName: string): AnyChain => {
   cachedChainsByName[chainName] ||= maybeGetChainForChainName(chainName)
   if (!cachedChainsByName[chainName]) {
     throw new Error(`Chain with name ${chainName} not found`)
@@ -255,7 +257,7 @@ export const getChainForChainName = (chainName: string): Chain => {
 }
 
 export const getDisplayNameForChainId = (chainId: string): string =>
-  maybeGetChainForChainId(chainId)?.pretty_name ?? chainId
+  maybeGetChainForChainId(chainId)?.prettyName ?? chainId
 
 /**
  * Get the description for a chain's native governance DAO.
@@ -268,7 +270,7 @@ export const getNativeTokenForChainId = (chainId: string): GenericToken => {
   if (!cachedNativeTokens[chainId]) {
     const chain = getChainForChainId(chainId)
 
-    const feeDenom = chain.fees?.fee_tokens.find(
+    const feeDenom = chain.chainRegistry?.fees?.fee_tokens.find(
       ({ denom }) => !denom.startsWith('ibc/')
     )?.denom
     if (!feeDenom) {
@@ -276,36 +278,17 @@ export const getNativeTokenForChainId = (chainId: string): GenericToken => {
     }
 
     const assetList =
-      assets.find(({ chain_name }) => chain_name === chain.chain_name)
-        ?.assets ?? []
+      assets.find(({ chain_name }) => chain_name === chain.chainName)?.assets ??
+      []
     const asset = assetList.find(({ base }) => base === feeDenom)
     if (!asset) {
       throw new Error(`Chain ${chainId} has no asset for fee token ${feeDenom}`)
     }
 
-    cachedNativeTokens[chainId] = Object.freeze({
+    cachedNativeTokens[chainId] = convertChainRegistryAssetToGenericToken(
       chainId,
-      type: TokenType.Native,
-      denomOrAddress: feeDenom,
-      symbol: asset.symbol,
-      decimals:
-        asset.denom_units.find(({ denom }) => denom === asset.display)
-          ?.exponent ??
-        asset.denom_units.find(({ exponent }) => exponent > 0)?.exponent ??
-        asset.denom_units[0]?.exponent ??
-        0,
-      // Use asset images.
-      imageUrl:
-        asset.logo_URIs?.png ??
-        asset.logo_URIs?.jpeg ??
-        asset.logo_URIs?.svg ??
-        // Fallback.
-        getFallbackImage(feeDenom),
-      source: {
-        chainId,
-        denomOrAddress: feeDenom,
-      },
-    } as GenericToken)
+      asset
+    )
   }
 
   return cachedNativeTokens[chainId]!
@@ -393,8 +376,8 @@ export const getIbcTransferInfoBetweenChains = (
   destinationChannel: string
   info: IBCInfo
 } => {
-  const { chain_name: srcChainName } = getChainForChainId(srcChainId)
-  const { chain_name: destChainName } = getChainForChainId(destChainId)
+  const { chainName: srcChainName } = getChainForChainId(srcChainId)
+  const { chainName: destChainName } = getChainForChainId(destChainId)
 
   const info = ibc.find(
     ({ chain_1, chain_2, channels }) =>
@@ -451,12 +434,12 @@ export const getIbcTransferInfoFromChannel = (
   channel: IBCInfo['channels'][number]
   info: IBCInfo
 } => {
-  const { chain_name } = getChainForChainId(sourceChainId)
+  const { chainName } = getChainForChainId(sourceChainId)
 
   const info = ibc.find(
     ({ chain_1, chain_2, channels }) =>
       // Chain 1 is the source chain.
-      (chain_1.chain_name === chain_name &&
+      (chain_1.chain_name === chainName &&
         channels.some(
           ({ chain_1, version }) =>
             version === 'ics20-1' &&
@@ -464,7 +447,7 @@ export const getIbcTransferInfoFromChannel = (
             chain_1.channel_id === sourceChannel
         )) ||
       // Chain 2 is the source chain.
-      (chain_2.chain_name === chain_name &&
+      (chain_2.chain_name === chainName &&
         channels.some(
           ({ chain_2, version }) =>
             version === 'ics20-1' &&
@@ -478,7 +461,7 @@ export const getIbcTransferInfoFromChannel = (
     )
   }
 
-  const thisChainNumber = info.chain_1.chain_name === chain_name ? 1 : 2
+  const thisChainNumber = info.chain_1.chain_name === chainName ? 1 : 2
   const otherChain = info[`chain_${thisChainNumber === 1 ? 2 : 1}`]
   const channel = info.channels.find(
     ({
@@ -515,8 +498,8 @@ export const getIbcTransferChainIdsForChain = (chainId: string): string[] => {
       .filter(
         ({ chain_1, chain_2, channels }) =>
           // Either chain is the source chain.
-          (chain_1.chain_name === sourceChain.chain_name ||
-            chain_2.chain_name === sourceChain.chain_name) &&
+          (chain_1.chain_name === sourceChain.chainName ||
+            chain_2.chain_name === sourceChain.chainName) &&
           // Both chains exist in the registry.
           maybeGetChainForChainName(chain_1.chain_name) &&
           maybeGetChainForChainName(chain_2.chain_name) &&
@@ -530,8 +513,8 @@ export const getIbcTransferChainIdsForChain = (chainId: string): string[] => {
       )
       .map(({ chain_1, chain_2 }) => {
         const otherChain =
-          chain_1.chain_name === sourceChain.chain_name ? chain_2 : chain_1
-        return getChainForChainName(otherChain.chain_name).chain_id
+          chain_1.chain_name === sourceChain.chainName ? chain_2 : chain_1
+        return getChainForChainName(otherChain.chain_name).chainId
       })
       // Remove nonexistent osmosis testnet chain.
       .filter((chainId) => chainId !== 'osmo-test-4')
@@ -588,13 +571,13 @@ export const getIbcTransferInfoFromConnection = (
   info: IBCInfo
   destinationChain: IBCInfo['chain_1']
 } => {
-  const { chain_name } = getChainForChainId(sourceChainId)
+  const { chainName } = getChainForChainId(sourceChainId)
 
   const info = ibc.find(
     ({ chain_1, chain_2, channels }) =>
-      ((chain_1.chain_name === chain_name &&
+      ((chain_1.chain_name === chainName &&
         chain_1.connection_id === sourceConnectionId) ||
-        (chain_2.chain_name === chain_name &&
+        (chain_2.chain_name === chainName &&
           chain_2.connection_id === sourceConnectionId)) &&
       channels.some(
         ({ chain_1, chain_2, version }) =>
@@ -609,7 +592,7 @@ export const getIbcTransferInfoFromConnection = (
     )
   }
 
-  const thisChainNumber = info.chain_1.chain_name === chain_name ? 1 : 2
+  const thisChainNumber = info.chain_1.chain_name === chainName ? 1 : 2
   const destinationChain = info[`chain_${thisChainNumber === 1 ? 2 : 1}`]
 
   return {
@@ -685,8 +668,7 @@ export const getChainIdsForAddress = (address: string): string[] => {
   // the first.
   const { prefix } = fromBech32(address)
   const chainsForAddress = supportedChains.filter(
-    ({ chain, mainnet }) =>
-      chain.bech32_prefix === prefix && mainnet === MAINNET
+    ({ chain, mainnet }) => chain.bech32Prefix === prefix && mainnet === MAINNET
   )
 
   if (!chainsForAddress.length) {
@@ -724,13 +706,6 @@ export const getDaoInfoForChainId = (
   chainId,
   coreAddress: mustGetConfiguredChainConfig(chainId).name,
   coreVersion: ContractVersion.Gov,
-  supportedFeatures: Object.values(Feature).reduce(
-    (acc, feature) => ({
-      ...acc,
-      [feature]: false,
-    }),
-    {} as SupportedFeatureMap
-  ),
   votingModuleAddress: '',
   votingModuleInfo: {
     contract: '',
@@ -763,7 +738,7 @@ export const isSecretNetwork = (chainId: string): boolean =>
  */
 export const getNullWalletForChain = (chainId: string): string =>
   toBech32(
-    getChainForChainId(chainId).bech32_prefix,
+    getChainForChainId(chainId).bech32Prefix,
     new Uint8Array([...Array(20)].fill(0))
   )
 

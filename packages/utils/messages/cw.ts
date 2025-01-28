@@ -19,6 +19,8 @@ import {
   UnifiedCosmosMsg,
   WasmMsg,
 } from '@dao-dao/types/contracts/common'
+import { Cosmos_authzv1beta1Authorization_FromAmino } from '@dao-dao/types/protobuf/codegen/cosmos/authz/v1beta1/authz'
+import { MsgGrant } from '@dao-dao/types/protobuf/codegen/cosmos/authz/v1beta1/tx'
 import {
   MsgRegisterInterchainAccount,
   MsgSendTx,
@@ -321,6 +323,37 @@ export const makeCosmosMsg = (msg: any): UnifiedCosmosMsg => {
       },
     })
   ) {
+    if (
+      msg.stargate.typeUrl === MsgGrant.typeUrl &&
+      // Amino encoding.
+      objectMatchesStructure(msg.stargate.value, {
+        grant: {
+          authorization: {
+            type: {},
+            value: {},
+          },
+        },
+      })
+    ) {
+      msg = {
+        stargate: {
+          typeUrl: msg.stargate.typeUrl,
+          value: {
+            ...msg.stargate.value,
+            grant: {
+              ...msg.stargate.value.grant,
+              // encode as Any if an object
+              authorization:
+                msg.stargate.value.grant.authorization instanceof Uint8Array
+                  ? msg.stargate.value.grant.authorization
+                  : Cosmos_authzv1beta1Authorization_FromAmino(
+                      msg.stargate.value.grant.authorization
+                    ),
+            },
+          },
+        },
+      }
+    }
     msg = makeStargateMessage(msg)
   }
 
@@ -558,7 +591,7 @@ export const decodeIcaExecuteMsg = (
 
     return {
       match: true,
-      chainId: chain.chain_id,
+      chainId: chain.chainId,
       type: 'execute',
       msgWithSender: msgsWithSenders[0],
       cosmosMsgWithSender: cosmosMsgsWithSenders[0],
@@ -597,7 +630,7 @@ export const decodeIcaCreateMsg = (
 
     return {
       match: true,
-      chainId: chain.chain_id,
+      chainId: chain.chainId,
       type: 'create',
       msgsWithSenders: [],
       cosmosMsgsWithSenders: [],
@@ -762,50 +795,50 @@ export const getFundsUsedInCwMessage = (msg: UnifiedCosmosMsg): Coin[] =>
     ? 'send' in msg.bank
       ? msg.bank.send.amount
       : 'burn' in msg.bank
-      ? msg.bank.burn.amount
-      : []
+        ? msg.bank.burn.amount
+        : []
     : 'staking' in msg
-    ? 'delegate' in msg.staking
-      ? [msg.staking.delegate.amount]
-      : 'undelegate' in msg.staking
-      ? [msg.staking.undelegate.amount]
-      : 'redelegate' in msg.staking
-      ? [msg.staking.redelegate.amount]
-      : []
-    : 'ibc' in msg
-    ? 'transfer' in msg.ibc
-      ? [msg.ibc.transfer.amount]
-      : []
-    : 'wasm' in msg
-    ? 'execute' in msg.wasm
-      ? 'funds' in msg.wasm.execute
-        ? msg.wasm.execute.funds
-        : // Secret Network
-          msg.wasm.execute.send
-      : 'instantiate' in msg.wasm
-      ? 'funds' in msg.wasm.instantiate
-        ? msg.wasm.instantiate.funds
-        : // Secret Network
-          msg.wasm.instantiate.send
-      : []
-    : isCosmWasmStargateMsg(msg)
-    ? (() => {
-        try {
-          const decoded = decodeStargateMessage(msg).stargate
-          switch (decoded.typeUrl) {
-            // Support IBC spends.
-            case MsgTransfer.typeUrl: {
-              const data = decoded.value as MsgTransfer
-              if (data.token) {
-                return [data.token]
-              }
-            }
-          }
-        } catch {}
+      ? 'delegate' in msg.staking
+        ? [msg.staking.delegate.amount]
+        : 'undelegate' in msg.staking
+          ? [msg.staking.undelegate.amount]
+          : 'redelegate' in msg.staking
+            ? [msg.staking.redelegate.amount]
+            : []
+      : 'ibc' in msg
+        ? 'transfer' in msg.ibc
+          ? [msg.ibc.transfer.amount]
+          : []
+        : 'wasm' in msg
+          ? 'execute' in msg.wasm
+            ? 'funds' in msg.wasm.execute
+              ? msg.wasm.execute.funds
+              : // Secret Network
+                msg.wasm.execute.send
+            : 'instantiate' in msg.wasm
+              ? 'funds' in msg.wasm.instantiate
+                ? msg.wasm.instantiate.funds
+                : // Secret Network
+                  msg.wasm.instantiate.send
+              : []
+          : isCosmWasmStargateMsg(msg)
+            ? (() => {
+                try {
+                  const decoded = decodeStargateMessage(msg).stargate
+                  switch (decoded.typeUrl) {
+                    // Support IBC spends.
+                    case MsgTransfer.typeUrl: {
+                      const data = decoded.value as MsgTransfer
+                      if (data.token) {
+                        return [data.token]
+                      }
+                    }
+                  }
+                } catch {}
 
-        return []
-      })()
-    : []
+                return []
+              })()
+            : []
 
 /**
  * Check whether or not the message is a cw20 send contract message, optionally

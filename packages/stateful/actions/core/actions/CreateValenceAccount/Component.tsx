@@ -46,7 +46,7 @@ export const CreateValenceAccountComponent: ActionComponent<
   options: { serviceFee, nativeBalances },
 }) => {
   const { t } = useTranslation()
-  const { chain_id: chainId } = useChain()
+  const { chainId } = useChain()
 
   const { control, watch, setValue, setError, clearErrors } =
     useFormContext<CreateValenceAccountData>()
@@ -117,6 +117,12 @@ export const CreateValenceAccountComponent: ActionComponent<
                 ? () => removeCoin(index)
                 : undefined
             }
+            overrideInsufficientFundsWarning={(amount, tokenSymbol) =>
+              t('error.insufficientFundsWarningMinusServiceFee', {
+                amount,
+                tokenSymbol,
+              })
+            }
             tokens={nativeBalances}
           />
         ))}
@@ -168,17 +174,17 @@ export const CreateValenceAccountComponent: ActionComponent<
                   fee: serviceFee.loading
                     ? '...'
                     : serviceFee.errored
-                    ? '<error>'
-                    : serviceFee.data
-                    ? t('format.token', {
-                        amount: HugeDecimal.from(
-                          serviceFee.data.balance
-                        ).toInternationalizedHumanReadableString({
-                          decimals: serviceFee.data.token.decimals,
-                        }),
-                        symbol: serviceFee.data.token.symbol,
-                      })
-                    : '',
+                      ? '<error>'
+                      : serviceFee.data
+                        ? t('format.token', {
+                            amount: HugeDecimal.from(
+                              serviceFee.data.balance
+                            ).toInternationalizedHumanReadableString({
+                              decimals: serviceFee.data.token.decimals,
+                            }),
+                            symbol: serviceFee.data.token.symbol,
+                          })
+                        : '',
                   context:
                     serviceFee.loading || serviceFee.errored || serviceFee.data
                       ? undefined

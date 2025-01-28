@@ -1,8 +1,10 @@
+import { useQueries } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useRecoilValue, waitForAllSettled } from 'recoil'
+import { useRecoilValue } from 'recoil'
 
-import { navigatingToHrefAtom, searchDaosSelector } from '@dao-dao/state/recoil'
-import { useCachedLoadable, useDaoNavHelpers } from '@dao-dao/stateless'
+import { indexerQueries } from '@dao-dao/state/query'
+import { navigatingToHrefAtom } from '@dao-dao/state/recoil'
+import { useDaoNavHelpers } from '@dao-dao/stateless'
 import {
   CommandModalContextSection,
   CommandModalContextSectionItem,
@@ -16,6 +18,7 @@ import {
   getFallbackImage,
   getImageUrlForChainId,
   getSupportedChains,
+  makeCombineQueryResultsIntoLoadingData,
   mustGetConfiguredChainConfig,
   parseContractVersion,
 } from '@dao-dao/utils'
@@ -45,36 +48,32 @@ export const useFollowingAndFilteredDaosSections = ({
   const followingDaosLoading = useLoadingFollowingDaos()
   const { getDaoPath } = useDaoNavHelpers()
 
-  const queryResults = useCachedLoadable(
-    options.filter
-      ? waitForAllSettled(
-          chains.map(({ chain }) =>
-            searchDaosSelector({
-              chainId: chain.chain_id,
-              query: options.filter,
-              limit,
-              // Exclude following DAOs from search since they show in a
-              // separate section.
-              exclude: followingDaosLoading.loading
-                ? undefined
-                : followingDaosLoading.data
-                    .filter(({ chainId }) => chainId === chain.chain_id)
-                    .map(({ coreAddress }) => coreAddress),
-            })
-          )
-        )
-      : undefined
-  )
+  const searchQueries = useQueries({
+    queries: chains.map(({ chain }) =>
+      indexerQueries.searchDaos({
+        chainId: chain.chainId,
+        query: options.filter,
+        limit,
+        // Exclude following DAOs from search since they show in a
+        // separate section.
+        exclude: followingDaosLoading.loading
+          ? undefined
+          : followingDaosLoading.data
+              .filter(({ chainId }) => chainId === chain.chainId)
+              .map(({ coreAddress }) => coreAddress),
+      })
+    ),
+    combine: makeCombineQueryResultsIntoLoadingData({
+      transform: (results) => results.flatMap((r) => r.hits),
+    }),
+  })
 
   const navigatingToHref = useRecoilValue(navigatingToHrefAtom)
 
   // Use query results if filter is present.
   const daos = [
     ...(options.filter
-      ? (queryResults.state !== 'hasValue'
-          ? []
-          : queryResults.contents.flatMap((l) => l.valueMaybe() || [])
-        )
+      ? (searchQueries.loading ? [] : searchQueries.data)
           .filter(({ value }) => !!value?.config)
           .map(
             ({
@@ -102,9 +101,9 @@ export const useFollowingAndFilteredDaosSections = ({
             })
           )
       : // Otherwise when filter is empty, display featured DAOs.
-      featuredDaosLoading.loading
-      ? []
-      : featuredDaosLoading.data.map((d) => d.info)),
+        featuredDaosLoading.loading
+        ? []
+        : featuredDaosLoading.data.map((d) => d.info)),
     // Add configured chains.
     ...getConfiguredChains().flatMap(
       ({
@@ -142,8 +141,7 @@ export const useFollowingAndFilteredDaosSections = ({
 
   // When filter present, use search results. Otherwise use featured DAOs.
   const daosLoading = options.filter
-    ? queryResults.state === 'loading' ||
-      (queryResults.state === 'hasValue' && queryResults.updating)
+    ? searchQueries.loading || searchQueries.updating
     : featuredDaosLoading.loading || !!featuredDaosLoading.updating
 
   const followingSection: CommandModalContextSection<CommandModalDaoInfo> = {
