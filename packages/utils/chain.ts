@@ -802,11 +802,29 @@ export const TokenSourcesIndex: { [chainId: string]: { [denomOrAddress: string]:
       chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/F6B367385300865F654E110976B838502504231705BAC0849B0651C226385885", symbol: "junoSTARS", decimals: 6, imageUrl: getImageUrlForChainId("stargaze-1"),
       source: { denomOrAddress: "ustars", type: TokenType.Native, chainId: "stargaze-1" }
     },
+    // OSMO from home
+    'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518':
+    {
+      chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", symbol: "junoOSMO", decimals: 6, imageUrl: getImageUrlForChainId("osmosis-1"),
+      source: { denomOrAddress: "uosmo", type: TokenType.Native, chainId: "osmosis-1" }
+    },
+    // ATOM from home
+    'ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9':
+    {
+      chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9", symbol: "junoATOM", decimals: 6, imageUrl: getImageUrlForChainId("cosmoshub-4"),
+      source: { denomOrAddress: "uatom", type: TokenType.Native, chainId: "cosmoshub-4" }
+    },
     // AKT from home
     'ibc/DFC6F33796D5D0075C5FB54A4D7B8E76915ACF434CB1EE2A1BA0BB8334E17C3A':
     {
       chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/DFC6F33796D5D0075C5FB54A4D7B8E76915ACF434CB1EE2A1BA0BB8334E17C3A", symbol: "junoAKT", decimals: 6, imageUrl: getImageUrlForChainId("akash-1"),
       source: { denomOrAddress: "uakt", type: TokenType.Native, chainId: "akash-1" }
+    },
+    // BTSG from home
+    'ibc/008BFD000A10BCE5F0D4DD819AE1C1EC2942396062DABDD6AE64A655ABC7085B':
+    {
+      chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/008BFD000A10BCE5F0D4DD819AE1C1EC2942396062DABDD6AE64A655ABC7085B", symbol: "junoBTSG", decimals: 6, imageUrl: getImageUrlForChainId("bitsong-2b"),
+      source: { denomOrAddress: "ubtsg", type: TokenType.Native, chainId: "bitsong2b" }
     },
   },
   // 'bitsong-2b': {
