@@ -106,7 +106,7 @@ export const CreateShitstrap: ComponentType<
     const {
       context,
       chainContext,
-      chain: { chain_id: nativeChainId },
+      chain: { chainId: nativeChainId },
     } = actionOptions
     const configureCreateShitStrapActionDefaults = useInitializedActionForKey(
       ActionKey.ManageShitstrap
@@ -114,7 +114,7 @@ export const CreateShitstrap: ComponentType<
 
     // get connected wallet balance info
     const { address: walletAddress, getSigningClient } = useWallet()
-    const { chain_id: chainId, bech32_prefix: bech32Prefix } = useChain()
+    const { chainId, bech32Prefix } = useChain()
 
     const tokenBalances = useTokenBalances()
 
@@ -180,7 +180,7 @@ export const CreateShitstrap: ComponentType<
     const shitstrapFactoryExists = !!widgetData?.factories?.[watchChainId]
     const shitstrapOwnerAddrValid =
       !!watchShitstrapOwner &&
-      isValidBech32Address(watchShitstrapOwner.address, currentChain.bech32_prefix)
+      isValidBech32Address(watchShitstrapOwner.address, currentChain.bech32Prefix)
 
     // A DAO can create a shitstrap payment factory on the current chain and any
     // polytone connection that is also a supported chain (since the shitstrap
@@ -427,7 +427,7 @@ export const CreateShitstrap: ComponentType<
                   register={register}
                   validation={[
                     validateRequired,
-                    makeValidateAddress(currentChain.bech32_prefix),
+                    makeValidateAddress(currentChain.bech32Prefix),
                   ]}
                 />
                 <div className="flex min-w-0 grow flex-row items-stretch gap-2 sm:gap-3">
