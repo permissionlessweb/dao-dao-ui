@@ -172,13 +172,7 @@ export const ShitstrapPaymentCard = (
             : 'error.cantSpendMoreThanTreasury'
         : ''
 
-    const estimatedToken = eligibleAsset
-        ? HugeDecimal.from(eligibleAsset.shit_rate ?? 1)
-            .div(HugeDecimal.from(10).pow(18))
-            .toNumber() * parseInt(watchAmount)
-        : 1
-
-
+    const estimatedToken = eligibleAsset ? HugeDecimal.from(eligibleAsset.shit_rate ?? 1).div(HugeDecimal.from(10).pow(18)).toNumber() * parseInt(watchAmount) : 1
 
     useEffect(() => {
         const timeout = setTimeout(() => { }, 200)
@@ -324,7 +318,7 @@ export const ShitstrapPaymentCard = (
                                     hideSymbol={false}
                                     prefix="For every: "
                                     suffix={`, Receive: ${HugeDecimal.from(asset.shit_rate ?? 1).div(HugeDecimal.from(10).pow(18)).toNumber()} $${tokenToShit?.symbol} `}
-                                    symbol={asset.source.denomOrAddress != asset.denomOrAddress ? asset.source.denomOrAddress : asset.symbol}
+                                    symbol={asset.symbol}
                                 />
                                 // </div>
                             ))
@@ -402,24 +396,15 @@ export const ShitstrapPaymentCard = (
                                                 : currentEntityTokenBalances.data
                                                     ?.filter(({ token }) =>
                                                         shitstrapInfo && shitstrapInfo.possibleShit.some((asset) => {
-                                                            if (asset.source.denomOrAddress != asset.denomOrAddress) {
-                                                                return asset.source.denomOrAddress === token.denomOrAddress
-                                                            } else {
-                                                                return asset.denomOrAddress == token.denomOrAddress
-                                                            }
+                                                            asset.denomOrAddress == token.denomOrAddress
 
                                                         })
                                                     )
                                                     ?.map(({ balance, token }) => ({
                                                         ...token,
                                                         description:
-                                                            t('title.balance') +
-                                                            ': ' +
-                                                            HugeDecimal.from(
-                                                                balance
-                                                            ).toInternationalizedHumanReadableString({
-                                                                decimals: 6,
-                                                            }),
+                                                            t('title.balance') + ': ' +
+                                                            HugeDecimal.from(balance).toInternationalizedHumanReadableString({ decimals: 6, }),
                                                     })) ?? [],
                                         }
                                         //  :
@@ -478,7 +463,7 @@ export const ShitstrapPaymentCard = (
                                         className="grow text-sm"
                                         decimals={6}
                                         hideSymbol={false}
-                                        symbol={tokenToShit ? tokenToShit.source.denomOrAddress != tokenToShit.denomOrAddress ? tokenToShit.symbol : tokenToShit.symbol : undefined}
+                                        symbol={tokenToShit ? tokenToShit.symbol : undefined}
                                     />
                                 )}
                             </div>
