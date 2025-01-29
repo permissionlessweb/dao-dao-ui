@@ -86,7 +86,7 @@ export const TabRenderer = ({
 
   const shitstrapEligibleAssetsGenericTokenLoading = useQueries({
     queries: activeShitstraps.flatMap(({ chainId, possibleShit }) =>
-      possibleShit.map(( ps) => {
+      possibleShit.map((ps) => {
         const options = {
           chainId,
           type: ps.type,
@@ -124,9 +124,11 @@ export const TabRenderer = ({
     <div className="flex flex-col gap-6">
       <div className="flex flex-row items-center justify-between gap-8">
         <div className="flex flex-row flex-wrap items-center gap-x-4 gap-y-1">
-          <p className="title-text text-text-body">{t('title.shitStrap')}</p>
+          <p className="title-text text-text-body">{t('title.availableShitstraps')}</p>
           <p className="secondary-text">{t('info.shitstrapSecondaryText')}</p>
         </div>
+      </div>
+      <div className=" items-center  mb-9">
         {createShitStrapHref && (
           <Tooltip title={!isMember ? t('error.mustBeMemberToCreateShitstrapPayment') : undefined}>
             <ButtonLink
@@ -141,8 +143,7 @@ export const TabRenderer = ({
             </ButtonLink>
           </Tooltip>
         )}
-      </div>
-      <div className="mb-9">
+        {/* TODO: Add header for filter */}
         {shitStrapsLoading.loading ? (
           <div className="border-t border-border-secondary pt-6">
             {/* <ActiveVestingPaymentLineHeader /> */}
@@ -165,7 +166,7 @@ export const TabRenderer = ({
                     }}
                     shitstrapInfo={shitstrapInfo}
                     transparentBackground={index % 2 !== 0}
-                    eligibleShit={shitstrapEligibleAssetsGenericTokenLoading} 
+                    eligibleShit={shitstrapEligibleAssetsGenericTokenLoading}
                     queryClient={queryClient} />
                 ))}
               </div>

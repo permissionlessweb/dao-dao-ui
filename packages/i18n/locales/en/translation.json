@@ -1729,6 +1729,7 @@
   "title": {
     "404": "404: Not Found",
     "500": "500: Error",
+    "availableShitstraps": "SEZ's Current Shitstrap List",
     "acceptSubDao": "Accept SubDAO Request",
     "accepted": "Accepted",
     "acceptingSubmissions": "Accepting submissions",

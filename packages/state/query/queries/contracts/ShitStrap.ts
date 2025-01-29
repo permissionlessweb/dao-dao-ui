@@ -42,7 +42,7 @@ export const shitStrapQueryKeys = {
         args,
       },
     ] as const,
-  shitPile: (
+  hasShit: (
     chainId: string,
     contractAddress: string,
     args?: Record<string, unknown>
@@ -50,7 +50,7 @@ export const shitStrapQueryKeys = {
     [
       {
         ...shitStrapQueryKeys.address(chainId, contractAddress)[0],
-        method: 'shit_pile',
+        method: 'has_shit',
         args,
       },
     ] as const,
@@ -123,30 +123,30 @@ export const shitStrapQueries = {
       !!contractAddress &&
       (options?.enabled != undefined ? options.enabled : true),
   }),
-  shitPile: <TData = Uint128>(
+  hasShit: <TData = Uint128>(
     queryClient: QueryClient,
-    { chainId, contractAddress, options }: ShitStrapShitPileQuery<TData>
+    { chainId, contractAddress, options }: ShitstrapHasShitQuery<TData>
   ): UseQueryOptions<Uint128, Error, TData> => ({
-    queryKey: shitStrapQueryKeys.shitPile(chainId, contractAddress),
+    queryKey: shitStrapQueryKeys.hasShit(chainId, contractAddress),
     queryFn: async () => {
-      try {
-        // Attempt to fetch data from the indexer.
-        return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
-            chainId,
-            contractAddress: contractAddress,
-            formula: 'shitstrap/shitPile',
-          })
-        )
-      } catch (error) {
-        console.error(error)
-      }
+      // try {
+      //   // Attempt to fetch data from the indexer.
+      //   return await queryClient.fetchQuery(
+      //     indexerQueries.queryContract(queryClient, {
+      //       chainId,
+      //       contractAddress: contractAddress,
+      //       formula: 'shitstrap/hasShit',
+      //     })
+      //   )
+      // } catch (error) {
+      //   console.error(error)
+      // }
 
       // If indexer query fails, fallback to contract query
       return new ShitStrapQueryClient(
         await getCosmWasmClientForChainId(chainId),
         contractAddress
-      ).shitPile()
+      ).hasShit()
     },
     ...options,
     enabled:
@@ -189,18 +189,18 @@ export const shitStrapQueries = {
   ): UseQueryOptions<NullableUint128, Error, TData> => ({
     queryKey: shitStrapQueryKeys.shitRate(chainId, contractAddress, args),
     queryFn: async () => {
-      try {
-        // Attempt to fetch data from the indexer.
-        return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
-            chainId,
-            contractAddress: contractAddress,
-            formula: 'shitstrap/shitRate',
-          })
-        )
-      } catch (error) {
-        console.error(error)
-      }
+      // try {
+      //   // Attempt to fetch data from the indexer.
+      //   return await queryClient.fetchQuery(
+      //     indexerQueries.queryContract(queryClient, {
+      //       chainId,
+      //       contractAddress: contractAddress,
+      //       formula: 'shitstrap/shitRate',
+      //     })
+      //   )
+      // } catch (error) {
+      //   console.error(error)
+      // }
 
       // If indexer query fails, fallback to contract query
       return new ShitStrapQueryClient(
@@ -219,18 +219,18 @@ export const shitStrapQueries = {
   ): UseQueryOptions<NullableArrayOfPossibleShit, Error, TData> => ({
     queryKey: shitStrapQueryKeys.shitRates(chainId, contractAddress),
     queryFn: async () => {
-      try {
-        // Attempt to fetch data from the indexer.
-        return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
-            chainId,
-            contractAddress: contractAddress,
-            formula: 'shitstrap/shitRates',
-          })
-        )
-      } catch (error) {
-        console.error(error)
-      }
+      // try {
+      //   // Attempt to fetch data from the indexer.
+      //   return await queryClient.fetchQuery(
+      //     indexerQueries.queryContract(queryClient, {
+      //       chainId,
+      //       contractAddress: contractAddress,
+      //       formula: 'shitstrap/shitRates',
+      //     })
+      //   )
+      // } catch (error) {
+      //   console.error(error)
+      // }
 
       // If indexer query fails, fallback to contract query
       return new ShitStrapQueryClient(
@@ -266,7 +266,7 @@ export interface ShitStrapShitRateQuery<TData>
 
 export interface ShitStrapFullOfShitQuery<TData>
   extends ShitStrapReactQuery<Boolean, TData> {}
-export interface ShitStrapShitPileQuery<TData>
+export interface ShitstrapHasShitQuery<TData>
   extends ShitStrapReactQuery<Uint128, TData> {}
 export interface ShitStrapConfigQuery<TData>
   extends ShitStrapReactQuery<Config, TData> {}

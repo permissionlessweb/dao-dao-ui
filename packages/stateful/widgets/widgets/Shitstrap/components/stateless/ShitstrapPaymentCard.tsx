@@ -478,7 +478,7 @@ export const ShitstrapPaymentCard = (
                                         className="grow text-sm"
                                         decimals={6}
                                         hideSymbol={false}
-                                        symbol={tokenToShit ? tokenToShit.source.denomOrAddress != tokenToShit.denomOrAddress ? tokenToShit.source.denomOrAddress : tokenToShit.symbol : undefined}
+                                        symbol={tokenToShit ? tokenToShit.source.denomOrAddress != tokenToShit.denomOrAddress ? tokenToShit.symbol : tokenToShit.symbol : undefined}
                                     />
                                 )}
                             </div>

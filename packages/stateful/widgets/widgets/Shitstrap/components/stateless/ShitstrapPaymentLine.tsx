@@ -7,13 +7,14 @@ import {
   Dropdown,
   TokenAmountDisplay,
   Tooltip,
+  useCachedLoading,
 } from '@dao-dao/stateless'
 import { GenericToken, ShitStrapPaymentLineProps, TypedOption, Uint128 } from '@dao-dao/types'
 import { PossibleShit } from '@dao-dao/types/contracts/ShitStrap'
 import { getChainForChainId } from '@dao-dao/utils'
 import { useQueryLoadingDataWithError } from '../../../../../hooks'
-import { tokenQueries } from '@dao-dao/state/query'
-import { contractVersionSelector } from '@dao-dao/state/recoil'
+import { shitStrapQueries, tokenQueries } from '@dao-dao/state/query'
+import { contractVersionSelector, genericTokenBalancesSelector } from '@dao-dao/state/recoil'
 
 export const ShitstrapPaymentLine = ({
   shitstrapInfo,
@@ -27,26 +28,40 @@ export const ShitstrapPaymentLine = ({
 
   const { chainId, possibleShit: somePossibleshit, shit, full, shitstrapContractAddr, owner } =
     shitstrapInfo
-  const {  bech32Prefix } = getChainForChainId(chainId)
+  const { bech32Prefix } = getChainForChainId(chainId)
 
-  // const freshShitTokenQuery = useQueryLoadingDataWithError(
-  //   tokenQueries.info(queryClient, {
-  //     chainId,
-  //     type: shitstrapInfo.shit.type,
-  //     denomOrAddress: shitstrapInfo.shit.denomOrAddress,
+  const currentShitProgressLoading = useQueryLoadingDataWithError(
+    shitStrapQueries.hasShit(queryClient, { chainId, contractAddress: shitstrapContractAddr })
+  )
 
-  //   })
-  // )
+  const currentShitProgress = currentShitProgressLoading.errored || currentShitProgressLoading.loading ? "0" : currentShitProgressLoading.data
+  // Load balances as loadables since they refresh automatically on a timer.
+  const currentEntityTokenBalances = useCachedLoading(
+    shitstrapContractAddr
+      ? genericTokenBalancesSelector({
+        chainId: chainId,
+        address: shitstrapContractAddr,
+        filter: {
+          account: {
+            chainId,
+            address: shitstrapContractAddr,
+          },
+        },
+      })
+      : undefined,
+    []
+  )
 
-  // const freshShit = freshShitTokenQuery.errored || freshShitTokenQuery.loading ? shit.denomOrAddress :
-  //   freshShitTokenQuery.data.source.denomOrAddress != freshShitTokenQuery.data.denomOrAddress ?
-  //     freshShitTokenQuery.data.source.denomOrAddress : freshShitTokenQuery.data.denomOrAddress
+  const currentShitBalance = currentEntityTokenBalances.loading ? undefined :
+    currentEntityTokenBalances.data.flatMap((t) => {
+      t.token.denomOrAddress == shitstrapInfo.shit.denomOrAddress
+      return t
+    })
 
   interface PossibleShitWithGenericToken {
     shit_rate: Uint128
     token: GenericToken
   }
-
 
 
   // Create GenericToken with shitstrap ratio extended
@@ -98,7 +113,6 @@ export const ShitstrapPaymentLine = ({
         ) : (
           <>
             {/* display map of eligible assets & their shit_rates */}
-            {/* todo: click to see map of all possible tokens, display verified or tokenfactory tokens */}
             <div onClick={(event) => event.stopPropagation()}>
               <Dropdown
                 onSelect={handleSelect}
@@ -106,21 +120,37 @@ export const ShitstrapPaymentLine = ({
                 placeholder={t('info.selectEligibleAsset', {
                   number: possibleShitOptions.length,
                 })}
-              // selected={}
               />
             </div>
           </>
         )}
         <div className="hidden md:block">
           {/* Show Cutoff Token */}
-          Total Shit:
+          Shit Progress
           <TokenAmountDisplay
-            amount={HugeDecimal.from(shitstrapInfo.cutoff).times(
-              HugeDecimal.from(10).pow(0)
+            amount={(HugeDecimal.from(currentShitProgress).div(
+              shitstrapInfo.cutoff
+            ))}
+            className="body-text truncate font-mono"
+            decimals={shit.decimals}
+            wrapperClassName={shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`) ? 'color-warning' : shit.denomOrAddress.startsWith(`ibc/`) ? '' : ''
+            }
+            showAllDecimals
+            hideSymbol
+            suffix=' %'
+            symbol={""}
+          />
+        </div>
+        <div className="hidden md:block">
+
+          Left To Shit :
+          <TokenAmountDisplay
+            amount={HugeDecimal.fromHumanReadable(currentShitBalance ? currentShitBalance[0].balance : 0, 0).times(
+              HugeDecimal.from(10).pow(0).minus(currentShitProgress)
             )}
             className="body-text truncate font-mono"
             decimals={shit.decimals}
-            wrapperClassName={''// shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`) ? 'color-warning' : shit.denomOrAddress.startsWith(`ibc/`) ? '' : ''
+            wrapperClassName={shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`) ? 'color-warning' : shit.denomOrAddress.startsWith(`ibc/`) ? '' : ''
             }
             symbol={shitstrapInfo.shit.symbol}
           />

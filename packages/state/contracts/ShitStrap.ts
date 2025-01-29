@@ -23,7 +23,7 @@ import {
 export interface ShitStrapReadOnlyInterface {
   contractAddress: string
   config: () => Promise<Config>
-  shitPile: () => Promise<Uint128>
+  hasShit: () => Promise<Uint128>
   fullOfShit: () => Promise<Boolean>
   shitRate: ({ asset }: { asset: string }) => Promise<NullableUint128>
   shitRates: () => Promise<NullableArrayOfPossibleShit>
@@ -36,7 +36,7 @@ export class ShitStrapQueryClient implements ShitStrapReadOnlyInterface {
     this.client = client
     this.contractAddress = contractAddress
     this.config = this.config.bind(this)
-    this.shitPile = this.shitPile.bind(this)
+    this.hasShit = this.hasShit.bind(this)
     this.fullOfShit = this.fullOfShit.bind(this)
     this.shitRate = this.shitRate.bind(this)
     this.shitRates = this.shitRates.bind(this)
@@ -47,9 +47,9 @@ export class ShitStrapQueryClient implements ShitStrapReadOnlyInterface {
       config: {},
     })
   }
-  shitPile = async (): Promise<Uint128> => {
+  hasShit = async (): Promise<Uint128> => {
     return this.client.queryContractSmart(this.contractAddress, {
-      shit_pile: {},
+      has_shit: {},
     })
   }
   fullOfShit = async (): Promise<Boolean> => {

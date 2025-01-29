@@ -25,6 +25,7 @@
 - Improve shitstrap card
   - Same as shitstrap line 
   - Add button to fund shitstrap
+    
 
 ~~- use chain prefix to trunicate factorytoken labels.~~
 ## Docker 

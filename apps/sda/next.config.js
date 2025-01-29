@@ -1,6 +1,39 @@
 // GNU AFFERO GENERAL PUBLIC LICENSE Version 3. Copyright (C) 2022 DAO DAO Contributors.
 // See the "LICENSE" file in the root directory of this package for more copyright information.
 
+// TODO: create payment option to  access ui for dao
+// const ALLOWED_ADDRESSES = ['address1', 'address2', 'address3']; 
+// const NOT_ALLOWED_URL = '/wanna-shit'; 
+
+// // Next.js redirect function
+// const redirects = async () =>  {
+  
+//   const response = await fetch('https://api.example.com/allowed-addresses');
+//   const allowedAddresses = await response.json();
+
+//   return [
+  
+//   {
+//     source: '/dao/:slug*',
+//     permanent: true,
+//     async destination({ params }) {
+//       if (allowedAddresses.includes(params.slug)) {
+//         return '/' + params.slug;
+//       } else {
+//         return '/not-allowed';
+//       }
+//     },
+//   },
+//   {
+//     source: '/:locale',
+//     destination: '/' + process.env.NEXT_PUBLIC_SDA_DEFAULT_DAO_ADDRESS,
+//     permanent: false,
+//     locale: false,
+//   },
+// ]};
+
+// module.exports = { redirects };
+
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 })
