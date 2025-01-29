@@ -22,6 +22,8 @@ export const ShitstrapPaymentLine = ({
   const shitstrapInfo =
     freshInfo.loading || freshInfo.errored ? fallbackInfo : freshInfo.data
 
+
+    
   return (
     <>
       <StatelessShitstrapPaymentLine

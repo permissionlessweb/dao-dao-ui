@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import { HugeDecimal } from '@dao-dao/math'
 import {
+  Button,
   ChainProvider,
   Dropdown,
   TokenAmountDisplay,
@@ -15,6 +16,13 @@ import { getChainForChainId } from '@dao-dao/utils'
 import { useQueryLoadingDataWithError } from '../../../../../hooks'
 import { shitStrapQueries, tokenQueries } from '@dao-dao/state/query'
 import { contractVersionSelector, genericTokenBalancesSelector } from '@dao-dao/state/recoil'
+import { ArrowForwardIos } from '@mui/icons-material'
+import { useState } from 'react'
+
+interface PossibleShitWithGenericToken {
+  shit_rate: Uint128
+  token: GenericToken
+}
 
 export const ShitstrapPaymentLine = ({
   shitstrapInfo,
@@ -26,6 +34,7 @@ export const ShitstrapPaymentLine = ({
 }: ShitStrapPaymentLineProps) => {
   const { t } = useTranslation()
 
+
   const { chainId, possibleShit: somePossibleshit, shit, full, shitstrapContractAddr, owner } =
     shitstrapInfo
   const { bech32Prefix } = getChainForChainId(chainId)
@@ -33,10 +42,10 @@ export const ShitstrapPaymentLine = ({
   const currentShitProgressLoading = useQueryLoadingDataWithError(
     shitStrapQueries.hasShit(queryClient, { chainId, contractAddress: shitstrapContractAddr })
   )
-
   const currentShitProgress = currentShitProgressLoading.errored || currentShitProgressLoading.loading ? "0" : currentShitProgressLoading.data
+
   // Load balances as loadables since they refresh automatically on a timer.
-  const currentEntityTokenBalances = useCachedLoading(
+  const shitstrapContractBalanceLoading = useCachedLoading(
     shitstrapContractAddr
       ? genericTokenBalancesSelector({
         chainId: chainId,
@@ -52,16 +61,11 @@ export const ShitstrapPaymentLine = ({
     []
   )
 
-  const currentShitBalance = currentEntityTokenBalances.loading ? undefined :
-    currentEntityTokenBalances.data.flatMap((t) => {
+  const currentShitBalance = shitstrapContractBalanceLoading.loading ? undefined :
+    shitstrapContractBalanceLoading.data.flatMap((t) => {
       t.token.denomOrAddress == shitstrapInfo.shit.denomOrAddress
       return t
     })
-
-  interface PossibleShitWithGenericToken {
-    shit_rate: Uint128
-    token: GenericToken
-  }
 
 
   // Create GenericToken with shitstrap ratio extended
@@ -69,8 +73,6 @@ export const ShitstrapPaymentLine = ({
     shitstrapInfo.possibleShit.flatMap((asset, index) => {
       console.log(index, asset, somePossibleshit)
       const displayToken = asset.source.chainId != asset.chainId ? asset.symbol : asset.symbol
-
-
       return {
         label: `${displayToken}: ${HugeDecimal.from(asset.shit_rate).toInternationalizedHumanReadableString({ decimals: 18, minDecimals: 3, })}`,
         value: { shit_rate: asset.shit_rate, token: asset },
@@ -87,6 +89,19 @@ export const ShitstrapPaymentLine = ({
     // Handle the selection of an option
     console.log(option, index)
   }
+
+  const leftToShit = HugeDecimal.fromHumanReadable(currentShitBalance ? currentShitBalance[0].balance : 0, 0).times(
+    HugeDecimal.from(10).pow(0).minus(currentShitProgress))
+
+  // if contract does not have atleast enought to shit, display a button to fund the shitstrap
+  const [showingFundShitstrap, setShowFundShitstrap] = useState(false)
+  const hasEnoughShit = !currentShitBalance ? undefined : currentShitBalance.find((a) => {
+
+    if (a.token.denomOrAddress == shitstrapInfo.shit.denomOrAddress && leftToShit.gt(a.balance)) {
+      return false
+    }
+    return true
+  })
 
   return (
     <ChainProvider chainId={chainId}>
@@ -143,17 +158,30 @@ export const ShitstrapPaymentLine = ({
         </div>
         <div className="hidden md:block">
 
-          Left To Shit :
-          <TokenAmountDisplay
-            amount={HugeDecimal.fromHumanReadable(currentShitBalance ? currentShitBalance[0].balance : 0, 0).times(
-              HugeDecimal.from(10).pow(0).minus(currentShitProgress)
-            )}
-            className="body-text truncate font-mono"
-            decimals={shit.decimals}
-            wrapperClassName={shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`) ? 'color-warning' : shit.denomOrAddress.startsWith(`ibc/`) ? '' : ''
-            }
-            symbol={shitstrapInfo.shit.symbol}
-          />
+          {!showingFundShitstrap && !hasEnoughShit ? (
+            <Button
+              // disabled={!distribution.open_funding}
+              onClick={() => setShowFundShitstrap(true)}
+              size="lg" variant="secondary"
+            >
+              {t('button.addFunds')}
+              <ArrowForwardIos className="!h-4 !w-4" />
+            </Button>) : (
+
+            <>
+              Left To Shit :
+              <TokenAmountDisplay
+                amount={leftToShit}
+                className="body-text truncate font-mono"
+                decimals={shit.decimals}
+                wrapperClassName={shit.denomOrAddress.startsWith(`factory/'${bech32Prefix}'1`) ? 'color-warning' : shit.denomOrAddress.startsWith(`ibc/`) ? '' : ''
+                }
+                symbol={shitstrapInfo.shit.symbol}
+              />
+            </>
+          )}
+
+
         </div>
       </div>
     </ChainProvider>

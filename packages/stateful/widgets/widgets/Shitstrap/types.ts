@@ -1,3 +1,8 @@
+
+import { HugeDecimal } from '@dao-dao/math'
+import { LoadingDataWithError } from '@dao-dao/types'
+import { ShitstrapInfoGeneric } from '@dao-dao/types/contracts/ShitStrap'
+
 export type ShitstrapPaymentWidgetData = {
   /**
    * A map of chain ID to current contract on that chain. This replaces the
@@ -29,3 +34,38 @@ export type ShitstrapPaymentWidgetData = {
   // optional default factory on home chain as dao or connected wallet to fallback to
   factory?: string
 }
+
+
+export type ShitstrapFundModalProps = {
+  /**
+   * Distribution. If undefined, modal is closed.
+   */
+  shitstrapInfo: ShitstrapInfoGeneric | undefined
+  /**
+   * Remaining distribution rewards.
+   */
+  remaining: LoadingDataWithError<HugeDecimal>
+  /**
+   * Whether or not the modal is visible. This should only be true when
+   * distribution is defined, but may be false when distribution is defined to
+   * prevent UI stuttering when closing.
+   */
+  visible: boolean
+  /**
+   * Close callback.
+   */
+  onClose: () => void
+  /**
+   * Fund distribution callback. Returns true if the fund was successful.
+   */
+  onFund: (amount: HugeDecimal) => Promise<boolean>
+  /**
+   * Whether or not the user is funding.
+   */
+  funding: boolean
+}
+
+export type StatefulDaoRewardDistributionInfoModalProps = Omit<
+  StatelessDaoRewardDistributionInfoModalProps,
+  'onFund' | 'funding' | 'remaining' | 'visible'
+>

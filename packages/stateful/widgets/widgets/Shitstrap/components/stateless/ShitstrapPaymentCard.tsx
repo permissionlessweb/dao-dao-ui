@@ -8,6 +8,7 @@ import { constSelector, useRecoilValueLoadable } from 'recoil'
 
 import { HugeDecimal } from '@dao-dao/math'
 import {
+    allBalancesSelector,
     DaoDaoCoreSelectors,
     genericTokenBalancesSelector,
 } from '@dao-dao/state'
@@ -48,18 +49,19 @@ import {
 } from '../../../../../hooks'
 import { useMakeShitstrapPayment } from '../../../../../hooks/contracts/CwShitstrap'
 import { entityQueries } from '../../../../../queries'
+import { useTokenBalances } from '../../../../../actions'
 
 export const ShitstrapPaymentCard = (
     { shitstrapInfo: fallbackInfo, shitting, }: StatefulShitStrapPaymentCardProps) => {
     const { t } = useTranslation()
     const { chainId } = useChain()
     const { bech32Prefix, } = getChainForChainId(chainId)
+    const queryClient = useQueryClient()
 
 
     const { goToDaoProposal } = useDaoNavHelpers()
     const [mode, setMode] = useState(ShitstrapPaymentMode.Payment)
-    const { context, address, chain: { chainId: daoChainID } } = useActionOptions()
-
+    const { context, address, chainContext, chain: { chainId: daoChainID } } = useActionOptions()
     // create form for selecting token and amount
     const { register, control, watch, setValue, setError, getValues, clearErrors, } = useForm()
 
@@ -75,44 +77,45 @@ export const ShitstrapPaymentCard = (
         isValidBech32Address(walletAddress, bech32Prefix) ? walletAddress : ''
     )
 
-    // DAO & balance of DAO
-    // Try to retrieve governance token address, failing if not a cw20-based DAO.
-    const currentEntityDAOTokenLoadable = useRecoilValueLoadable(
-        !entity.loading &&
-            entity.data.type === EntityType.Dao &&
-            // Only care about loading the governance token if on the chain we're
-            // creating the token swap on.
-            entity.data.chainId === chainId
-            ? DaoDaoCoreSelectors.tryFetchGovernanceTokenAddressSelector({
-                chainId,
-                contractAddress: entity.data.address
-            })
-            : constSelector(undefined)
+    const isIbc = !!daoChainID && !!chainId && daoChainID !== chainId
+
+
+    // // Load balances as loadables since they refresh automatically on a timer.
+    // const currentEntityTokenBalances = useCachedLoading(
+    //     entity &&
+    //         !entity.loading &&
+    //         entity.data ? genericTokenBalancesSelector({
+    //             chainId: chainId,
+    //             address: entity.data.address,
+    //             filter: {
+    //                 account: {
+    //                     chainId,
+    //                     address: entity.data.polytoneProxy ? entity.data.polytoneProxy.address : entity.data.address,
+    //                 },
+    //             },
+    //         })
+    //         : undefined,
+    //     []
+    // )
+
+
+    const balances = useCachedLoading(
+        allBalancesSelector({
+            chainId,
+            address: entity.loading ? walletAddress : entity.data.address,
+            // cw20GovernanceTokenAddress: governanceTokenAddress,
+            // additionalTokens,
+            // This hook is used to fetch usable balances for actions. Staked
+            // balances are not desired.
+            ignoreStaked: true,
+            // includeAccountTypes,
+            // excludeAccountTypes,
+            // includeChainIds,
+        }),
+        [],
+        (error) => console.error(error)
     )
 
-    // Load balances as loadables since they refresh automatically on a timer.
-    const currentEntityTokenBalances = useCachedLoading(
-        entity &&
-            !entity.loading &&
-            entity.data &&
-            currentEntityDAOTokenLoadable.state !== 'loading'
-            ? genericTokenBalancesSelector({
-                chainId: chainId,
-                address: entity.data.address,
-                cw20GovernanceTokenAddress:
-                    currentEntityDAOTokenLoadable.state === 'hasValue'
-                        ? currentEntityDAOTokenLoadable.contents
-                        : undefined,
-                filter: {
-                    account: {
-                        chainId,
-                        address: entity.data.address,
-                    },
-                },
-            })
-            : undefined,
-        []
-    )
 
     // if wallet is selected to make payment, use wallet tokens in TokenInput, broacast payment via wallet
     useEffect(() => {
@@ -129,7 +132,7 @@ export const ShitstrapPaymentCard = (
         }
     }, [watchShitToken])
 
-    const queryClient = useQueryClient()
+
     // Use info passed into props as fallback, since it came from the list query;
     // the individual query updates more frequently.
     const freshInfo = useQueryLoadingDataWithError(
@@ -186,11 +189,12 @@ export const ShitstrapPaymentCard = (
 
         const thisdebu = !entity.loading ? entity.data : undefined
         console.log(thisdebu)
-        console.log(currentEntityTokenBalances)
+        console.log()
+        console.log(balances)
         console.log(daoChainID)
         console.log(chainId)
         return () => clearTimeout(timeout)
-    }, [usingOwnShit])
+    }, [usingOwnShit,entity])
     useEffect(() => {
         // console.log("eligibleAsset",eligibleAsset)
         // console.log("watchAmount",watchAmount)
@@ -388,17 +392,24 @@ export const ShitstrapPaymentCard = (
                                     selectedToken={watchShitToken}
                                     showChainImage
                                     tokens={
-                                        // usingOwnShit ?
                                         {
                                             loading: false,
-                                            data: currentEntityTokenBalances.loading
+                                            data: balances.loading
                                                 ? []
-                                                : currentEntityTokenBalances.data
-                                                    ?.filter(({ token }) =>
-                                                        shitstrapInfo && shitstrapInfo.possibleShit.some((asset) => {
-                                                            asset.denomOrAddress == token.denomOrAddress
+                                                : balances.data
+                                                    ?.filter(({ token }) => {
+                                                        console.log(token)
+                                                        if (token.chainId == chainId) {
+                                                            return shitstrapInfo && shitstrapInfo.possibleShit.some((asset) => {
+                                                                if (asset.denomOrAddress == token.denomOrAddress) {
+                                                                    console.log("True")
 
-                                                        })
+                                                                    return asset
+                                                                }
+
+                                                            })
+                                                        }
+                                                    }
                                                     )
                                                     ?.map(({ balance, token }) => ({
                                                         ...token,
