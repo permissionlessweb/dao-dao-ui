@@ -109,7 +109,7 @@ export const CreateShitstrap: ComponentType<
       chain: { chainId: nativeChainId },
     } = actionOptions
     const configureCreateShitStrapActionDefaults = useInitializedActionForKey(
-      ActionKey.ManageShitstrap
+      ActionKey.ConfigureShitstrapPayments
     )
 
     // get connected wallet balance info
@@ -173,14 +173,16 @@ export const CreateShitstrap: ComponentType<
       watchChainId
     )
 
-    const crossChainAccountActionExists = allActionsWithData.some(
-      (action) => action.actionKey === ActionKey.ManageShitstrap
-    )
+
 
     const shitstrapFactoryExists = !!widgetData?.factories?.[watchChainId]
     const shitstrapOwnerAddrValid =
       !!watchShitstrapOwner &&
       isValidBech32Address(watchShitstrapOwner.address, currentChain.bech32Prefix)
+
+    const crossChainAccountActionExists = allActionsWithData.some(
+      (action) => action.actionKey === ActionKey.ConfigureShitstrapPayments
+    )
 
     // A DAO can create a shitstrap payment factory on the current chain and any
     // polytone connection that is also a supported chain (since the shitstrap
@@ -357,7 +359,7 @@ export const CreateShitstrap: ComponentType<
           {console.log("shitstrapFactoryExists", shitstrapFactoryExists)}
           {isCreating &&
             !shitstrapFactoryExists &&
-            configureCreateShitStrapActionDefaults && (
+            (
               <StatusCard
                 className="max-w-lg"
                 content={t('info.shitstrapManagerNeeded', {
@@ -373,8 +375,9 @@ export const CreateShitstrap: ComponentType<
                     remove()
                     addAction(
                       {
-                        actionKey: ActionKey.ManageShitstrap,
-                        data: configureCreateShitStrapActionDefaults,
+                        actionKey: ActionKey.ConfigureShitstrapPayments,
+                        data: !configureCreateShitStrapActionDefaults.errored &&
+                          !configureCreateShitStrapActionDefaults.loading ? configureCreateShitStrapActionDefaults.data.defaults : {},
                       },
                       actionIndex
                     )

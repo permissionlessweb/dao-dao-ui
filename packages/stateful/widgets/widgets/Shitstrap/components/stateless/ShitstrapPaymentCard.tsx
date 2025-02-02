@@ -175,7 +175,8 @@ export const ShitstrapPaymentCard = (
             : 'error.cantSpendMoreThanTreasury'
         : ''
 
-    const estimatedToken = eligibleAsset ? HugeDecimal.from(eligibleAsset.shit_rate ?? 1).div(HugeDecimal.from(10).pow(18)).toNumber() * parseInt(watchAmount) : 1
+    const convertedShitRate = eligibleAsset ? HugeDecimal.from(eligibleAsset.shit_rate ?? 1).div(HugeDecimal.from(10).pow(18)).toNumber() : 1
+    const estimatedToken = convertedShitRate * watchAmount
 
     useEffect(() => {
         const timeout = setTimeout(() => { }, 200)
@@ -194,7 +195,7 @@ export const ShitstrapPaymentCard = (
         console.log(daoChainID)
         console.log(chainId)
         return () => clearTimeout(timeout)
-    }, [usingOwnShit,entity])
+    }, [usingOwnShit, entity])
     useEffect(() => {
         // console.log("eligibleAsset",eligibleAsset)
         // console.log("watchAmount",watchAmount)
@@ -387,7 +388,6 @@ export const ShitstrapPaymentCard = (
                                     onSelectToken={(token) => {
                                         // Save the matched token to the form in shitToken field
                                         setValue(('payment.' + 'shitToken') as 'shitToken', token)
-                                        // console.log("selected token:", watchShitToken)
                                     }}
                                     selectedToken={watchShitToken}
                                     showChainImage
@@ -402,8 +402,6 @@ export const ShitstrapPaymentCard = (
                                                         if (token.chainId == chainId) {
                                                             return shitstrapInfo && shitstrapInfo.possibleShit.some((asset) => {
                                                                 if (asset.denomOrAddress == token.denomOrAddress) {
-                                                                    console.log("True")
-
                                                                     return asset
                                                                 }
 
@@ -418,36 +416,6 @@ export const ShitstrapPaymentCard = (
                                                             HugeDecimal.from(balance).toInternationalizedHumanReadableString({ decimals: 6, }),
                                                     })) ?? [],
                                         }
-                                        //  :
-                                        //     {
-                                        //         loading: false,
-                                        //         data: currentDaoEntityTokenBalances.loading
-                                        //             ? []
-                                        //             : (currentDaoEntityTokenBalances.data
-                                        //                 ?.filter(({ token }) =>
-                                        //                     shitstrapInfo.possibleShit.some((asset) => {
-                                        //                         if (typeof asset.token === 'object') {
-                                        //                             if ('native' in asset.token) {
-                                        //                                 return asset.token.native === token.denomOrAddress;
-                                        //                             } else if ('cw20' in asset.token) {
-                                        //                                 return asset.token.cw20 === token.denomOrAddress;
-                                        //                             } else {
-                                        //                                 return false;
-                                        //                             }
-                                        //                         } else {
-                                        //                             return asset.token === token.denomOrAddress;
-                                        //                         }
-                                        //                     })
-                                        //                 )
-                                        //                 ?.map(({ balance, token }) => ({
-                                        //                     ...token,
-                                        //                     owner: owner,
-                                        //                     description:
-                                        //                         t('title.balance') +
-                                        //                         ': ' + HugeDecimal.from(balance).toInternationalizedHumanReadableString({ decimals })
-                                        //                     ,
-                                        //                 })) ?? []),
-                                        //     }
                                     }
                                 />
                                 {usingOwnShit ? <>
@@ -463,23 +431,25 @@ export const ShitstrapPaymentCard = (
                         {mode === ShitstrapPaymentMode.Flush ? <></> : null}
                         {mode === ShitstrapPaymentMode.OverFlow ? <></> : null}
                     </div>
-                    {estimatedToken && !entity.loading && (
+                    {!entity.loading && (
                         <div className="flex flex-col gap-2 border-t border-border-secondary px-6 py-4">
                             <p className="link-text mb-1">{t('info.previewShitstrapPayment')}</p>
                             <div className="flex flex-row items-center justify-between gap-8">
+                                {estimatedToken}
                                 <p className="link-text mb-1">{t('title.estimatedToShit')}</p>
-                                {estimatedToken !== HugeDecimal.zero.toNumber() && (
+                                {tokenToShit && estimatedToken && (
                                     <TokenAmountDisplay
-                                        amount={estimatedToken}
+                                        showAllDecimals={true}
+                                        showFullAmount={true}
+                                        amount={HugeDecimal.from(estimatedToken).toNumber()}
                                         className="grow text-sm"
-                                        decimals={6}
+                                        decimals={tokenToShit.decimals}
                                         hideSymbol={false}
-                                        symbol={tokenToShit ? tokenToShit.symbol : undefined}
+                                        symbol={tokenToShit.symbol}
                                     />
                                 )}
                             </div>
 
-                            <div className="flex flex-row items-center justify-between gap-8"></div>
 
                             {onShitstrapPayment && (
                                 <Button

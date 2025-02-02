@@ -123,6 +123,7 @@ export enum ActionKey {
   PauseRewardDistribution = 'pauseRewardDistribution',
   ResumeRewardDistribution = 'resumeRewardDistribution',
   // Shitstrap
+  ConfigureShitstrapPayments = 'configureShitstrapPayments',
   ManageShitstrap = 'manageShitstrap',
   FixRewardDistributor = 'fixRewardDistributor',
 }

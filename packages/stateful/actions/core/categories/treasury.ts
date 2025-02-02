@@ -17,6 +17,7 @@ export const makeTreasuryActionCategory: ActionCategoryMaker = ({
   }),
   actionKeys: [
     ActionKey.ManageShitstrap,
+    ActionKey.ConfigureShitstrapPayments,
     ActionKey.Spend,
     ActionKey.ManageStaking,
     ActionKey.ManageVesting,

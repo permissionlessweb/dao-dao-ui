@@ -8,7 +8,7 @@ export type ShitstrapPaymentWidgetData = {
    * A map of chain ID to current contract on that chain. This replaces the
    * single `shitstrap` and allows for multiple chains.
    */
-  factories: Record<
+  factories?: Record<
     string,
     {
       address: string
@@ -64,8 +64,3 @@ export type ShitstrapFundModalProps = {
    */
   funding: boolean
 }
-
-export type StatefulDaoRewardDistributionInfoModalProps = Omit<
-  StatelessDaoRewardDistributionInfoModalProps,
-  'onFund' | 'funding' | 'remaining' | 'visible'
->

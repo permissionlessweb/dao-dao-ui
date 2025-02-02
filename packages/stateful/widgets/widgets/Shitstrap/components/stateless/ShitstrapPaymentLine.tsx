@@ -17,7 +17,7 @@ import { useQueryLoadingDataWithError } from '../../../../../hooks'
 import { shitStrapQueries, tokenQueries } from '@dao-dao/state/query'
 import { contractVersionSelector, genericTokenBalancesSelector } from '@dao-dao/state/recoil'
 import { ArrowForwardIos } from '@mui/icons-material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface PossibleShitWithGenericToken {
   shit_rate: Uint128
@@ -39,6 +39,7 @@ export const ShitstrapPaymentLine = ({
     shitstrapInfo
   const { bech32Prefix } = getChainForChainId(chainId)
 
+  // get the amount of shit that has been shit
   const currentShitProgressLoading = useQueryLoadingDataWithError(
     shitStrapQueries.hasShit(queryClient, { chainId, contractAddress: shitstrapContractAddr })
   )
@@ -90,8 +91,8 @@ export const ShitstrapPaymentLine = ({
     console.log(option, index)
   }
 
-  const leftToShit = HugeDecimal.fromHumanReadable(currentShitBalance ? currentShitBalance[0].balance : 0, 0).times(
-    HugeDecimal.from(10).pow(0).minus(currentShitProgress))
+  //  subtract the cutoff from what has been shit to 
+  const leftToShit = HugeDecimal.from(shitstrapInfo.cutoff).minus(currentShitProgress)
 
   // if contract does not have atleast enought to shit, display a button to fund the shitstrap
   const [showingFundShitstrap, setShowFundShitstrap] = useState(false)
@@ -102,6 +103,14 @@ export const ShitstrapPaymentLine = ({
     }
     return true
   })
+
+
+
+
+  useEffect(() => {
+    console.log("leftToShit:", leftToShit)
+    console.log("shit.decimals:", shit.decimals)
+  }, [leftToShit])
 
   return (
     <ChainProvider chainId={chainId}>
@@ -169,7 +178,7 @@ export const ShitstrapPaymentLine = ({
             </Button>) : (
 
             <>
-              Left To Shit :
+              Left To Shit:
               <TokenAmountDisplay
                 amount={leftToShit}
                 className="body-text truncate font-mono"
