@@ -72,7 +72,7 @@ export const ShitstrapPaymentLine = ({
   // Create GenericToken with shitstrap ratio extended
   const possibleShitOptions: TypedOption<PossibleShitWithGenericToken>[] = eligibleShit.errored || eligibleShit.loading ? [] :
     shitstrapInfo.possibleShit.flatMap((asset, index) => {
-      console.log(index, asset, somePossibleshit)
+      // console.log(index, asset, somePossibleshit)
       const displayToken = asset.source.chainId != asset.chainId ? asset.symbol : asset.symbol
       return {
         label: `${displayToken}: ${HugeDecimal.from(asset.shit_rate).toInternationalizedHumanReadableString({ decimals: 18, minDecimals: 3, })}`,
@@ -88,7 +88,7 @@ export const ShitstrapPaymentLine = ({
 
   const handleSelect = (option: typeof possibleShitOptions, index: number) => {
     // Handle the selection of an option
-    console.log(option, index)
+    // console.log(option, index)
   }
 
   //  subtract the cutoff from what has been shit to 

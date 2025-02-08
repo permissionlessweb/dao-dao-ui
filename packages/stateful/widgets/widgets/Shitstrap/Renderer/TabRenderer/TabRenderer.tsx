@@ -97,7 +97,6 @@ export const TabRenderer = ({
     ),
     combine: makeCombineQueryResultsIntoLoadingDataWithError({
       firstLoad: 'one',
-      // transform: (infos) => uniqBy(infos, (info) => info.chainId + ':' + info.denomOrAddress),
     }),
   })
 
@@ -114,7 +113,6 @@ export const TabRenderer = ({
   useEffect(() => {
     if (!shitstrapPaymentModalOpen && openShitstrapPayment) {
       const timeout = setTimeout(() => setOpenShitStrapContract(undefined), 200)
-      // console.log("shitstrapShitGenericTokenLoading", shitstrapShitGenericTokenLoading)
       return () => clearTimeout(timeout)
     }
 
@@ -240,7 +238,7 @@ export const TabRenderer = ({
       >
         {openShitstrapPayment ? (
           <ChainProvider chainId={openShitstrapPayment.chainId}>
-            <ShitStrapCard shitstrapInfo={openShitstrapPayment} usingPersonalShit={false} />
+            <ShitStrapCard shitstrapInfo={openShitstrapPayment} usingPersonalShit={false} queryClient={queryClient} />
           </ChainProvider>
         ) : (
           <Loader />

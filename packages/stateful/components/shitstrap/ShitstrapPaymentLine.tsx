@@ -16,7 +16,7 @@ export const ShitstrapPaymentLine = ({
   const freshInfo = useQueryLoadingDataWithError(
     cwShitstrapExtraQueries.info(queryClient, {
       chainId: fallbackInfo.chainId,
-      address: fallbackInfo.shitstrapContractAddr,
+      contractAddress: fallbackInfo.shitstrapContractAddr,
     })
   )
   const shitstrapInfo =

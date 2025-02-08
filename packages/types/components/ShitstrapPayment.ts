@@ -8,6 +8,7 @@ import { TokenInputOption, TokenInputProps } from './TokenInput'
 import { QueryClient } from '@tanstack/react-query'
 
 export type StatefulShitStrapPaymentCardProps = {
+  queryClient: QueryClient,
   shitstrapInfo: ShitstrapInfoGeneric
   usingPersonalShit: boolean
   shitting?: boolean

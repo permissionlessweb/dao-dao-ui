@@ -1,5 +1,5 @@
-import { ActionBase, Button, ChainProvider, ErrorPage, HorizontalNftCard, HorizontalNftCardLoader, InputErrorMessage, InputLabel, NativeCoinSelector, NumericInput } from "@dao-dao/stateless";
-import { ActionComponent, ActionOptions, AddressInputProps, GenericTokenBalance, LazyNftCardInfo, LoadingData, LoadingDataWithError, NftCardInfo, NftSelectionModalProps } from "@dao-dao/types";
+import { ActionBase, Button, ChainProvider, Dropdown, ErrorPage, HorizontalNftCard, HorizontalNftCardLoader, InputErrorMessage, InputLabel, NativeCoinSelector, NumericInput } from "@dao-dao/stateless";
+import { ActionComponent, ActionOptions, AddressInputProps, GenericToken, GenericTokenBalance, LazyNftCardInfo, LoadingData, LoadingDataWithError, NftCardInfo, NftSelectionModalProps, TypedOption } from "@dao-dao/types";
 import { Bundle, Infusion, NFT } from "@dao-dao/types/contracts/CwInfuser";
 import { TransferNftData } from "../TransferNft/Component";
 import { ComponentType, useEffect, useState } from "react";
@@ -11,6 +11,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cw721BaseQueries, nftQueries } from "@dao-dao/state/query";
 import { Approval } from "@dao-dao/types/contracts/Sg721Base";
 
+
+interface InfusionCollections {
+    collection: String
+    minRequired: number
+    maxRequired: number | undefined
+    paymentSubstitute: GenericToken | undefined
+}
 
 export type InfuseNftsData = {
     chainId: string
@@ -183,6 +190,37 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     const [showModal, setShowModal] = useState<boolean>(false)
 
 
+    // Create GenericToken with shitstrap ratio extended
+    const possibleCollections: TypedOption<InfusionCollections[]>[] = !infusion ? [] :
+        infusion.flatMap((asset, index) => {
+
+            const infsuions = asset.collections.flatMap((ii) => {
+                return {
+                    collection: ii.addr,
+                    minRequired: ii.min_req,
+                    maxRequired: ii.min_req,
+                    paymentSubstitute: undefined
+                }
+            })
+            // console.log(index, asset, somePossibleshit)
+            // const displayToken = asset.source.chainId != asset.chainId ? asset.symbol : asset.symbol
+            return {
+                label: ``,
+                value: infsuions,
+            }
+        }
+        )
+
+    const nftOptions = possibleCollections.map((asset, index) => ({
+        value: [asset],
+        label: asset.label
+    }))
+
+    const handleSelect = (option: typeof possibleCollections, index: number) => {
+        // Handle the selection of an option
+        console.log(option, index)
+    }
+
     return (
         <>
             <div className="flex flex-col gap-y-4 gap-x-12 lg:flex-row lg:flex-wrap">
@@ -269,11 +307,25 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                 {infusion && (<>
                     <p className="primary-text mb-3">Infusion Info</p>
                     {infusion.map((ii, index) => {
-                        ii.collections
+                        return (
+                            <>
+                                {/* display map of eligible infusion collections and the minimum needed */}
+                                <div onClick={(event) => event.stopPropagation()}>
+                                    <Dropdown
+                                        onSelect={handleSelect}
+                                        options={nftOptions}
+                                        placeholder={t('info.selectEligibleAsset', {
+                                            number: possibleCollections.length,
+                                        })}
+                                    />
+                                </div>
+                            </>
+                        )
                     })}
 
 
-                </>)}
+                </>)
+                }
             </div>
             <div className="flex flex-col gap-1">
                 {

@@ -126,7 +126,7 @@ export const listAllShitstrapContractsByInstantiator = async (
       )
     )
 
-    console.log(response)
+    // console.log(response)
 
     if (!response?.length) {
       break

@@ -356,7 +356,7 @@ export const CreateShitstrap: ComponentType<
           />
         )}
         <div className="flex  flex-col gap-4">
-          {console.log("shitstrapFactoryExists", shitstrapFactoryExists)}
+
           {isCreating &&
             !shitstrapFactoryExists &&
             (

@@ -78,7 +78,7 @@ export const TabRenderer = ({
           contracts.map(({ contract }) =>
             cwShitstrapExtraQueries.info(queryClient, {
               chainId,
-              address: contract,
+              contractAddress: contract,
             })
           )
         ),
@@ -124,8 +124,7 @@ export const TabRenderer = ({
         : undefined}
       isMember={isMember}
       shitStrapsLoading={{ loading: false, errored: false, data: shitstrapPaymentsNotFull }}
-      queryClient={queryClient}   // shitstrapTokenLoading={shitstrapTokenGenericInfoLoading}
-    // shitstrapEligibleAssetLoading={eligibleAssetsLoading}
+      queryClient={queryClient}
     />
   </>
   )

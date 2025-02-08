@@ -1,22 +1,24 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { QueryClient, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useRecoilCallback } from 'recoil'
 
 import { shitStrapQueries } from '@dao-dao/state/query'
-import { useActionOptions } from '@dao-dao/stateless'
+import { AddressInput, Button, ChainProvider, DaoSupportedChainPickerInput, FormSwitch, InputErrorMessage, InputLabel, TokenInput, useActionOptions } from '@dao-dao/stateless'
 import {
   ActionComponent,
+  ActionContextType,
   GenericToken,
   GenericTokenBalanceWithOwner,
 } from '@dao-dao/types'
 import { PossibleShit } from '@dao-dao/types/contracts/ShitStrap'
 import { Config as ShitstrapConfig } from '@dao-dao/types/ShitStrap'
-import { processError } from '@dao-dao/utils'
+import { getChainForChainId, makeValidateAddress, processError, validateRequired } from '@dao-dao/utils'
 
 import { ShitstrapPaymentWidgetData } from '../../../../widgets/widgets/Shitstrap/types'
 import { Counterparty } from '../token_swap/types'
+import { HugeDecimal } from '@dao-dao/math'
 export type MakeShitstrapPaymentData = {
   chainId: string
   // Whether or not the contract has been chosen. When this is `false`, shows
@@ -36,6 +38,7 @@ export type MakeShitstrapPaymentData = {
 }
 
 export type MakeShitstrapPaymentOptions = {
+  queryClient: QueryClient
   widgetData: ShitstrapPaymentWidgetData | undefined
   tokens: GenericTokenBalanceWithOwner[]
   /**
@@ -61,12 +64,15 @@ export const MakeShitstrapPayment: ActionComponent<
   remove,
   index: actionIndex,
   allActionsWithData,
-  options: { widgetData, tokens, factories },
+  options: { widgetData, queryClient, tokens, factories },
 }) => {
     const { t } = useTranslation()
     const {
       chain: { bech32Prefix },
+      address: chainAddressOwner,
+      context,
     } = useActionOptions()
+
 
     const {
       control,
@@ -85,19 +91,16 @@ export const MakeShitstrapPayment: ActionComponent<
     const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
     const watchShitToken = watch(('payment.' + 'shitToken') as 'shitToken')
 
-    // The only shistrap contracts that can have payments made:
-    //   - have not been flushed by owner
-    //   - are not full of shit
-    // selected shitstrap info
-    const queryClient = useQueryClient()
+    const shitstrapFactoryExists = !!widgetData?.factories?.[watchChainId]
 
     // const estimatedToken = eligibleAsset ? (HugeDecimal.from(eligibleAsset.shit_rate ?? 1).div(HugeDecimal.from(10).pow(6)).toNumber()) * parseInt(watchAmountToSendToShit) : 1;
+    const [usingCustomShitstrap, useCustomShitstrap] = useState(false)
     const [contractChosen, setChoossetContractChosen] = useState(false)
     const [queryShitstrapInfo, setQueryShitstrapInfo] = useState(false)
+    const [chooseLoading, setChooseLoading] = useState(false)
     const [shitstrapInfo, setShitstrapInfo] = useState<ShitstrapConfig>()
 
     // handle loading and affirm shitstrap contract
-    const [chooseLoading, setChooseLoading] = useState(false)
     const onChooseExistingContract = useRecoilCallback(
       ({ snapshot }) =>
         async () => {
@@ -198,190 +201,172 @@ export const MakeShitstrapPayment: ActionComponent<
     const decimals = watchShitToken ? watchShitToken?.decimals ?? 0 : 0
 
     return (
-      // <ChainProvider chainId={watchChainId}>
-      //   <p className="max-w-prose">{t('info.shitStrapExplanation')}</p>
-      //   <div className="flex flex-col gap-3">
-      //     <p className="max-w-prose">{t('form.tokenSwapExistingInstructions')}</p>
-      //     <div className="flex flex-row flex-wrap items-center gap-2">
-      //       <div className="flex shrink-0 flex-col gap-1">
-      //         <div className="flex flex-row items-end justify-between gap-2">
-      //           <InputLabel name={t('form.inputShitstrap')} />
-      //         </div>
+      <ChainProvider chainId={watchChainId}>
+        <div className="flex flex-col gap-3">
+          <p className="max-w-prose">{t('info.shitStrapExplanation')}</p>
+          {context.type === ActionContextType.Dao && (
+            <DaoSupportedChainPickerInput
+              disabled={!isCreating}
+              fieldName={fieldNamePrefix + 'chainId'}
+              onChange={(chainId) => {
+                // Reset when switching chain.
+                setValue((fieldNamePrefix + 'cutoff') as 'cutoff', "")
+                setValue((fieldNamePrefix + 'chainId') as 'chainId', chainId)
+                setValue((fieldNamePrefix + 'possibleShit') as 'possibleShit', [])
+                setValue(
+                  (fieldNamePrefix + 'ownerEntity.address') as 'ownerEntity.address',
+                  chainAddressOwner ? chainAddressOwner : ''
+                )
+              }}
+            />
+          )}
+          <div className="flex flex-row flex-wrap items-center gap-2">
+            <div className="flex shrink-0 flex-col gap-1">
 
-      //         <div className="flex flex-row gap-1">
-      //           <AddressInput
-      //             error={errors?.collectionAddress}
-      //             fieldName={
-      //               (fieldNamePrefix + 'shitstrapAddress') as 'shitstrapAddress'
-      //             }
-      //             register={register}
-      //             type="contract"
-      //             validation={[
-      //               validateRequired,
-      //               makeValidateAddress(bech32Prefix),
-      //             ]}
-      //           />
-      //           <InputErrorMessage error={errors?.collectionAddress} />
-      //           <Button
-      //             className="self-end"
-      //             loading={chooseLoading}
-      //             onClick={onChooseExistingContract}
-      //             size="lg"
-      //           >
-      //             {t('button.continue')}
-      //           </Button>
-      //           {shitstrapInfo && contractChosen ? (
-      //             // <></>
-      //             <TokenInput
-      //               allowCustomToken={false}
-      //               amount={{
-      //                 watch,
-      //                 setValue,
-      //                 register,
-      //                 getValues,
-      //                 fieldName: ('payment.' + 'amount') as 'amount',
-      //                 error: undefined,
-      //                 min: 0,
-      //                 max: 999999999999999999,
-      //                 step: HugeDecimal.one.toHumanReadableNumber(decimals),
-      //                 // validations: [
-      //                 //   (amount) =>
-      //                 //     HugeDecimal.from(amount).toString() <=
-      //                 //       selectedBalance.toString() ||
-      //                 //     t(insufficientBalanceI18nKey, {
-      //                 //       amount: selectedBalance.toLocaleString(undefined, {
-      //                 //         maximumFractionDigits: decimals,
-      //                 //       }),
-      //                 //       tokenSymbol:
-      //                 //         watchShitToken?.symbol ??
-      //                 //         t('info.token').toLocaleUpperCase(),
-      //                 //     }),
-      //                 // ],
-      //               }}
-      //               onSelectToken={(token) => {
-      //                 // Save the matched token to the form in shitToken field
-      //                 setValue(('payment.' + 'shitToken') as 'shitToken', token)
-      //               }}
-      //               // readOnly={shitting}
-      //               selectedToken={watchShitToken}
-      //               showChainImage
-      //               tokens={
-      //                 // usingOwnShit ?
-      //                 {
-      //                   loading: false,
-      //                   data: tokens.
-      //                         filter(({ token }) =>
-      //                           shitstrapInfo.accepted.some((asset) => {
-      //                             if (typeof asset.token === 'object') {
-      //                               if ('native' in asset.token) {
-      //                                 return (
-      //                                   asset.token.native ===
-      //                                   token.denomOrAddress
-      //                                 )
-      //                               } else if ('cw20' in asset.token) {
-      //                                 return (
-      //                                   asset.token.cw20 === token.denomOrAddress
-      //                                 )
-      //                               } else {
-      //                                 return false
-      //                               }
-      //                             } else {
-      //                               return asset.token === token.denomOrAddress
-      //                             }
-      //                           })
-      //                         )
-      //                         ?.map(({ balance, token }) => ({
-      //                           ...token,
-      //                           description:
-      //                             t('title.balance') +
-      //                             ': ' +
-      //                             HugeDecimal.from(
-      //                               balance
-      //                             ).toInternationalizedHumanReadableString({
-      //                               decimals: 6,
-      //                             }),
-      //                         })) ?? [],
-      //                 }
-      //               }
-      //             />
-      //             // <TokenInput
-      //             //   amount={{
-      //             //     watch,
-      //             //     setValue,
-      //             //     register,
-      //             //     getValues,
-      //             //     fieldName: (fieldNamePrefix + `amount`) as `amount`,
-      //             //     error: errors?.amount,
-      //             //     min: 0,
-      //             //     max: 999999999999,
-      //             //     step: HugeDecimal.one.toNumber(),
-      //             //     validations: [],
-      //             //   }}
-      //             //   onSelectToken={(token) => {
-      //             //     setValue(
-      //             //       (fieldNamePrefix + `shitToken`) as `shitToken`,
-      //             //       token
-      //             //     )
-      //             //   }}
-      //             //   readOnly={!isCreating}
-      //             //   selectedToken={watchShitToken}
-      //             //   showChainImage
-      //             //   tokens={{
-      //             //     loading: false,
-      //             //     data: tokens
-      //             //       .filter(({ token }) =>
-      //             //         shitstrapInfo.accepted.some((asset) => {
-      //             //           if (typeof asset.token === 'object') {
-      //             //             if ('native' in asset.token) {
-      //             //               return asset.token.native === token.denomOrAddress
-      //             //             } else if ('cw20' in asset.token) {
-      //             //               return asset.token.cw20 === token.denomOrAddress
-      //             //             } else {
-      //             //               return false
-      //             //             }
-      //             //           } else {
-      //             //             return asset.token === token.denomOrAddress
-      //             //           }
-      //             //         })
-      //             //       )
-      //             //       .map(({ owner, balance, token }) => ({
-      //             //         ...token,
-      //             //         owner,
-      //             //         description:
-      //             //           t('title.balance') +
-      //             //           ': ' +
-      //             //           HugeDecimal.from(
-      //             //             balance
-      //             //           ).toInternationalizedHumanReadableString({
-      //             //             decimals: 6,
-      //             //           }),
-      //             //       })),
-      //             //   }}
-      //             // />
-      //           ) : undefined}
-      //         </div>
-      //       </div>
-      //     </div>
-      //     <div className="flex flex-row items-center justify-between gap-8">
-      //       <p className="link-text mb-1">{t('info.previewShitstrapPayment')}</p>
-      //       <div className="flex flex-row items-center justify-between gap-8"></div>
-      //     </div>
-      //     <p className="secondary-text">{t('title.estimatedToShit')}</p>
-      //     {/* {activeShitstrap && estimatedToken !== HugeDecimal.zero.toNumber() && (
-      //                                 <TokenAmountDisplay
-      //                                     amount={estimatedToken}
-      //                                     className="grow header-text text-sm"
-      //                                     decimals={6}
-      //                                     symbol={activeShitstrap.shit.denomOrAddress.startsWith(`factory/osmo1`)
-      //                                         ? !activeShitstrap.shit.denomOrAddress.substring(51).startsWith('/')
-      //                                             ? activeShitstrap.shit.denomOrAddress.substring(71)
-      //                                             : activeShitstrap.shit.denomOrAddress.substring(52)
-      //                                         : activeShitstrap.shit.denomOrAddress}
-      //                                     hideSymbol={false}
-      //                                 />
-      //             )} */}
-      //   </div>
-      // </ChainProvider>
-      <></>
+              <div className="flex flex-row items-end justify-between gap-2">
+                <InputLabel name={t('form.inputShitstrap')} />
+              </div>
+
+              <div className="flex flex-row gap-1">
+                {shitstrapFactoryExists && (
+                  <div className="flex flex-row gap-3 items-center">
+                    {!usingCustomShitstrap ? (<>
+                      {/* <ShitstrapPicker !shitstrapInfosLoading.errored && !shitstrapInfosLoading.loading ? 
+                onSelect={(shitstrapContractAddr) =>
+                  setValue(
+                    (fieldNamePrefix + 'shitstrapAddress') as 'shitstrapAddress',
+                    shitstrapContractAddr
+                  )
+                }
+                readOnly={!isCreating}
+                selectedAddress={watchShitstrapAddress}
+                shitstraps={shitstrapInfosLoading.data}
+              /> */}
+
+                    </>) : (<>
+                      <div className="flex flex-row gap-1">
+                        <AddressInput
+                          error={errors?.collectionAddress}
+                          fieldName={
+                            (fieldNamePrefix + 'shitstrapAddress') as 'shitstrapAddress'
+                          }
+                          register={register}
+                          type="contract"
+                          validation={[
+                            validateRequired,
+                            makeValidateAddress(getChainForChainId(watchChainId).bech32Prefix),
+                          ]}
+                        />
+                      </div></>)}
+
+                    <Button
+                      className="self-end"
+                      loading={chooseLoading}
+                      onClick={onChooseExistingContract}
+                      size="lg"
+                    >
+                      {t('button.continue')}
+                    </Button>
+                    <FormSwitch
+                      fieldName={`none`}
+                      setValue={setValue}
+                      sizing="md"
+                      value={usingCustomShitstrap}
+                      onToggle={useCustomShitstrap}
+                    />
+
+                    <InputLabel
+                      name={t('title.customShitstrapAddress')}
+                      title
+                    />
+
+                    <InputErrorMessage error={errors?.collectionAddress} />
+
+                  </div>
+                )}
+                {shitstrapInfo && contractChosen ? (
+                  // <></>
+                  <TokenInput
+                    allowCustomToken={false}
+                    amount={{
+                      watch,
+                      setValue,
+                      register,
+                      getValues,
+                      fieldName: ('payment.' + 'amount') as 'amount',
+                      error: undefined,
+                      min: 0,
+                      max: 999999999999999999,
+                      step: HugeDecimal.one.toHumanReadableNumber(decimals),
+                      // validations: [
+                      //   (amount) =>
+                      //     HugeDecimal.from(amount).toString() <=
+                      //       selectedBalance.toString() ||
+                      //     t(insufficientBalanceI18nKey, {
+                      //       amount: selectedBalance.toLocaleString(undefined, {
+                      //         maximumFractionDigits: decimals,
+                      //       }),
+                      //       tokenSymbol:
+                      //         watchShitToken?.symbol ??
+                      //         t('info.token').toLocaleUpperCase(),
+                      //     }),
+                      // ],
+                    }}
+                    onSelectToken={(token) => {
+                      // Save the matched token to the form in shitToken field
+                      setValue(('payment.' + 'shitToken') as 'shitToken', token)
+                    }}
+                    // readOnly={shitting}
+                    selectedToken={watchShitToken}
+                    showChainImage
+                    tokens={
+                      // usingOwnShit ?
+                      {
+                        loading: false,
+                        data: tokens.
+                          filter(({ token }) =>
+                            shitstrapInfo.accepted.some((asset) => {
+                              if (typeof asset.token === 'object') {
+                                if ('native' in asset.token) {
+                                  return (
+                                    asset.token.native ===
+                                    token.denomOrAddress
+                                  )
+                                } else if ('cw20' in asset.token) {
+                                  return (
+                                    asset.token.cw20 === token.denomOrAddress
+                                  )
+                                } else {
+                                  return false
+                                }
+                              } else {
+                                return asset.token === token.denomOrAddress
+                              }
+                            })
+                          )
+                          ?.map(({ balance, token }) => ({
+                            ...token,
+                            description:
+                              t('title.balance') +
+                              ': ' +
+                              HugeDecimal.from(
+                                balance
+                              ).toInternationalizedHumanReadableString({
+                                decimals: 6,
+                              }),
+                          })) ?? [],
+                      }
+                    }
+                  />
+
+                ) : undefined}
+              </div>
+            </div>
+          </div>
+
+
+        </div>
+      </ChainProvider>
+      // <></>
     )
   }

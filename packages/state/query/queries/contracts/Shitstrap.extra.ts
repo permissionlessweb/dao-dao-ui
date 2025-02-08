@@ -13,10 +13,10 @@ export const fetchShitstrapInfo = async (
   queryClient: QueryClient,
   {
     chainId,
-    address,
+    contractAddress,
   }: {
     chainId: string
-    address: string
+    contractAddress: string
   }
 ): Promise<ShitstrapInfoGeneric> => {
   const [config] = await Promise.all(
@@ -25,7 +25,7 @@ export const fetchShitstrapInfo = async (
         .fetchQuery(
           shitStrapQueries.config(queryClient, {
             chainId,
-            contractAddress: address,
+            contractAddress,
           })
         )
         .then(async (config) => {
@@ -68,7 +68,7 @@ export const fetchShitstrapInfo = async (
     description: config.description,
     owner: config.owner,
     chainId,
-    shitstrapContractAddr: address,
+    shitstrapContractAddr: contractAddress,
     possibleShit: config.accepted.map((a) => {
       const token = typeof a.token == 'object' ? 'native' in a.token ? a.token.native : a.token.cw20 : a.token
       let match = acceptedShiit.filter((as) => {

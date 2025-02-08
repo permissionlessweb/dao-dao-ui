@@ -52,12 +52,10 @@ import { entityQueries } from '../../../../../queries'
 import { useTokenBalances } from '../../../../../actions'
 
 export const ShitstrapPaymentCard = (
-    { shitstrapInfo: fallbackInfo, shitting, }: StatefulShitStrapPaymentCardProps) => {
+    { shitstrapInfo: fallbackInfo, shitting, queryClient }: StatefulShitStrapPaymentCardProps) => {
     const { t } = useTranslation()
     const { chainId } = useChain()
     const { bech32Prefix, } = getChainForChainId(chainId)
-    const queryClient = useQueryClient()
-
 
     const { goToDaoProposal } = useDaoNavHelpers()
     const [mode, setMode] = useState(ShitstrapPaymentMode.Payment)
@@ -138,7 +136,7 @@ export const ShitstrapPaymentCard = (
     const freshInfo = useQueryLoadingDataWithError(
         cwShitstrapExtraQueries.info(queryClient, {
             chainId,
-            address: fallbackInfo.shitstrapContractAddr,
+            contractAddress: fallbackInfo.shitstrapContractAddr,
         })
     )
     const shitstrapInfo = freshInfo.loading || freshInfo.errored ? undefined : freshInfo.data
@@ -189,11 +187,11 @@ export const ShitstrapPaymentCard = (
         // console.log("estimatedToken",estimatedToken)
 
         const thisdebu = !entity.loading ? entity.data : undefined
-        console.log(thisdebu)
-        console.log()
-        console.log(balances)
-        console.log(daoChainID)
-        console.log(chainId)
+        // console.log(thisdebu)
+        // console.log()
+        // console.log(balances)
+        // console.log(daoChainID)
+        // console.log(chainId)
         return () => clearTimeout(timeout)
     }, [usingOwnShit, entity])
     useEffect(() => {
@@ -432,23 +430,28 @@ export const ShitstrapPaymentCard = (
                         {mode === ShitstrapPaymentMode.OverFlow ? <></> : null}
                     </div>
                     {!entity.loading && (
+
                         <div className="flex flex-col gap-2 border-t border-border-secondary px-6 py-4">
-                            <p className="link-text mb-1">{t('info.previewShitstrapPayment')}</p>
-                            <div className="flex flex-row items-center justify-between gap-8">
-                                {estimatedToken}
-                                <p className="link-text mb-1">{t('title.estimatedToShit')}</p>
-                                {tokenToShit && estimatedToken && (
-                                    <TokenAmountDisplay
-                                        showAllDecimals={true}
-                                        showFullAmount={true}
-                                        amount={HugeDecimal.from(estimatedToken).toNumber()}
-                                        className="grow text-sm"
-                                        decimals={tokenToShit.decimals}
-                                        hideSymbol={false}
-                                        symbol={tokenToShit.symbol}
-                                    />
-                                )}
-                            </div>
+                            {mode == ShitstrapPaymentMode.Payment ? (<>
+                                <p className="link-text mb-1">{t('info.previewShitstrapPayment')}</p>
+                                <div className="flex flex-row items-center justify-between gap-8">
+
+                                    <p className="link-text mb-1">{t('title.estimatedToShit')}</p>
+                                    {tokenToShit && estimatedToken && (
+                                        <TokenAmountDisplay
+                                            showAllDecimals={true}
+                                            showFullAmount={true}
+                                            amount={HugeDecimal.from(estimatedToken).toNumber()}
+                                            iconUrl={tokenToShit.imageUrl}
+                                            className="grow text-sm"
+                                            decimals={tokenToShit.decimals}
+                                            hideSymbol={false}
+                                            symbol={tokenToShit.symbol}
+                                        />
+                                    )}
+                                </div>
+
+                            </>) : undefined}
 
 
                             {onShitstrapPayment && (
@@ -459,13 +462,15 @@ export const ShitstrapPaymentCard = (
                                     onClick={onShitstrapPayment}
                                     variant="brand"
                                 >
-                                    {t('button.makeShitStrapPayment')}
+                                    {mode == ShitstrapPaymentMode.Flush ? (<>{t('button.flushShitstrap')}</>) : (<>{t('button.makeShitStrapPayment')}</>)}
+
                                 </Button>
                             )}
+
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
         </>
     )
 }

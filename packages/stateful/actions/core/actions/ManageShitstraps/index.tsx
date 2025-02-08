@@ -1,4 +1,4 @@
-import { useQueries } from '@tanstack/react-query'
+import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { ComponentType } from 'react'
 
 import { useTranslation } from 'react-i18next'
@@ -12,7 +12,7 @@ import {
   UncheckedDenom,
 } from '@dao-dao/types/contracts/ShitStrap'
 import { HugeDecimal } from '@dao-dao/math'
-import { cwShitstrapExtraQueries, cwShitstrapFactoriesExtraQuery, tokenQueries } from "@dao-dao/state/query"
+import { cwShitstrapExtraQueries, cwShitstrapFactoriesExtraQuery, shitStrapQueries, tokenQueries } from "@dao-dao/state/query"
 import {
   ActionBase,
   AddressInput,
@@ -31,6 +31,7 @@ import {
   ActionOptions,
   DurationWithUnits,
   GenericToken,
+  LoadingDataWithError,
   ProcessedMessage,
   SegmentedControlsProps,
   ShitstrapPaymentMode,
@@ -61,12 +62,12 @@ import {
 import { ShitstrapPaymentWidgetData } from '../../../../widgets/widgets/Shitstrap/types'
 
 import { CreateShitstrap, CreateShitstrapData } from './CreateShitstrap'
-import { FlushShitstrapData } from './FlushShitstrap'
+import { FlushShitstrap, FlushShitstrapData } from './FlushShitstrap'
 import {
   MakeShitstrapPayment,
   MakeShitstrapPaymentData,
 } from './MakeShitstrapPayment'
-import { ShitstrapOverFlowData } from './ShitstrapOverFlow'
+import { RedeemShitstrapOverflow, ShitstrapOverFlowData } from './ShitstrapOverFlow'
 
 // data coming from action tabs content
 export type ManageShitStrapData = {
@@ -142,13 +143,11 @@ const getShitstrapContractsOwnedByEntityQueries = (
   options: ActionOptions,
   widgetData?: ShitstrapPaymentWidgetData
 ) => {
-  // console.log("widgetData", widgetData)
-  // console.log("options", options)
   // retrieves shitstrap manager data from items saved in dao contract state.
   const sources =
     widgetData && getShitstrapSourcesFromWidgetData(options, widgetData)
 
-  const thisthing = options.context.accounts.flatMap(({ chainId, address: accountAddr }) =>
+  const allShitstrapsForSelectedChain = options.context.accounts.flatMap(({ chainId, address: accountAddr }) =>
     chainIsIndexed(chainId) && sources?.[chainId]?.factory ?
       cwShitstrapFactoriesExtraQuery.listAllShitstrapContractsByInstantiator(
         options.queryClient,
@@ -168,8 +167,7 @@ const getShitstrapContractsOwnedByEntityQueries = (
           })
         : []
   )
-  // console.log("thisthing", thisthing)
-  return thisthing
+  return allShitstrapsForSelectedChain
 }
 
 
@@ -201,7 +199,7 @@ const Component: ComponentType<
   const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
 
   const shitstrapContracts = useShitstrapContractsOwnedByEntity()
-  // console.log(shitstrapContracts)
+
   const tokenBalances = useTokenBalances()
   const selectedChainId =
     mode === 'create'
@@ -215,6 +213,19 @@ const Component: ComponentType<
               (props.fieldNamePrefix + 'overflow.chainId') as 'overflow.chainId'
             )
             : nativeChainId
+
+
+  const selectedShitstrapContract =
+    mode === 'payment'
+      ? watch((props.fieldNamePrefix + 'payment.shitstrapAddress') as 'payment.shitstrapAddress')
+      : mode === 'flush'
+        ? watch((props.fieldNamePrefix + 'flush.shitstrapAddress') as 'flush.shitstrapAddress')
+        // : mode === 'overflow'
+        //   ? watch(
+        //     (props.fieldNamePrefix + 'overflow.chainId') as 'overflow.chainId'
+        //   )
+        : nativeChainId
+
 
   const tabs: SegmentedControlsProps<ManageShitStrapData['mode']>['tabs'] = [
     // Only allow beginning a vest if widget is setup.
@@ -234,12 +245,15 @@ const Component: ComponentType<
         },
         {
           label: t('title.refundShitstrapOverflow'),
-          value: 'refund',
+          value: 'overflow',
         },
       ] as TypedOption<ManageShitStrapData['mode']>[])
       : []),
   ]
   const selectedTab = tabs.find((tab) => tab.value === mode)
+
+  const queryClient = useQueryClient()
+
   return (
     <SuspenseLoader
       fallback={<Loader />}
@@ -260,7 +274,6 @@ const Component: ComponentType<
       ) : (
         <p className="title-text mb-2">{selectedTab?.label}</p>
       )}
-      ˝
       {mode === ShitstrapPaymentMode.Create ? (
         <>
           {console.log(widgetData)}
@@ -283,14 +296,40 @@ const Component: ComponentType<
           errors={props.errors?.create}
           fieldNamePrefix={props.fieldNamePrefix + 'payment.'}
           options={{
+            queryClient,
             factories: {},
             widgetData,
             tokens: tokenBalances.loading ? [] : tokenBalances.data,
           }}
         />
       ) : null}
-      {mode === ShitstrapPaymentMode.Flush ? <></> : null}
-      {mode === ShitstrapPaymentMode.OverFlow ? <></> : null}
+      {mode === ShitstrapPaymentMode.Flush ? <FlushShitstrap
+
+        {...props}
+        errors={props.errors?.create}
+        fieldNamePrefix={props.fieldNamePrefix + 'flush.'}
+        options={{
+          queryClient,
+          factories: {},
+          widgetData,
+          tokens: tokenBalances.loading ? [] : tokenBalances.data,
+          daoShitstraps: shitstrapContracts,
+        }}
+      /> : null}
+      {mode === ShitstrapPaymentMode.OverFlow ?
+        <RedeemShitstrapOverflow
+
+          {...props}
+          errors={props.errors?.create}
+          fieldNamePrefix={props.fieldNamePrefix + 'overflow.'}
+          options={{
+            queryClient,
+            factories: {},
+            widgetData,
+            tokens: tokenBalances.loading ? [] : tokenBalances.data,
+            daoShitstraps: shitstrapContracts,
+          }}
+        /> : null}
     </SuspenseLoader>
   )
 }
@@ -347,22 +386,18 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
   }
 
   async setup() {
-    // console.log("this.widgetData:", this.widgetData)
-    // console.log("this.options.context.type:", this.options.context.type)
-
     const contractsResults = await Promise.all(
       getShitstrapContractsOwnedByEntityQueries(this.options, this.widgetData).map((query) =>
         this.options.queryClient.fetchQuery(query)
       )
     )
 
-    const infoQueries = contractsResults
-      .flat()
+    const infoQueries = contractsResults.flat()
       .map((result) =>
         result.contracts.map((contract) =>
           cwShitstrapExtraQueries.info(this.options.queryClient, {
             chainId: result.chainId,
-            address: contract.contract,
+            contractAddress: contract.contract,
           })
         )
       )
@@ -398,7 +433,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
       },
       flush: {
         chainId: this.options.chain.chainId,
-        shitstrap: '', // or some default value
+        shitstrapAddress: '', // or some default value
         owner: '',
       },
       payment: {
@@ -441,7 +476,6 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
           })
         )
       }
-      // console.log("shitstrapSource:", shitstrapSource)
 
       const instantiateMsg: ShitstrapInstantiateMsg = {
         title: create.title,

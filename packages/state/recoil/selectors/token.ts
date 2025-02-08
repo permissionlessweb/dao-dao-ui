@@ -230,7 +230,7 @@ export const genericTokenBalancesSelector = selectorFamily<
           : []
       )[0]
 
-      console.log(address, cw20TokenBalances)
+      // console.log(address, cw20TokenBalances)
 
       return [
         ...nativeTokenBalances.map((native) => ({
