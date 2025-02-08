@@ -148,24 +148,16 @@ const getShitstrapContractsOwnedByEntityQueries = (
     widgetData && getShitstrapSourcesFromWidgetData(options, widgetData)
 
   const allShitstrapsForSelectedChain = options.context.accounts.flatMap(({ chainId, address: accountAddr }) =>
-    chainIsIndexed(chainId) && sources?.[chainId]?.factory ?
+    sources?.[chainId]?.factory ?
       cwShitstrapFactoriesExtraQuery.listAllShitstrapContractsByInstantiator(
         options.queryClient,
         {
           chainId,
           address: sources?.[chainId]?.factory!,
           instantiator: accountAddr,
-        }
-      )
-      : sources?.[chainId]?.factory ?
-        cwShitstrapFactoriesExtraQuery.listAllShitstrapContractsByInstantiator(
-          options.queryClient,
-          {
-            chainId,
-            address: sources?.[chainId]?.factory!,
-            instantiator: accountAddr,
-          })
-        : []
+        })
+      : []
+
   )
   return allShitstrapsForSelectedChain
 }
@@ -185,6 +177,8 @@ const useShitstrapContractsOwnedByEntity = () => {
   })
 }
 
+
+
 const Component: ComponentType<
   ActionComponentProps<undefined, ManageShitStrapData> & {
     widgetData?: ShitstrapPaymentWidgetData
@@ -198,9 +192,8 @@ const Component: ComponentType<
 
   const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
 
-  const shitstrapContracts = useShitstrapContractsOwnedByEntity()
-
   const tokenBalances = useTokenBalances()
+  
   const selectedChainId =
     mode === 'create'
       ? watch((props.fieldNamePrefix + 'create.chainId') as 'create.chainId')
@@ -220,11 +213,11 @@ const Component: ComponentType<
       ? watch((props.fieldNamePrefix + 'payment.shitstrapAddress') as 'payment.shitstrapAddress')
       : mode === 'flush'
         ? watch((props.fieldNamePrefix + 'flush.shitstrapAddress') as 'flush.shitstrapAddress')
-        // : mode === 'overflow'
-        //   ? watch(
-        //     (props.fieldNamePrefix + 'overflow.chainId') as 'overflow.chainId'
-        //   )
-        : nativeChainId
+        : mode === 'overflow'
+          ? watch(
+            (props.fieldNamePrefix + 'overflow.shitstrapAddress') as 'overflow.shitstrapAddress'
+          )
+          : undefined
 
 
   const tabs: SegmentedControlsProps<ManageShitStrapData['mode']>['tabs'] = [
@@ -309,11 +302,8 @@ const Component: ComponentType<
         errors={props.errors?.create}
         fieldNamePrefix={props.fieldNamePrefix + 'flush.'}
         options={{
-          queryClient,
-          factories: {},
           widgetData,
           tokens: tokenBalances.loading ? [] : tokenBalances.data,
-          daoShitstraps: shitstrapContracts,
         }}
       /> : null}
       {mode === ShitstrapPaymentMode.OverFlow ?
@@ -323,11 +313,8 @@ const Component: ComponentType<
           errors={props.errors?.create}
           fieldNamePrefix={props.fieldNamePrefix + 'overflow.'}
           options={{
-            queryClient,
-            factories: {},
             widgetData,
             tokens: tokenBalances.loading ? [] : tokenBalances.data,
-            daoShitstraps: shitstrapContracts,
           }}
         /> : null}
     </SuspenseLoader>

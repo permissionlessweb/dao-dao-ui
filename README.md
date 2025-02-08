@@ -8,23 +8,17 @@
 ## SHITSTRAP TODO
 - [// indexer:  listAllShitstrapContractsByInstantiator](https://github.com/hard-nett/dao-dao-ui/blob/baf82f008d52446ccfa31bc9bc6deeb593435146/packages/stateful/widgets/widgets/Shitstrap/Renderer/TabRenderer/index.tsx#L52) (not created by DAO)
 - ibc deposit modal 
-- improved  conversion ratio view
+- improved conversion ratio view
 - filters:
   - by chain 
   - by accepted tokens 
   - by shitstrap recipient
 - validate minimum shit rates and cutoffs with each other
-- create: Choose any token when creating shitstrap (proposal deposit for reference)
-- payment: do not allow proposal form to begin if wallet or dao does not have token
-- payment: manually choose DAO to propose to pay for shitstrap  
-- payment: query maximum payment left for shitstrap
 - shitstraps: Add filtering support
-- Improve shitstrap line
-  - Display remaining to shit
+- shitstrap-lines: complete fund shitstrap if does not have shit balance  
+  - create proposal if dao or otherwise immediately fund from connected wallet otherwise
   - Display if funded or not
-- Improve shitstrap card
-  - Same as shitstrap line 
-  - Add button to fund shitstrap
+-  if wallet connected has balance 
     
 
 ~~- use chain prefix to trunicate factorytoken labels.~~

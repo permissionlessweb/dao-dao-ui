@@ -26,20 +26,7 @@ export type ShitstrapOverFlowData = {
 
 export type RedeemShitstrapOverflowOptions = {
   widgetData: ShitstrapPaymentWidgetData | undefined
-  queryClient: QueryClient
-  daoShitstraps: LoadingDataWithError<{ chainId: string, contracts: ArrayOfShitstrapContract }[]>
   tokens: GenericTokenBalanceWithOwner[]
-  /**
-   * A map of chain ID to current contract on that chain. This replaces the
-   * single `shitstrap` and allows for multiple chains.
-   */
-  factories: Record<
-    string,
-    {
-      address: string
-      version: 1
-    }
-  >
 }
 
 
@@ -53,11 +40,12 @@ export const RedeemShitstrapOverflow: ActionComponent<
   remove,
   index: actionIndex,
   allActionsWithData,
-  options: { widgetData, queryClient, daoShitstraps, tokens, factories },
+  options: { widgetData, tokens, },
 }) => {
 
     const { t } = useTranslation()
     const actionOptions = useActionOptions()
+    const queryClient = actionOptions.queryClient
     const {
       control,
       register,
@@ -87,7 +75,63 @@ export const RedeemShitstrapOverflow: ActionComponent<
     )
     const shitstrapFactoryExists = !!widgetData?.factories?.[watchChainId]
 
-    // Grabs all shitstraps created from the factory saved in daos widget item
+
+    // handle loading and affirm shitstrap contract
+    const onChooseExistingContract = useRecoilCallback(
+      ({ snapshot }) =>
+        async () => {
+          setChooseLoading(true)
+          try {
+            clearErrors(
+              (fieldNamePrefix + 'shitstrapAddress') as 'shitstrapAddress'
+            )
+            // Manually validate the contract address.
+            const valid = await trigger(
+              (fieldNamePrefix + 'shitstrapAddress') as 'shitstrapAddress'
+            )
+            console.log("valid:", valid)
+            if (!valid) {
+              // Error will be set by trigger.
+              return
+            }
+            // Should never happen due to validation above; just typecheck.
+            if (!watchShitstrapAddress) {
+              throw new Error(t('error.loadingData'))
+            }
+            setChoossetContractChosen(true)
+            const info = await queryClient.fetchQuery(
+              shitStrapQueries.config(queryClient, {
+                chainId: watchChainId,
+                contractAddress: watchShitstrapAddress!,
+              })
+            )
+            if (typeof info.full_of_shit !== 'boolean') {
+              throw new Error(t('error.notAShitstrapAddress'))
+            }
+            console.log('all good!')
+            console.log("info:", info)
+
+            setShitstrapInfo(info as ShitstrapConfig | undefined)
+          } catch (err) {
+            console.error(err)
+            setError(
+              (fieldNamePrefix + 'shitstrapAddress') as 'shitstrapAddress',
+              {
+                type: 'custom',
+                message:
+                  err instanceof Error ? err.message : `${processError(err)}`,
+              }
+            )
+            return
+          } finally {
+            setChooseLoading(false)
+          }
+        },
+      [
+        setChooseLoading,
+      ]
+    )
+
     return (
       <ChainProvider chainId={watchChainId}>
         <p className="max-w-prose">{t('info.shitstrapOverFlowDescription')}</p>
@@ -150,7 +194,7 @@ export const RedeemShitstrapOverflow: ActionComponent<
             <Button
               className="self-end"
               loading={chooseLoading}
-              onClick={undefined}
+              onClick={onChooseExistingContract}
               size="lg"
             >
               {t('button.continue')}

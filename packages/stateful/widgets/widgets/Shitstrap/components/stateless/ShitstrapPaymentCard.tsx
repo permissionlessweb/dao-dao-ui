@@ -47,7 +47,7 @@ import {
     useQueryLoadingDataWithError,
     useWallet,
 } from '../../../../../hooks'
-import { useMakeShitstrapPayment } from '../../../../../hooks/contracts/CwShitstrap'
+import { useFlush, useMakeShitstrapPayment } from '../../../../../hooks/contracts/CwShitstrap'
 import { entityQueries } from '../../../../../queries'
 import { useTokenBalances } from '../../../../../actions'
 
@@ -76,25 +76,6 @@ export const ShitstrapPaymentCard = (
     )
 
     const isIbc = !!daoChainID && !!chainId && daoChainID !== chainId
-
-
-    // // Load balances as loadables since they refresh automatically on a timer.
-    // const currentEntityTokenBalances = useCachedLoading(
-    //     entity &&
-    //         !entity.loading &&
-    //         entity.data ? genericTokenBalancesSelector({
-    //             chainId: chainId,
-    //             address: entity.data.address,
-    //             filter: {
-    //                 account: {
-    //                     chainId,
-    //                     address: entity.data.polytoneProxy ? entity.data.polytoneProxy.address : entity.data.address,
-    //                 },
-    //             },
-    //         })
-    //         : undefined,
-    //     []
-    // )
 
 
     const balances = useCachedLoading(
@@ -207,10 +188,49 @@ export const ShitstrapPaymentCard = (
         contractAddress: shitstrapInfo ? shitstrapInfo.shitstrapContractAddr : fallbackInfo.shitstrapContractAddr,
         sender: walletAddress,
     })
+    const makeShitstrapFlush = useFlush({
+        contractAddress: shitstrapInfo ? shitstrapInfo.shitstrapContractAddr : fallbackInfo.shitstrapContractAddr,
+        sender: walletAddress,
+    })
 
     // const shitAction = useInitializedActionForKey(ActionKey.ManageShitstrap)
     const [makingPayment, setMakingPayment] = useState(false)
     const awaitNextBlock = useAwaitNextBlock()
+    const onFlushShitstrap = async () => {
+        try {
+            if (!entity.loading && !usingOwnShit) {
+                await goToDaoProposal(entity.data.address, 'create', {
+                    prefill: getDaoProposalSinglePrefill({
+                        actions: [
+                            {
+                                actionKey: ActionKey.Execute,
+                                data: {
+                                    chainId,
+                                    address: shitstrapInfo ? shitstrapInfo.shitstrapContractAddr : fallbackInfo.shitstrapContractAddr,
+                                    message: JSON.stringify({ flush: {} }, null, 2),
+                                    funds: [],
+                                    cw20: false,
+                                },
+                            },
+                        ],
+                    }),
+                })
+
+            } else if (!entity.loading && usingOwnShit) {
+            } else if (watchShitToken && watchShitToken.type == TokenType.Native && usingOwnShit) {
+                if (shitstrapInfo?.owner == walletAddress) {
+                    await makeShitstrapFlush('auto', 'flush shitstrap', [])
+                }
+
+            }
+        } catch (err) {
+            console.error(err)
+            toast.error(processError(err))
+        } finally {
+            setMakingPayment(false)
+        }
+    }
+
     const onShitstrapPayment = async () => {
         setMakingPayment(true)
         try {
@@ -454,18 +474,17 @@ export const ShitstrapPaymentCard = (
                             </>) : undefined}
 
 
-                            {onShitstrapPayment && (
-                                <Button
-                                    center
-                                    className="mt-2"
-                                    loading={shitting}
-                                    onClick={onShitstrapPayment}
-                                    variant="brand"
-                                >
-                                    {mode == ShitstrapPaymentMode.Flush ? (<>{t('button.flushShitstrap')}</>) : (<>{t('button.makeShitStrapPayment')}</>)}
 
-                                </Button>
-                            )}
+                            <Button
+                                center
+                                className="mt-2"
+                                loading={shitting}
+                                onClick={mode == ShitstrapPaymentMode.Flush ? onFlushShitstrap : onShitstrapPayment}
+                                variant="brand"
+                            >
+                                {mode == ShitstrapPaymentMode.Flush ? (<>{t('button.flushShitstrap')}</>) : (<>{t('button.makeShitStrapPayment')}</>)}
+                            </Button>
+
 
                         </div>
                     )}
