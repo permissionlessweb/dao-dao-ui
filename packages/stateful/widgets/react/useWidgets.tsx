@@ -7,6 +7,7 @@ import { useChain, useDao } from '@dao-dao/stateless'
 import {
   LoadedWidget,
   LoadingData,
+  WidgetId,
   WidgetLocation,
   WidgetVisibilityContext,
 } from '@dao-dao/types'
@@ -31,47 +32,84 @@ export const useWidgets = ({
   const { items } = useDao().info
   const { isMember = false } = useMembership()
 
+
+
   const loadingWidgets = useMemo((): LoadingData<LoadedWidget[]> => {
-    const daoWidgets = getDaoWidgets(items)
+
+    const infusionWidget = getDaoWidgets({ "widget:infusions": "{}" }).map((daoWidget): LoadedWidget | undefined => {
+      const widget = getWidgetById(chainId, daoWidget.id)
+      // Enforce location filter.
+      if (!widget || (location && widget.location !== location)) {
+        return
+      }
+      // Enforce visibility context.
+      switch (widget.visibilityContext) {
+        case WidgetVisibilityContext.OnlyMembers:
+          if (!isMember) {
+            return
+          }
+          break
+        case WidgetVisibilityContext.OnlyNonMembers:
+          if (isMember) {
+            return
+          }
+          break
+      }
+      // Fill component with loaded values.
+      const WidgetComponent = () => (
+        <widget.Renderer variables={(daoWidget.values || {}) as any} />
+      )
+
+      return {
+        title: t('widgetTitle.' + widget.id),
+        widget,
+        daoWidget,
+        WidgetComponent,
+      }
+
+    })      // Filter out any undefined widgets.
+      .filter((widget): widget is LoadedWidget => !!widget)
+
+    const daoWidgets = getDaoWidgets(items).map((daoWidget): LoadedWidget | undefined => {
+      const widget = getWidgetById(chainId, daoWidget.id)
+      // Enforce location filter.
+      if (!widget || (location && widget.location !== location)) {
+        return
+      }
+
+      // Enforce visibility context.
+      switch (widget.visibilityContext) {
+        case WidgetVisibilityContext.OnlyMembers:
+          if (!isMember) {
+            return
+          }
+          break
+        case WidgetVisibilityContext.OnlyNonMembers:
+          if (isMember) {
+            return
+          }
+          break
+      }
+
+      // Fill component with loaded values.
+      const WidgetComponent = () => (
+        <widget.Renderer variables={(daoWidget.values || {}) as any} />
+      )
+
+      return {
+        title: t('widgetTitle.' + widget.id),
+        widget,
+        daoWidget,
+        WidgetComponent,
+      }
+    })
+      // Filter out any undefined widgets.
+      .filter((widget): widget is LoadedWidget => !!widget)
 
     return {
       loading: false,
-      data: daoWidgets
-        .map((daoWidget): LoadedWidget | undefined => {
-          const widget = getWidgetById(chainId, daoWidget.id)
-          // Enforce location filter.
-          if (!widget || (location && widget.location !== location)) {
-            return
-          }
+      data: daoWidgets.concat(infusionWidget)
 
-          // Enforce visibility context.
-          switch (widget.visibilityContext) {
-            case WidgetVisibilityContext.OnlyMembers:
-              if (!isMember) {
-                return
-              }
-              break
-            case WidgetVisibilityContext.OnlyNonMembers:
-              if (isMember) {
-                return
-              }
-              break
-          }
-
-          // Fill component with loaded values.
-          const WidgetComponent = () => (
-            <widget.Renderer variables={(daoWidget.values || {}) as any} />
-          )
-
-          return {
-            title: t('widgetTitle.' + widget.id),
-            widget,
-            daoWidget,
-            WidgetComponent,
-          }
-        })
-        // Filter out any undefined widgets.
-        .filter((widget): widget is LoadedWidget => !!widget),
     }
   }, [items, isMember, t, location, chainId])
 
