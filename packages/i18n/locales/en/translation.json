@@ -1455,6 +1455,7 @@
     "rewardsRemainingTooltip": "The rewards that will be distributed to all members of the DAO proportional to their voting power.",
     "saveTransactionDescription": "Save this transaction so you can reuse it later. Using an existing name will overwrite the previous save.",
     "searchDaosPlaceholder": "Find a DAO...",
+    "searchShitstrapsPlaceholder": "Find a Shitstrap...",
     "searchDraftPlaceholder": "Find a draft...",
     "searchForAccount": "Search for an account...",
     "searchForChain": "Search for a chain...",
@@ -1735,7 +1736,8 @@
     "voteCast": "Vote successfully cast.",
     "withdrewPayment": "Withdrew payment."
   },
-  "title": {
+    "title": {
+    "infusedCollection": "Infused Collection",
     "404": "404: Not Found",
     "500": "500: Error",
     "availableShitstraps": "SEZ's Current Shitstrap List",
@@ -1848,6 +1850,7 @@
     "custom": "Custom",
     "customValidatorAddress": "Custom Validator Address",
     "dao": "DAO",
+    "shit": "Shit",
     "daoAdminExec": "DAO Admin Execute",
     "daoCreationProcess": "DAO Creation Process",
     "daoDaoCommunityStatistics": "DAO DAO Community Statistics",

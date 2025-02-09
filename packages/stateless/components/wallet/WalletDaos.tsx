@@ -62,7 +62,7 @@ export const WalletDaos = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-row items-stretch gap-2">
+        <div className="flex flex-row items-stretch gap-2">
         <SearchBar
           containerClassName="grow"
           placeholder={t('info.searchDaosPlaceholder')}

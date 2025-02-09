@@ -1,4 +1,4 @@
-import { ActionBase, Button, ChainProvider, Dropdown, ErrorPage, HorizontalNftCard, HorizontalNftCardLoader, InputErrorMessage, InputLabel, NativeCoinSelector, NumericInput } from "@dao-dao/stateless";
+import { ActionBase, Button, ChainProvider, Dropdown, ErrorPage, HorizontalNftCard, HorizontalInfusionCard, HorizontalNftCardLoader, InputErrorMessage, InputLabel, NativeCoinSelector, NumericInput, HorizontalInfusionCardProps } from "@dao-dao/stateless";
 import { ActionComponent, ActionOptions, AddressInputProps, GenericToken, GenericTokenBalance, LazyNftCardInfo, LoadingData, LoadingDataWithError, NftCardInfo, NftSelectionModalProps, TypedOption } from "@dao-dao/types";
 import { Bundle, Infusion, NFT } from "@dao-dao/types/contracts/CwInfuser";
 import { TransferNftData } from "../TransferNft/Component";
@@ -190,11 +190,10 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     const [showModal, setShowModal] = useState<boolean>(false)
 
 
-    // Create GenericToken with shitstrap ratio extended
-    const possibleCollections: TypedOption<InfusionCollections[]>[] = !infusion ? [] :
-        infusion.flatMap((asset, index) => {
 
-            const infsuions = asset.collections.flatMap((ii) => {
+    const possibleCollections: TypedOption<InfusionCollections[]>[] = !infusion ? [] :
+        infusion.flatMap((infusion, index) => {
+            const infsuions = infusion.collections.flatMap((ii) => {
                 return {
                     collection: ii.addr,
                     minRequired: ii.min_req,
@@ -202,10 +201,8 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                     paymentSubstitute: undefined
                 }
             })
-            // console.log(index, asset, somePossibleshit)
-            // const displayToken = asset.source.chainId != asset.chainId ? asset.symbol : asset.symbol
             return {
-                label: ``,
+                label: '', // get the collection address name of    
                 value: infsuions,
             }
         }
@@ -303,22 +300,16 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                     <InputErrorMessage error={errors?.collection} />
                 </div>
             </div>
+            {/* Create way to tab between infusions for a given */}
             <div className="flex flex-col gap-1">
                 {infusion && (<>
-                    <p className="primary-text mb-3">Infusion Info</p>
                     {infusion.map((ii, index) => {
+                        const newIi: HorizontalInfusionCardProps = { ...ii, chainId: watchChainId };
                         return (
                             <>
+                                <HorizontalInfusionCard key={index.toString()} {...newIi} />
                                 {/* display map of eligible infusion collections and the minimum needed */}
-                                <div onClick={(event) => event.stopPropagation()}>
-                                    <Dropdown
-                                        onSelect={handleSelect}
-                                        options={nftOptions}
-                                        placeholder={t('info.selectEligibleAsset', {
-                                            number: possibleCollections.length,
-                                        })}
-                                    />
-                                </div>
+
                             </>
                         )
                     })}

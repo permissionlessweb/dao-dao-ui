@@ -20,7 +20,6 @@ export type FlushShitstrapData = {
   owner: string
 }
 
-
 // query and filter all shitstraps owned by entity that are full
 //if none, display input for shitstrap contract address
 export type FlushShitstrapOptions = {

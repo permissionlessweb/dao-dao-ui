@@ -13,12 +13,6 @@ import { NFT } from "@dao-dao/types/contracts/CwInfuser";
 import { useTokenBalances } from "../../../hooks";
 import { HugeDecimal } from "@dao-dao/math";
 
-// Check if infuser is approved for this token id 
-const getIsInfuserApproved = (options: ActionOptions, nftAddr: string, spender: string, tokenId: string) => {
-    const infusionInfo = cw721BaseQueries.approval({ chainId: options.chain.chainId, contractAddress: nftAddr, args: { spender, tokenId } })
-    return infusionInfo
-}
-
 /**  
  * Get infusion config
  */
@@ -48,6 +42,14 @@ const getInfusionById = (
     })
     return infusionInfo
 }
+
+
+// Check if infuser is approved for this token id 
+const getIsInfuserApproved = (options: ActionOptions, nftAddr: string, spender: string, tokenId: string) => {
+    const infusionInfo = cw721BaseQueries.approval({ chainId: options.chain.chainId, contractAddress: nftAddr, args: { spender, tokenId } })
+    return infusionInfo
+}
+
 
 const useInfusionContractFromForm = (options: ActionOptions, infusionMinter: string, infusionId: string) => {
     return useQueries({
@@ -83,9 +85,7 @@ const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
     const watchInfusionBundles = watch((props.fieldNamePrefix + 'infusionBundles') as 'infusionBundles')
     const watchFunds = watch((props.fieldNamePrefix + 'funds') as 'funds')
     const watchTokenId = watch((props.fieldNamePrefix + 'tokenId') as 'tokenId')
-    const watchCollection = watch(
-        (props.fieldNamePrefix + 'collection') as 'collection'
-    )
+    const watchCollection = watch((props.fieldNamePrefix + 'collection') as 'collection')
 
     const cw20 = false
 

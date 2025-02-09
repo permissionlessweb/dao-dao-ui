@@ -758,7 +758,7 @@ export const getPublicKeyTypeForChain = (chainId: string): string => {
 
 /**for a given chain-id and denom address, get the Generic token source
  */
-export const lastDitchEffortFetchShitTokenSource = (
+export const  lastDitchEffortFetchShitTokenSource = (
   chainId: string,
   denomOrAddress: string
 ): GenericToken | undefined => {

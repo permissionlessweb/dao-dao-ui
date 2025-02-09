@@ -1,21 +1,29 @@
 import { Add, WarningRounded } from '@mui/icons-material'
-import { ComponentType, useCallback, useEffect, useState } from 'react'
+import { ComponentType, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
+  ButtonPopup,
   ChainProvider,
   DropdownIconButton,
   ErrorPage,
+  FormSwitch,
+  InputLabel,
   LineLoaders,
   Loader,
   Modal,
   NoContent,
+  SearchBar,
+  Switch,
   Tooltip,
+  useButtonPopupFilter,
   useDao,
   useDaoNavHelpers,
+  useSearchFilter,
 } from '@dao-dao/stateless'
 import {
   ButtonLinkProps,
+  FilterFn,
   GenericToken,
   GenericTokenSource,
   LoadingDataWithError,
@@ -23,6 +31,7 @@ import {
   StatefulShitStrapPaymentLineProps,
   TokenType,
   TransProps,
+  TypedOption,
   WidgetId,
 } from '@dao-dao/types'
 import { ShitstrapInfo, ShitstrapInfoGeneric } from '@dao-dao/types/contracts/ShitStrap'
@@ -32,6 +41,7 @@ import { QueryClient, useQueries, useQueryClient } from '@tanstack/react-query'
 import { makeCombineQueryResultsIntoLoadingDataWithError } from '@dao-dao/utils'
 import { tokenQueries } from '@dao-dao/state/query'
 import uniqBy from 'lodash.uniqby'
+import clsx from 'clsx'
 
 export interface TabRendererProps {
   shitStrapsLoading: LoadingDataWithError<ShitstrapInfoGeneric[]>
@@ -61,6 +71,7 @@ export const TabRenderer = ({
   const { daoSubpathComponents, goToDao } = useDaoNavHelpers()
   // get connected wallet details
   // const { address: walletAddress } = useWallet()
+  const [usingFilters, setUseFilters] = useState(false)
 
   const openShitstrapContract = daoSubpathComponents[0] === WidgetId.ShitStrap ? daoSubpathComponents[1] : undefined
 
@@ -80,7 +91,7 @@ export const TabRenderer = ({
     return !data.loading && !data.errored
   }
 
-
+  const allShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading) ? shitStrapsLoading.data : []
   const activeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading) ? shitStrapsLoading.data.filter(({ full }) => !full) : []
   const completeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading) ? shitStrapsLoading.data.filter(({ full }) => full) : []
 
@@ -100,13 +111,47 @@ export const TabRenderer = ({
     }),
   })
 
-
-
-
   const [showingCompleted, setShowingCompleted] = useState(false)
   const [shitstrapPaymentModalOpen, setShitstrapPaymentModalOpen] = useState(!!openShitstrapContract)
-
   const openShitstrapPayment = activeShitstraps.find(({ shitstrapContractAddr }) => shitstrapContractAddr === openShitstrapContract)
+
+  // 1. create filterable options from all shitstrap contracts DAO owns
+  // - accepted shit  
+  // - chain-id  
+  // - token 
+  const filterOptions = useMemo(
+    (): TypedOption<FilterFn<ShitstrapInfoGeneric>>[] => [
+      {
+        label: t('title.shit'),
+        value: ({ shit }) => shit,
+      },
+      {
+        label: t('title.cutoff'),
+        value: ({ cutoff }) => cutoff,
+      },
+      {
+        label: t('title.acceptedShit'),
+        value: ({ possibleShit }) => possibleShit,
+      },
+    ],
+    [t]
+  )
+
+  const {
+    filteredData: filteredShitstraps,
+    buttonPopupProps: filterDaosButtonProps,
+  } = useButtonPopupFilter({
+    data: allShitstraps,
+    options: filterOptions,
+  })
+
+
+  const { searchBarProps, filteredData: searchedDaos } = useSearchFilter({
+    data: filteredShitstraps,
+    filterableKeys: [],
+    querySyncedParam: 'dq',
+  })
+
 
   // Wait for modal to close before clearing the open shitstrap payment modal to prevent
   // UI flicker.
@@ -151,6 +196,37 @@ export const TabRenderer = ({
           <ErrorPage error={shitStrapsLoading.error} />
         ) : shitStrapsLoading.data.length ? (
           <div className="space-y-6 border-t border-border-secondary pt-6">
+            <div className="flex flex-row items-stretch gap-2">
+
+
+              <SearchBar
+                containerClassName="grow"
+                placeholder={t('info.searchShitstrapsPlaceholder')}
+                {...searchBarProps}
+              />
+
+              <ButtonPopup position="left" {...filterDaosButtonProps} />
+
+              <Switch
+                sizing="md"
+                enabled={usingFilters}
+                onClick={() => {
+                  if (usingFilters) {
+
+                    setUseFilters(false)
+                  } else {
+
+                    setUseFilters(true)
+                  }
+                }}
+              />
+              <InputLabel
+                name={t('title.filters')}
+
+              />
+            </div>
+
+
             {activeShitstraps.length > 0 && (
               <div className="space-y-1">
                 {/* <ActiveShitStrapLineHeader /> */}

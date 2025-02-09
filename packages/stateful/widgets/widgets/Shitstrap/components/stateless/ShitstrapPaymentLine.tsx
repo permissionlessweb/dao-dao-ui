@@ -86,10 +86,6 @@ export const ShitstrapPaymentLine = ({
     label: asset.label
   }))
 
-  const handleSelect = (option: typeof possibleShitOptions, index: number) => {
-    // Handle the selection of an option
-    // console.log(option, index)
-  }
 
   //  subtract the cutoff from what has been shit to 
   const leftToShit = HugeDecimal.from(shitstrapInfo.cutoff).minus(currentShitProgress)
@@ -97,20 +93,20 @@ export const ShitstrapPaymentLine = ({
   // if contract does not have atleast enought to shit, display a button to fund the shitstrap
   const [showingFundShitstrap, setShowFundShitstrap] = useState(false)
   const hasEnoughShit = !currentShitBalance ? undefined : currentShitBalance.find((a) => {
-
     if (a.token.denomOrAddress == shitstrapInfo.shit.denomOrAddress && leftToShit.gt(a.balance)) {
       return false
     }
     return true
   })
 
+  const handleSelect = (option: typeof possibleShitOptions, index: number) => {
+    console.log(option, index)
+  }
 
-
-
-  useEffect(() => {
-    console.log("leftToShit:", leftToShit)
-    console.log("shit.decimals:", shit.decimals)
-  }, [leftToShit])
+  // useEffect(() => {
+  //   console.log("leftToShit:", leftToShit)
+  //   console.log("shit.decimals:", shit.decimals)
+  // }, [leftToShit])
 
   return (
     <ChainProvider chainId={chainId}>
