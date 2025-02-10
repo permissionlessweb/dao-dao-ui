@@ -90,3 +90,9 @@ export interface Config {
 export type Boolean = boolean
 export type NullableUint128 = Uint128 | null
 export type NullableArrayOfPossibleShit = PossibleShit[] | null
+
+
+export interface PossibleShitWithGenericToken {
+  shit_rate: Uint128
+  token: GenericToken
+}

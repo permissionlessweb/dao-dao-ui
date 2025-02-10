@@ -18,11 +18,8 @@ import { shitStrapQueries, tokenQueries } from '@dao-dao/state/query'
 import { contractVersionSelector, genericTokenBalancesSelector } from '@dao-dao/state/recoil'
 import { ArrowForwardIos } from '@mui/icons-material'
 import { useEffect, useState } from 'react'
+import { PossibleShitWithGenericToken } from '@dao-dao/types/ShitStrap'
 
-interface PossibleShitWithGenericToken {
-  shit_rate: Uint128
-  token: GenericToken
-}
 
 export const ShitstrapPaymentLine = ({
   shitstrapInfo,
@@ -69,7 +66,6 @@ export const ShitstrapPaymentLine = ({
     })
 
 
-  // Create GenericToken with shitstrap ratio extended
   const possibleShitOptions: TypedOption<PossibleShitWithGenericToken>[] = eligibleShit.errored || eligibleShit.loading ? [] :
     shitstrapInfo.possibleShit.flatMap((asset, index) => {
       // console.log(index, asset, somePossibleshit)

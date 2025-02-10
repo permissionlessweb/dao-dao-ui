@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import {
   ButtonPopup,
   ChainProvider,
+  Dropdown,
   DropdownIconButton,
   ErrorPage,
   FormSwitch,
@@ -42,6 +43,8 @@ import { makeCombineQueryResultsIntoLoadingDataWithError } from '@dao-dao/utils'
 import { tokenQueries } from '@dao-dao/state/query'
 import uniqBy from 'lodash.uniqby'
 import clsx from 'clsx'
+import { HugeDecimal } from '@dao-dao/math'
+import { PossibleShitWithGenericToken } from '@dao-dao/types/ShitStrap'
 
 export interface TabRendererProps {
   shitStrapsLoading: LoadingDataWithError<ShitstrapInfoGeneric[]>
@@ -94,6 +97,10 @@ export const TabRenderer = ({
   const allShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading) ? shitStrapsLoading.data : []
   const activeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading) ? shitStrapsLoading.data.filter(({ full }) => !full) : []
   const completeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading) ? shitStrapsLoading.data.filter(({ full }) => full) : []
+  const [filteredShitstraps, setFilteredShitstraps] = useState(allShitstraps);
+  const shitstrapsToDisplay = filteredShitstraps.length != 0 ? filteredShitstraps : activeShitstraps
+
+
 
   const shitstrapEligibleAssetsGenericTokenLoading = useQueries({
     queries: activeShitstraps.flatMap(({ chainId, possibleShit }) =>
@@ -119,38 +126,30 @@ export const TabRenderer = ({
   // - accepted shit  
   // - chain-id  
   // - token 
-  const filterOptions = useMemo(
-    (): TypedOption<FilterFn<ShitstrapInfoGeneric>>[] => [
-      {
-        label: t('title.shit'),
-        value: ({ shit }) => shit,
-      },
-      {
-        label: t('title.cutoff'),
-        value: ({ cutoff }) => cutoff,
-      },
-      {
-        label: t('title.acceptedShit'),
-        value: ({ possibleShit }) => possibleShit,
-      },
-    ],
-    [t]
-  )
+  const possibleShitOptions: TypedOption<PossibleShitWithGenericToken>[] =
+    allShitstraps.flatMap((shitstrapInfo) => {
+      return shitstrapInfo.possibleShit.map((asset, index) => {
+        // console.log(index, asset, somePossibleshit)
+        const displayToken = asset.source.chainId != asset.chainId ? asset.symbol : asset.symbol
+        return {
+          label: asset.symbol,
+          value: { shit_rate: asset.shit_rate, token: asset },
+        }
+      })
+    })
 
-  const {
-    filteredData: filteredShitstraps,
-    buttonPopupProps: filterDaosButtonProps,
-  } = useButtonPopupFilter({
-    data: allShitstraps,
-    options: filterOptions,
-  })
+  const options = possibleShitOptions.map((asset, index) => ({
+    value: [asset],
+    label: asset.label
+  }))
 
+  const handleFilterByAcceptedShit = (option: typeof possibleShitOptions, index: number) => {
+    const filteredList = allShitstraps.filter(shitstrap => shitstrap.possibleShit.find((ac, index) => {
+      return ac.symbol === option[index].value.token.symbol
+    }));
+    setFilteredShitstraps(filteredList);
+  }
 
-  const { searchBarProps, filteredData: searchedDaos } = useSearchFilter({
-    data: filteredShitstraps,
-    filterableKeys: [],
-    querySyncedParam: 'dq',
-  })
 
 
   // Wait for modal to close before clearing the open shitstrap payment modal to prevent
@@ -199,41 +198,43 @@ export const TabRenderer = ({
             <div className="flex flex-row items-stretch gap-2">
 
 
-              <SearchBar
+              {/* <SearchBar
                 containerClassName="grow"
                 placeholder={t('info.searchShitstrapsPlaceholder')}
                 {...searchBarProps}
-              />
+              /> */}
+              {/* <ButtonPopup position="left" {...filterDaosButtonProps} /> */}
 
-              <ButtonPopup position="left" {...filterDaosButtonProps} />
+              {/* display map of eligible assets & their shit_rates */}
+              <div onClick={(event) => event.stopPropagation()}>
+                <Dropdown
+                  onSelect={handleFilterByAcceptedShit}
+                  options={options}
+                  placeholder={t('info.filterByAcceptedShit', {
+                    number: possibleShitOptions.length,
+                  })}
+                />
+              </div>
 
               <Switch
                 sizing="md"
                 enabled={usingFilters}
                 onClick={() => {
                   if (usingFilters) {
-
                     setUseFilters(false)
                   } else {
-
                     setUseFilters(true)
                   }
                 }}
               />
-              <InputLabel
-                name={t('title.filters')}
-
-              />
+              <InputLabel name={t('title.filters')} />
             </div>
-
-
-            {activeShitstraps.length > 0 && (
+            {shitstrapsToDisplay.length > 0 && (
               <div className="space-y-1">
                 {/* <ActiveShitStrapLineHeader /> */}
-                {activeShitstraps.map((shitstrapInfo, index) => (
+                {shitstrapsToDisplay.map((shitstrapInfo, index) => (
                   <ShitStrapLine
-                    key={shitstrapInfo.chainId +
-                      shitstrapInfo.shitstrapContractAddr}
+                    key={shitstrapInfo.chainId + shitstrapInfo.shitstrapContractAddr}
                     onClick={() => {
                       setShitstrapPaymentModalOpen(true)
                       setOpenShitStrapContract(shitstrapInfo.shitstrapContractAddr)

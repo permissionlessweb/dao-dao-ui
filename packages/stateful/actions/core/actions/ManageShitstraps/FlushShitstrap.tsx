@@ -38,7 +38,7 @@ export const FlushShitstrap: ActionComponent<
   remove,
   index: actionIndex,
   allActionsWithData,
-  options: { widgetData,  tokens },
+  options: { widgetData },
 }) => {
 
     const { t } = useTranslation()
