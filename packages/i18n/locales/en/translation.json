@@ -601,6 +601,8 @@
   "form": {
     "acceptSubDaoAddressInputLabel": "SubDAO to accept",
     "addAnImage": "Add an image",
+    "selectInfusionMinter": "Select Infusion Minter",
+    "selectInfusionID": "Select Infusion ID",
     "address": "Address",
     "addressInputPlaceholder_any": "Search profile or DAO name or enter an address...",
     "addressInputPlaceholder_contract": "Search DAO name or enter an address...",

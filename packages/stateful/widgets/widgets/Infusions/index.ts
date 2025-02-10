@@ -20,8 +20,8 @@ export const InfusionsWidget: Widget<InfusionWidgetData> = {
     defaultValues: {
         infusionId: '',
         infusionMinter: '',
-        selectedInfusionIndex: 0,
         fieldNamePrefix: 'infusion.'
+        // selectedInfusionIndex: '0',
         // description: '',
         // mint: {
         //   contract: '',

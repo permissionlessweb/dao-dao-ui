@@ -2,12 +2,13 @@ import { WidgetRendererProps } from "@dao-dao/types";
 import { InfusionWidgetData } from "./types";
 
 import { useWallet } from '../../../hooks/useWallet'
-import { HorizontalScroller, NftCard, useCachedLoadable, useChain } from "@dao-dao/stateless";
+import { AddressInput, ChainProvider, HorizontalInfusionCard, HorizontalInfusionCardProps, HorizontalScroller, NftCard, NumericInput, useCachedLoadable, useChain } from "@dao-dao/stateless";
 import { useTranslation } from "react-i18next";
 import { QueryClient, useQueries, useQueryClient } from "@tanstack/react-query";
 import { CommonNftSelectors, cwInfuserExtraQueries, nftQueries } from "@dao-dao/state";
-import { makeCombineQueryResultsIntoLoadingData, makeCombineQueryResultsIntoLoadingDataWithError } from "@dao-dao/utils";
-import { useFormContext } from "react-hook-form";
+import { isValidBech32Address, makeCombineQueryResultsIntoLoadingData, makeCombineQueryResultsIntoLoadingDataWithError, makeValidateAddress, validatePositive, validateRequired } from "@dao-dao/utils";
+import { FormProvider, useForm, useFormContext } from "react-hook-form";
+import InfusionItem from "../../../components/nft/InfusionItem";
 
 
 
@@ -30,20 +31,34 @@ export const InfusionsRenderer = ({
         fieldNamePrefix,
         infusionMinter,
         infusionId,
-        selectedInfusionIndex,
         // description,
         // mint: { contract, msg, buttonLabel },
     },
 }: WidgetRendererProps<InfusionWidgetData>) => {
+
+    const formMethods = useForm<InfusionWidgetData>({
+        defaultValues: {
+            fieldNamePrefix,
+            infusionMinter,
+            infusionId,
+        },
+    })
+
     const { t } = useTranslation()
-    const { chainId } = useChain()
+    const { chainId, bech32Prefix } = useChain()
     const {
         address: walletAddress = '',
         getSigningClient,
         isWalletConnected,
     } = useWallet()
 
-    const { watch, control, } = useFormContext<InfusionWidgetData>()
+    const {
+        watch,
+        control,
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = formMethods
 
     const watchInfusionMinter = watch((fieldNamePrefix + 'infusionMinter') as 'infusionMinter')
     const watchInfusionId = watch((fieldNamePrefix + 'infusionId') as 'infusionId')
@@ -53,44 +68,62 @@ export const InfusionsRenderer = ({
 
     const infusionInfoLDWE = useInfusionContract(queryClient, chainId, watchInfusionMinter, watchInfusionId)
     const infusionInfo = !infusionInfoLDWE.errored && !infusionInfoLDWE.loading ? infusionInfoLDWE.data : []
-    const selectedInfusion = infusionInfo[selectedInfusionIndex].infused_collection.addr!
-
-    // get nft collection from infusion minter
-    const allTokensLoadable = useCachedLoadable(
-        CommonNftSelectors.unpaginatedAllTokensSelector({
-            contractAddress: selectedInfusion,
-            chainId,
-        })
-    )
-
-    const first100Cards = useQueries({
-        queries:
-            allTokensLoadable.state === 'hasValue'
-                ? allTokensLoadable.contents.slice(0, 100).map((tokenId) =>
-                    nftQueries.cardInfo(queryClient, {
-                        collection: selectedInfusion,
-                        chainId,
-                        tokenId,
-                    })
-                )
-                : [],
-        combine: makeCombineQueryResultsIntoLoadingData(),
-    })
-
 
     return (
+        <FormProvider {...formMethods}>
+            <div className="flex grow flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                    <p className="primary-text mb-3">{t('form.selectInfusionMinter')}</p>
+                    <ChainProvider chainId={chainId}>
+                        <AddressInput
+                            fieldName={(fieldNamePrefix + 'infusionMinter') as 'infusionMinter'}
+                            register={register}
+                            validation={[
+                                validateRequired,
+                                // If executing smart contract, ensure recipient is smart
+                                // contract.
+                                // (executeSmartContract
+                                //     ? makeValidateAddress
+                                //     : makeValidateAddress)(chain.bech32_prefix),
+                                makeValidateAddress(bech32Prefix)
+                            ]}
+                        />
+                        <p className="primary-text mb-3">{t('form.selectInfusionId')}</p>
 
-        <div className="flex flex-col gap-4">
-            {(first100Cards.loading || first100Cards.data.length > 0) && (
-                <HorizontalScroller
-                    Component={NftCard}
-                    containerClassName="-mx-16 3xl:-mx-64 px-[1px]"
-                    itemClassName="w-64"
-                    items={first100Cards}
-                    shadowClassName="w-16 3xl:w-64"
-                />
-            )}
+                        {isValidBech32Address(watchInfusionMinter) ?
+                            <NumericInput
+                                fieldName={fieldNamePrefix + 'infusionId' as 'infusionId'}
+                                min={0}
+                                numericValue
+                                register={register}
+                                sizing="sm"
+                                step={1}
+                                validation={[validateRequired, validatePositive]}
+                            /> : null}
 
-        </div>
+
+                        {infusionInfo.length != 0 ?
+                            <>
+                                {infusionInfo.map((ii, index) => {
+                                    return (
+                                        <>
+                                            <InfusionItem infusionInfo={ii}
+                                                chainId={chainId}
+                                                queryClient={queryClient}
+                                                index={index.toString()}
+                                            />
+                                            {/* display map of eligible infusion collections and the minimum needed */}
+                                        </>
+                                    )
+                                })}
+
+                            </> : null}
+                    </ChainProvider>
+                    {/* <InputErrorMessage error={errors?.recipient} /> */}
+                </div>
+            </div>
+
+
+        </FormProvider>
     )
 }

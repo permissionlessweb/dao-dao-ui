@@ -5,7 +5,7 @@ export type InfusionWidgetData = {
     infusionMinter: string
     infusionId: string
     // the index of the infusion being viewed (each infusionId may have multiple infusion instances)
-    selectedInfusionIndex: number
+    // selectedInfusionIndex: string
     // // infusion
     // mint: {
     //   contract: string
