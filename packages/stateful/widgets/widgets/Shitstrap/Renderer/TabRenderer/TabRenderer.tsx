@@ -137,8 +137,20 @@ export const TabRenderer = ({
         }
       })
     })
+  const beingShitOptions: TypedOption<PossibleShitWithGenericToken>[] =
+    allShitstraps.flatMap((shitstrapInfo) => {
+      return {
+        label: shitstrapInfo.shit.symbol,
+        value: { shit_rate: shitstrapInfo.cutoff, token: shitstrapInfo.shit },
+      }
+    })
 
-  const options = possibleShitOptions.map((asset, index) => ({
+  const allPossibleShitOptions = possibleShitOptions.map((asset, index) => ({
+    value: [asset],
+    label: asset.label
+  }))
+
+  const allBeingShitOptions = beingShitOptions.map((asset, index) => ({
     value: [asset],
     label: asset.label
   }))
@@ -147,6 +159,12 @@ export const TabRenderer = ({
     const filteredList = allShitstraps.filter(shitstrap => shitstrap.possibleShit.find((ac, index) => {
       return ac.symbol === option[index].value.token.symbol
     }));
+    setFilteredShitstraps(filteredList);
+  }
+  
+  const handleFilterByBeingShit = (option: typeof beingShitOptions, index: number) => {
+    console.log(index)
+    const filteredList = allShitstraps.filter((shitstrap) => option[index].value.token.denomOrAddress === shitstrap.shit.denomOrAddress);
     setFilteredShitstraps(filteredList);
   }
 
@@ -197,37 +215,27 @@ export const TabRenderer = ({
           <div className="space-y-6 border-t border-border-secondary pt-6">
             <div className="flex flex-row items-stretch gap-2">
 
-
-              {/* <SearchBar
-                containerClassName="grow"
-                placeholder={t('info.searchShitstrapsPlaceholder')}
-                {...searchBarProps}
-              /> */}
-              {/* <ButtonPopup position="left" {...filterDaosButtonProps} /> */}
-
               {/* display map of eligible assets & their shit_rates */}
               <div onClick={(event) => event.stopPropagation()}>
                 <Dropdown
                   onSelect={handleFilterByAcceptedShit}
-                  options={options}
+                  options={allPossibleShitOptions}
                   placeholder={t('info.filterByAcceptedShit', {
                     number: possibleShitOptions.length,
                   })}
                 />
               </div>
 
-              <Switch
-                sizing="md"
-                enabled={usingFilters}
-                onClick={() => {
-                  if (usingFilters) {
-                    setUseFilters(false)
-                  } else {
-                    setUseFilters(true)
-                  }
-                }}
-              />
-              <InputLabel name={t('title.filters')} />
+              {/* display map of tokens being shit */}
+              <div onClick={(event) => event.stopPropagation()}>
+                <Dropdown
+                  onSelect={handleFilterByBeingShit}
+                  options={allBeingShitOptions}
+                  placeholder={t('info.filterByBeingShit', {
+                    number: possibleShitOptions.length,
+                  })}
+                />
+              </div>
             </div>
             {shitstrapsToDisplay.length > 0 && (
               <div className="space-y-1">
