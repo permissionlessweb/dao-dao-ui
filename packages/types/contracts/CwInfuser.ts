@@ -4,6 +4,9 @@
 * and run the @cosmwasm/ts-codegen generate command to regenerate this file.
 */
 
+import { Timestamp } from "./common";
+import { RoyaltyInfoResponse } from "./Sg721Base";
+
 export type Uint128 = string;
 export interface InstantiateMsg {
   admin?: string | null;
@@ -25,7 +28,7 @@ export type ExecuteMsg = {
   update_config: {};
 } | {
   create_infusion: {
-    collections: Infusion[];
+    infusions: Infusion[];
   };
 } | {
   infuse: {
@@ -43,6 +46,8 @@ export interface Infusion {
 export interface NFTCollection {
   addr: Addr;
   min_req: number;
+  max_req?: number | null;
+  payment_substitute?: Coin | null;
 }
 export interface InfusedCollection {
   addr?: string | null;
@@ -52,6 +57,10 @@ export interface InfusedCollection {
   num_tokens: number;
   sg: boolean;
   symbol: string;
+  royalty_info?: RoyaltyInfoResponse |  null;
+  start_trading_time?: Timestamp  | null;
+  explicit_content?: boolean | null;
+  external_link?: string | null;
 }
 export interface InfusionParams {
   min_per_bundle?: number | null;

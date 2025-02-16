@@ -189,6 +189,7 @@ export class InfusedNftAction extends ActionBase<InfuseNftsData> {
         })
 
         this.defaults = {
+            paymentSubstituteExists: false,
             chainId: options.chain.chainId,
             infusionMinter: '',
             infusionId: '0',
@@ -284,6 +285,7 @@ export class InfusedNftAction extends ActionBase<InfuseNftsData> {
     ]: ProcessedMessage[]): InfuseNftsData {
 
         return {
+            paymentSubstituteExists: false,
             chainId,
             infusionMinter: decodedMessage.wasm.execute.contract_addr,
             infusionId: decodedMessage.wasm.execute.msg.infuse.infusion_id,

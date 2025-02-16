@@ -6,6 +6,8 @@ import { HorizontalInfusionCard, HorizontalInfusionCardProps, HorizontalScroller
 import { Infusion } from "@dao-dao/types/contracts/CwInfuser";
 import { makeCombineQueryResultsIntoLoadingData } from "@dao-dao/utils";
 import { QueryClient, useQueries } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { EntityDisplay } from "../EntityDisplay";
 
 
 interface InfusionItemProps {
@@ -16,6 +18,8 @@ interface InfusionItemProps {
 }
 
 const InfusionItem: React.FC<InfusionItemProps> = ({ infusionInfo, chainId, queryClient, index }) => {
+    const { t } = useTranslation()
+
     const allTokensLoadable = useCachedLoadable(
         CommonNftSelectors.unpaginatedAllTokensSelector({
             contractAddress: infusionInfo.infused_collection.addr!,
@@ -37,10 +41,12 @@ const InfusionItem: React.FC<InfusionItemProps> = ({ infusionInfo, chainId, quer
         combine: makeCombineQueryResultsIntoLoadingData(),
     })
 
-    const newIi: HorizontalInfusionCardProps = { ...infusionInfo, chainId: chainId };
-    // Render your infusion item here
-    return <div>
+    const newIi: HorizontalInfusionCardProps = { ...infusionInfo, chainId: chainId, EntityDisplay };
+    return <>
         <HorizontalInfusionCard key={index.toString()} {...newIi} />
+
+        {/* Display current NFT Collection  Tokens */}
+        <p className="primary-text mb-3">{t('title.infusionCollection')}</p>
         <div className="flex flex-col gap-4">
             {(first100Cards.loading || first100Cards.data.length > 0) && (
                 <HorizontalScroller
@@ -53,7 +59,7 @@ const InfusionItem: React.FC<InfusionItemProps> = ({ infusionInfo, chainId, quer
             )}
         </div>
 
-    </div>;
+    </ >;
 };
 
 export default InfusionItem;

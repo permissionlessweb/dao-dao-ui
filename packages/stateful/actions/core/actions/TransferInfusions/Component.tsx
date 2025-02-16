@@ -1,6 +1,6 @@
-import { ActionBase, Button, ChainProvider, Dropdown, ErrorPage, HorizontalNftCard, HorizontalInfusionCard, HorizontalNftCardLoader, InputErrorMessage, InputLabel, NativeCoinSelector, NumericInput, HorizontalInfusionCardProps } from "@dao-dao/stateless";
+import { ActionBase, Button, ChainProvider, Dropdown, ErrorPage, HorizontalNftCard, HorizontalInfusionCard, HorizontalNftCardLoader, InputErrorMessage, InputLabel, NativeCoinSelector, NumericInput, HorizontalInfusionCardProps, FormSwitch } from "@dao-dao/stateless";
 import { ActionComponent, ActionOptions, AddressInputProps, GenericToken, GenericTokenBalance, LazyNftCardInfo, LoadingData, LoadingDataWithError, NftCardInfo, NftSelectionModalProps, TypedOption } from "@dao-dao/types";
-import { Bundle, Infusion, NFT } from "@dao-dao/types/contracts/CwInfuser";
+import { Bundle, Infusion, NFT, NFTCollection } from "@dao-dao/types/contracts/CwInfuser";
 import { TransferNftData } from "../TransferNft/Component";
 import { ComponentType, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,7 @@ import clsx from "clsx"
 import { useQueryClient } from "@tanstack/react-query";
 import { cw721BaseQueries, nftQueries } from "@dao-dao/state/query";
 import { Approval } from "@dao-dao/types/contracts/Sg721Base";
+import { EntityDisplay } from "../../../../components";
 
 
 interface InfusionCollections {
@@ -20,6 +21,7 @@ interface InfusionCollections {
 }
 
 export type InfuseNftsData = {
+    paymentSubstituteExists: boolean
     chainId: string
     infusionMinter: string
     infusionId: string
@@ -68,6 +70,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     const watchInfusionId = watch((fieldNamePrefix + 'infusionId') as 'infusionId')
     const watchCollection = watch((fieldNamePrefix + 'collection') as 'collection')
     const watchTokenId = watch((fieldNamePrefix + 'tokenId') as 'tokenId')
+    const watchPaymentInfusionExists = watch((fieldNamePrefix + 'paymentSubstituteExists') as 'paymentSubstituteExists')
 
     const watchInfuionBundles = watch(
         (fieldNamePrefix + 'infusionBundles') as 'infusionBundles'
@@ -103,13 +106,12 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     // if there are more than one bundle that have the nft collection being added, we check the number of the current nft collection are in the bundle. 
     /// if there is a bundle we can add the nft to, we add it to that one, or else we create a new bundle.
     const updateInfusionBundles = (nft: LazyNftCardInfo, remove: boolean = false) => {
-        const infusion = !infusionInfo.errored && !infusionInfo.loading ? infusionInfo.data : null
+
         const required = infusion?.[0]?.collections.find(
             (accNftColl) => accNftColl.addr === nft.collectionAddress
         )?.min_req
 
         if (remove) {
-            // Remove NFT from bundles
             const bundleIndex = infusionBundleFields.findIndex((bundle) =>
                 bundle.nfts.some(
                     (bnft) =>
@@ -152,9 +154,6 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                 }
             })
 
-            console.log("targetBundleIndex:", targetBundleIndex)
-            console.log("canAddToExisting:", canAddToExisting)
-
             if (canAddToExisting && targetBundleIndex !== -1) {
                 // Add to existing bundle
                 const updatedNfts = [
@@ -186,10 +185,22 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
         }
     }, [selectedKey, setError, clearErrors, t, fieldNamePrefix])
 
+    // when infusion ID or infusion contract is changed, reset selected nfts & funds 
+    useEffect(() => {
+        infusionBundleFields.forEach((_, index) => {
+            removeEligibleAsset(index);
+        });
+        coins.forEach((_, index) => {
+            removeCoin(index);
+        });
+
+        setValue((fieldNamePrefix + 'collection') as 'collection', '')
+        setValue((fieldNamePrefix + 'tokenId') as 'tokenId', '')
+    }, [watchInfusionId, watchInfusionMinter]);
+
 
     const [showModal, setShowModal] = useState<boolean>(false)
-
-
+    const [paymentSubstituteEligible, setPaymentSubEligible] = useState<boolean>(false)
 
     const possibleCollections: TypedOption<InfusionCollections[]>[] = !infusion ? [] :
         infusion.flatMap((infusion, index) => {
@@ -217,6 +228,12 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
         // Handle the selection of an option
         console.log(option, index)
     }
+
+    const paymentSubstituteEligibleCollection = watchInfusionMinter && infusion && infusion[0].collections.filter((a) => {
+        if (a.payment_substitute) {
+            return a
+        }
+    })
 
     return (
         <>
@@ -248,18 +265,36 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                                     : t('form.infusionId')}
                             </p>
 
-                            {isValidBech32Address(watchInfusionMinter) ? <NumericInput
-                                disabled={!isCreating}
-                                error={errors?.codeId}
-                                fieldName={fieldNamePrefix + 'infusionId' as 'infusionId'}
-                                min={0}
-                                numericValue
-                                register={register}
-                                sizing="sm"
-                                step={1}
-                                validation={[validateRequired, validatePositive]}
-                            /> : null}
+                            {isValidBech32Address(watchInfusionMinter) ?
+                                <NumericInput
+                                    disabled={!isCreating}
+                                    error={errors?.codeId}
+                                    fieldName={fieldNamePrefix + 'infusionId' as 'infusionId'}
+                                    min={0}
+                                    numericValue
+                                    register={register}
+                                    sizing="sm"
+                                    step={1}
+                                    validation={[validateRequired, validatePositive]}
+                                /> : null}
 
+                            {
+                                paymentSubstituteEligibleCollection && paymentSubstituteEligibleCollection.length != 0 ? <>
+                                    <div className="flex flex-row gap-3 items-center">
+                                        <FormSwitch
+                                            fieldName={fieldNamePrefix + 'paymentSubstituteExists' as 'paymentSubstituteExists'}
+                                            setValue={setValue}
+                                            sizing="md"
+                                            value={watchPaymentInfusionExists}
+                                        />
+
+                                        <InputLabel
+                                            name={t('title.usePaymentSubstitute')}
+                                            title
+                                        />
+
+                                    </div></> : undefined
+                            }
                         </ChainProvider>
                         <InputErrorMessage error={errors?.recipient} />
                     </div>
@@ -304,7 +339,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
             <div className="flex flex-col gap-1">
                 {infusion && (<>
                     {infusion.map((ii, index) => {
-                        const newIi: HorizontalInfusionCardProps = { ...ii, chainId: watchChainId };
+                        const newIi: HorizontalInfusionCardProps = { ...ii, chainId: watchChainId, EntityDisplay };
                         return (
                             <>
                                 <HorizontalInfusionCard key={index.toString()} {...newIi} />

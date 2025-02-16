@@ -63,7 +63,6 @@ export const InfusionsRenderer = ({
     const watchInfusionMinter = watch((fieldNamePrefix + 'infusionMinter') as 'infusionMinter')
     const watchInfusionId = watch((fieldNamePrefix + 'infusionId') as 'infusionId')
 
-
     const queryClient = useQueryClient()
 
     const infusionInfoLDWE = useInfusionContract(queryClient, chainId, watchInfusionMinter, watchInfusionId)
@@ -71,36 +70,39 @@ export const InfusionsRenderer = ({
 
     return (
         <FormProvider {...formMethods}>
-            <div className="flex grow flex-col gap-4">
-                <div className="flex flex-col gap-1">
-                    <p className="primary-text mb-3">{t('form.selectInfusionMinter')}</p>
-                    <ChainProvider chainId={chainId}>
-                        <AddressInput
-                            fieldName={(fieldNamePrefix + 'infusionMinter') as 'infusionMinter'}
-                            register={register}
-                            validation={[
-                                validateRequired,
-                                // If executing smart contract, ensure recipient is smart
-                                // contract.
-                                // (executeSmartContract
-                                //     ? makeValidateAddress
-                                //     : makeValidateAddress)(chain.bech32_prefix),
-                                makeValidateAddress(bech32Prefix)
-                            ]}
-                        />
-                        <p className="primary-text mb-3">{t('form.selectInfusionId')}</p>
-
-                        {isValidBech32Address(watchInfusionMinter) ?
-                            <NumericInput
-                                fieldName={fieldNamePrefix + 'infusionId' as 'infusionId'}
-                                min={0}
-                                numericValue
+            <ChainProvider chainId={chainId}>
+                <div className="flex grow flex-col gap-4">
+                    <div className="flex flex-col gap-1">
+                        <p className="primary-text mb-3">{t('form.selectInfusionMinter')}</p>
+                        <div className="flex min-w-0 flex-col flex-wrap gap-x-3 gap-y-2 sm:flex-row sm:items-stretch">
+                            <AddressInput
+                                fieldName={(fieldNamePrefix + 'infusionMinter') as 'infusionMinter'}
                                 register={register}
-                                sizing="sm"
-                                step={1}
-                                validation={[validateRequired, validatePositive]}
-                            /> : null}
+                                validation={[
+                                    validateRequired,
+                                    // If executing smart contract, ensure recipient is smart
+                                    // contract.
+                                    // (executeSmartContract
+                                    //     ? makeValidateAddress
+                                    //     : makeValidateAddress)(chain.bech32_prefix),
+                                    makeValidateAddress(bech32Prefix)
+                                ]}
+                            />
 
+                            {isValidBech32Address(watchInfusionMinter) ? <>
+                                <NumericInput
+                                    fieldName={fieldNamePrefix + 'infusionId' as 'infusionId'}
+                                    min={0}
+                                    numericValue
+                                    register={register}
+                                    sizing="sm"
+                                    step={1}
+                                    validation={[validateRequired, validatePositive]}
+                                />
+                                <p className="primary-text mb-3">{t('form.selectInfusionId')}</p>
+                            </> : null}
+
+                        </div>
 
                         {infusionInfo.length != 0 ?
                             <>
@@ -118,12 +120,10 @@ export const InfusionsRenderer = ({
                                 })}
 
                             </> : null}
-                    </ChainProvider>
-                    {/* <InputErrorMessage error={errors?.recipient} /> */}
+                        {/* <InputErrorMessage error={errors?.recipient} /> */}
+                    </div>
                 </div>
-            </div>
-
-
+            </ChainProvider>
         </FormProvider>
     )
 }
