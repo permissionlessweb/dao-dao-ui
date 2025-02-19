@@ -41,7 +41,7 @@ export interface InfuseNftsOptions {
     // The set of NFTs that may be infused as part of this action.
     options: LoadingDataWithError<LazyNftCardInfo[]>
     // Information about the NFT currently selected.
-    nftInfos: LoadingDataWithError<NftCardInfo[]> | undefined
+    selectedNfts: LoadingDataWithError<NftCardInfo[]> | undefined
     // Information from the Infusion currently selected.
     infusionInfo: LoadingDataWithError<Infusion[] | undefined>
     // // Information about the approval status of NFTs selected to be infused.
@@ -56,7 +56,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     fieldNamePrefix,
     isCreating,
     errors,
-    options: { options, nftInfos, tokens, infusionInfo, AddressInput, NftSelectionModal },
+    options: { options, selectedNfts, tokens, infusionInfo, AddressInput, NftSelectionModal },
 }) => {
     const { t } = useTranslation()
     const { control, watch, setValue, setError, register, clearErrors, } =
@@ -75,6 +75,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     const watchInfuionBundles = watch(
         (fieldNamePrefix + 'infusionBundles') as 'infusionBundles'
     )
+
     // bundles
     const {
         fields: infusionBundleFields,
@@ -305,14 +306,14 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                         <InputLabel name={t('title.numNfts', { count: watchInfuionBundles.length, })} />
                     )}
 
-                    {nftInfos &&
-                        (nftInfos.loading ? (
+                    {selectedNfts &&
+                        (selectedNfts.loading ? (
                             <HorizontalNftCardLoader />
-                        ) : nftInfos.errored ? (
-                            <ErrorPage error={nftInfos.error} />
+                        ) : selectedNfts.errored ? (
+                            <ErrorPage error={selectedNfts.error} />
                         ) : (
                             <div className="flex flex-col gap-1">
-                                {nftInfos.data.map(({ key, ...nftInfo }) => (
+                                {selectedNfts.data.map(({ key, ...nftInfo }) => (
                                     <HorizontalNftCard key={key} {...nftInfo} />
                                 ))}
                             </div>
@@ -321,7 +322,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                     {isCreating && (
                         <Button
                             className={clsx(
-                                nftInfos && !nftInfos.loading && !nftInfos.errored
+                                selectedNfts && !selectedNfts.loading && !selectedNfts.errored
                                     ? 'self-end'
                                     : 'self-start'
                             )}
@@ -337,9 +338,9 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
             </div>
             {/* Create way to tab between infusions for a given */}
             <div className="flex flex-col gap-1">
-                {infusion && (<>
+                {infusion && selectedNfts && !selectedNfts.errored && !selectedNfts.loading && (<>
                     {infusion.map((ii, index) => {
-                        const newIi: HorizontalInfusionCardProps = { ...ii, chainId: watchChainId, EntityDisplay };
+                        const newIi: HorizontalInfusionCardProps = { ...ii, chainId: watchChainId, EntityDisplay, fieldNamePrefix, entityEligibleNFTs: options, selectedNfts, isProposalAction: true };
                         return (
                             <>
                                 <HorizontalInfusionCard key={index.toString()} {...newIi} />

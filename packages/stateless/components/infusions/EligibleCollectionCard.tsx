@@ -17,6 +17,7 @@ export const EligibleCollectionCard = ({
     address,
     paymentSub,
     substituteLabel,
+    index,
 
 }: EligibleCollectionCardProps) => {
     const { t } = useTranslation()
@@ -63,7 +64,9 @@ export const EligibleCollectionCard = ({
                         onClick={(e) => e.stopPropagation()}
                         openInNewTab
                     >
-                        <p className="secondary-text text-xs">{t('title.infusedCollectionTitle')}</p>
+                        <p className="secondary-text text-xs">
+                            {t('title.infusionsEligibleCollections', { index })}</p>
+
                         <TooltipLikeDisplay
                             className="group-hover/nft:opacity-100 absolute bottom-4 left-4 opacity-0 shadow-dp4 transition-opacity hover:!opacity-90"
                             icon={<ArrowOutwardRounded className="!h-5 !w-5" />}

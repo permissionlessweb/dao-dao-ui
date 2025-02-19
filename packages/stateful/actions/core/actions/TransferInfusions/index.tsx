@@ -75,7 +75,7 @@ const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
     const options = useActionOptions()
     const currentChainId = options.chain.chainId
 
-    const { watch, control, } = useFormContext<InfuseNftsData>()
+    const { watch, } = useFormContext<InfuseNftsData>()
     const { denomOrAddress: governanceCollectionAddress } =
         useCw721CommonGovernanceTokenInfoIfExists() ?? {}
 
@@ -136,8 +136,7 @@ const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
 
     const allChainOptions =
         nftOptions.loading || nftOptions.errored
-            ? nftOptions
-            : combineLoadingDataWithErrors(
+            ? nftOptions : combineLoadingDataWithErrors(
                 ...Object.values(nftOptions.data).filter(
                     (data): data is LoadingDataWithError<LazyNftCardInfo[]> => !!data
                 )
@@ -167,7 +166,7 @@ const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
             options={{
                 infusionInfo: infusionInfoLDWE,
                 options: availableToInfuse,
-                nftInfos: watchChainId && watchInfusionBundles ? nftInfos : undefined,
+                selectedNfts: watchChainId && watchInfusionBundles ? nftInfos : undefined,
                 tokens,
                 AddressInput,
                 NftSelectionModal,

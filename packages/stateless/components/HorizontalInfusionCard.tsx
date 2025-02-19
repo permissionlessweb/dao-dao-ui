@@ -5,10 +5,11 @@ import { ComponentType, forwardRef, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactPlayer from 'react-player'
 
-import { EligibleCollectionCardProps, NftCardInfo, StatefulEntityDisplayProps } from '@dao-dao/types'
+import { EligibleCollectionCardProps, LazyNftCardInfo, LoadingDataWithError, NftCardInfo, StatefulEntityDisplayProps } from '@dao-dao/types'
 import {
   NFT_VIDEO_EXTENSIONS,
   getImageUrlForChainId,
+  getNftKey,
   getNftName,
   objectMatchesStructure,
   toAccessibleImageUrl,
@@ -23,32 +24,160 @@ import { TokenAmountDisplay } from './token'
 import { HugeDecimal } from '@dao-dao/math'
 import { EligibleCollectionCard } from './infusions'
 import { HorizontalScroller } from './HorizontalScroller'
+import { NftSelectionModal } from '@dao-dao/stateful'
+import { useFieldArray, useFormContext } from 'react-hook-form'
+import { InfuseNftsData } from '@dao-dao/stateful/actions/core/actions/TransferInfusions/Component'
+import { HorizontalNftCard, HorizontalNftCardLoader } from './HorizontalNftCard'
+import { ErrorPage } from './error'
 
 
 export interface HorizontalInfusionCardProps extends Infusion {
+  EntityDisplay: ComponentType<StatefulEntityDisplayProps>
+  selectedNfts: LoadingDataWithError<NftCardInfo[]>
+  entityEligibleNFTs: LoadingDataWithError<LazyNftCardInfo[]>
+  fieldNamePrefix: string
   className?: string
   chainId: string
-  EntityDisplay: ComponentType<StatefulEntityDisplayProps>
+  isProposalAction: boolean,
 }
 
 export const HorizontalInfusionCard = forwardRef<
   HTMLDivElement,
   HorizontalInfusionCardProps
 >(function HorizontalInfusionCard(
-  {
-    collections,
-    infused_collection,
-    className,
-    chainId,
-    infusion_params,
-    payment_recipient,
-    EntityDisplay,
-  },
+  infusion,
   ref
 ) {
   const { t } = useTranslation()
+  const { control, watch, setValue, setError, register, clearErrors, } =
+    useFormContext<InfuseNftsData>()
 
-  const chainImage = getImageUrlForChainId(chainId)
+
+  const [showModal, setShowModal] = useState<boolean>(false)
+
+  const watchChainId = watch((infusion.fieldNamePrefix + 'chainId') as 'chainId')
+  const watchInfusionMinter = watch((infusion.fieldNamePrefix + 'infusionMinter') as 'infusionMinter')
+  const watchInfusionId = watch((infusion.fieldNamePrefix + 'infusionId') as 'infusionId')
+  const watchCollection = watch((infusion.fieldNamePrefix + 'collection') as 'collection')
+  const watchTokenId = watch((infusion.fieldNamePrefix + 'tokenId') as 'tokenId')
+  const watchPaymentInfusionExists = watch((infusion.fieldNamePrefix + 'paymentSubstituteExists') as 'paymentSubstituteExists')
+  const watchInfuionBundles = watch(
+    (infusion.fieldNamePrefix + 'infusionBundles') as 'infusionBundles'
+  )
+
+  // bundles
+  const {
+    fields: infusionBundleFields,
+    append: appendEligibleAsset,
+    remove: removeEligibleAsset,
+    update: updateEligibleAsset,
+  } = useFieldArray({
+    control,
+    name: (infusion.fieldNamePrefix + 'infusionBundles') as 'infusionBundles',
+  })
+  // funds 
+  const {
+    fields: coins,
+    append: appendCoin,
+    remove: removeCoin,
+  } = useFieldArray({
+    control,
+    name: infusion.fieldNamePrefix + 'funds' as 'funds',
+  })
+
+  const updateInfusionBundles = (nft: LazyNftCardInfo, remove: boolean = false) => {
+    const required = infusion.collections.find(
+      (accNftColl) => accNftColl.addr === nft.collectionAddress
+    )?.min_req
+
+    if (remove) {
+      const bundleIndex = infusionBundleFields.findIndex((bundle) =>
+        bundle.nfts.some(
+          (bnft) =>
+            bnft.addr === nft.collectionAddress &&
+            bnft.token_id === parseInt(nft.tokenId)
+        )
+      )
+
+      if (bundleIndex !== -1) {
+        // Find and remove the specific NFT from the bundle
+        const updatedNfts = infusionBundleFields[bundleIndex].nfts.filter(
+          (bnft) =>
+            !(bnft.addr === nft.collectionAddress && bnft.token_id === parseInt(nft.tokenId))
+        )
+
+        if (updatedNfts.length === 0) {
+          // Remove entire bundle if empty
+          removeEligibleAsset(bundleIndex)
+          console.log("after-removed:", watchInfuionBundles)
+        } else {
+          // Update bundle with remaining NFTs
+          updateEligibleAsset(bundleIndex, { nfts: updatedNfts })
+          console.log("after-removed-updated:", watchInfuionBundles)
+        }
+      }
+    } else {
+      // Add NFT to bundles
+      let targetBundleIndex = -1
+      let canAddToExisting = false
+
+      // Check existing bundles for same collection
+      infusionBundleFields.forEach((bundle, index) => {
+        const sameCollectionCount = bundle.nfts.filter(
+          (bnft) => bnft.addr === nft.collectionAddress
+        ).length
+
+        if (sameCollectionCount > 0 && (required ? sameCollectionCount < required : true)) {
+          targetBundleIndex = index
+          canAddToExisting = true
+        }
+      })
+
+      if (canAddToExisting && targetBundleIndex !== -1) {
+        // Add to existing bundle
+        const updatedNfts = [
+          ...infusionBundleFields[targetBundleIndex].nfts,
+          { addr: nft.collectionAddress, token_id: parseInt(nft.tokenId) }
+        ]
+        updateEligibleAsset(targetBundleIndex, { nfts: updatedNfts })
+        console.log("after-updated-added:", watchInfuionBundles)
+        console.log("after-updated-added:", infusion)
+      } else {
+        // Create new bundle
+        appendEligibleAsset({
+          nfts: [{ addr: nft.collectionAddress, token_id: parseInt(nft.tokenId) }]
+        })
+        console.log("after-updated-appended:", watchInfuionBundles)
+      }
+    }
+  }
+
+  const selectedKey = getNftKey(watchChainId, watchCollection, watchTokenId)
+
+
+  useEffect(() => {
+
+    console.log("infusion.entityEligibleNFTs", infusion.entityEligibleNFTs)
+    console.log("infusion.collections", infusion.collections)
+    console.log("infusion.infused_collection", infusion.infused_collection)
+
+  }, [showModal, setShowModal])
+
+  // when infusion ID or infusion contract is changed, reset selected nfts & funds 
+  useEffect(() => {
+    infusionBundleFields.forEach((_, index) => {
+      removeEligibleAsset(index);
+    });
+    coins.forEach((_, index) => {
+      removeCoin(index);
+    });
+
+    setValue((infusion.fieldNamePrefix + 'collection') as 'collection', '')
+    setValue((infusion.fieldNamePrefix + 'tokenId') as 'tokenId', '')
+  }, [watchInfusionId, watchInfusionMinter]);
+
+
+  const chainImage = getImageUrlForChainId(infusion.chainId)
   const chainImageNode = chainImage && (
     <NextImage
       alt=""
@@ -59,14 +188,14 @@ export const HorizontalInfusionCard = forwardRef<
     />
   )
 
-  const eligibleCollectionCardProps: EligibleCollectionCardProps[] = collections.map((eligible) => {
+  const eligibleCollectionCardProps: EligibleCollectionCardProps[] = infusion.collections.map((eligible, index) => {
     return {
+      index,
       address: eligible.addr,
       substituteLabel: eligible.payment_substitute ? t('title.infusedCollectionTotalSupply') : t('title.infusedCollectionTotalSupply'),
       paymentSub: eligible.payment_substitute ? eligible.payment_substitute : undefined
     }
   })
-
 
   // const [imageLoading, setImageLoading] = useState(!!imageUrl)
   // const [imageLoadErrored, setImageLoadErrored] = useState(false)
@@ -115,7 +244,7 @@ export const HorizontalInfusionCard = forwardRef<
       className={clsx(
         'flex flex-col items-stretch overflow-hidden rounded-lg bg-background-primary sm:grid sm:grid-cols-[auto_1fr] sm:grid-rows-1',
         // imageLoading && 'animate-pulse',
-        className
+        infusion.className
       )}
       ref={ref}
     >
@@ -176,17 +305,17 @@ export const HorizontalInfusionCard = forwardRef<
             <p className="primary-text truncate font-normal">
               <CopyToClipboard
                 className="text-xs"
-                label={infused_collection.name}
+                label={infusion.infused_collection.name}
                 textClassName="primary-text"
                 tooltip={t('button.copyAddressToClipboard')}
-                value={infused_collection.addr!}
+                value={infusion.infused_collection.addr!}
               />
             </p>
             <p className="secondary-text text-xs">{t('title.infusedCollectionTotalSupply')}</p>
             <div className="flex flex-row gap-2">
-              <p className="primary-text text-lg truncate font-semibold">{infused_collection.num_tokens}</p>
+              <p className="primary-text text-lg truncate font-semibold">{infusion.infused_collection.num_tokens}</p>
               <Button className={clsx('self-end')}
-                onClick={() => { }}  // setShowModal(true)
+                onClick={() => { }}
                 variant={'primary'}
               >
                 {t('button.viewInfusedCollection')}
@@ -194,18 +323,18 @@ export const HorizontalInfusionCard = forwardRef<
             </div>
             <p className="secondary-text text-xs">{t('title.infusedCollectionMintFee')}</p>
             <p className="primary-text truncate font-normal">
-              {infusion_params.mint_fee ? <TokenAmountDisplay
-                amount={HugeDecimal.from(infusion_params.mint_fee.amount)}
+              {infusion.infusion_params.mint_fee ? <TokenAmountDisplay
+                amount={HugeDecimal.from(infusion.infusion_params.mint_fee.amount)}
                 decimals={6}
                 // iconUrl={ }
                 showFullAmount
-                symbol={infusion_params.mint_fee.denom}
+                symbol={infusion.infusion_params.mint_fee.denom}
               /> : <>{t('title.noInfusionFee')}</>}
             </p>
             <p className="secondary-text text-xs">{t('title.infusionPaymentRecipient')}</p>
 
-            {payment_recipient ? (
-              <EntityDisplay address={payment_recipient!} />
+            {infusion.payment_recipient ? (
+              <infusion.EntityDisplay address={infusion.payment_recipient!} />
             ) : (
               <p className="body-text italic">
                 {t('info.failedToDecodeAddressUnrecognizedMessage')}
@@ -222,7 +351,6 @@ export const HorizontalInfusionCard = forwardRef<
               items={{ loading: false, data: eligibleCollectionCardProps }}
               shadowClassName=" "
             />
-            {eligibleCollectionCardProps.length != 0 && console.log(eligibleCollectionCardProps)}
           </div>
           {/* Source chain */}
           {/* {chainImageNode ? (
@@ -238,19 +366,62 @@ export const HorizontalInfusionCard = forwardRef<
                 chainImageNode
                 )
                 ) : null} */}
-
           <Button className={clsx('self-start')}
-            onClick={() => { }}  //  setShowModal(true)
+            onClick={() => setShowModal(true)}  //  setShowModal(true)
             variant={'primary'}
           >
             {t('button.selectNfts')}
           </Button>
+          {infusion.selectedNfts && !infusion.isProposalAction &&
+            (infusion.selectedNfts.loading ? (
+              <HorizontalNftCardLoader />
+            ) : infusion.selectedNfts.errored ? (
+              <ErrorPage error={infusion.selectedNfts.error} />
+            ) : (
+              <div className="flex flex-col gap-1">
+                {infusion.selectedNfts.data.map(({ key, ...nftInfo }) => (
+                  <HorizontalNftCard key={key} {...nftInfo} />
+                ))}
+              </div>
+            ))}
         </div>
+        {/* add funds selector if payment subsitute enabled */}
+        {/* Preview json action option */}
+        {/* Prompt transaction or proposal based on entity type*/}
 
-
+        <NftSelectionModal
+          action={{
+            loading: false,
+            label: t('button.save'),
+            onClick: () => {
+              setShowModal(false)
+            },
+          }}
+          header={{
+            title: t('title.selectNftsToInfuse'),
+          }}
+          nfts={infusion.entityEligibleNFTs}
+          onClose={() => setShowModal(false)}
+          onNftClick={(nft) => {
+            if (nft.key === selectedKey) {
+              setValue((infusion.fieldNamePrefix + 'tokenId') as 'tokenId', '')
+              setValue((infusion.fieldNamePrefix + 'collection') as 'collection', '')
+              updateInfusionBundles(nft, true)
+            } else {
+              setValue((infusion.fieldNamePrefix + 'chainId') as 'chainId', nft.chainId)
+              setValue((infusion.fieldNamePrefix + 'tokenId') as 'tokenId', nft.tokenId)
+              setValue(
+                (infusion.fieldNamePrefix + 'collection') as 'collection',
+                nft.collectionAddress
+              )
+              updateInfusionBundles(nft, false)
+            }
+          }}
+          selectedKeys={selectedKey ? [selectedKey] : []}
+          visible={showModal}
+        />
       </div>
       <p className="title-text border-b border-border-secondary py-10 px-6" />
-
     </div>
   )
 })

@@ -8,6 +8,7 @@ import { Coin } from './contracts'
 
 export type EligibleCollectionCardProps = {
     address: string
+    index: number
     substituteLabel: string
     paymentSub: Coin | null | undefined
     // ButtonLink: ComponentType<ButtonLinkProps>

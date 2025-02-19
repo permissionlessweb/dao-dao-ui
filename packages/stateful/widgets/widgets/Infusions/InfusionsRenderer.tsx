@@ -35,6 +35,14 @@ export const InfusionsRenderer = ({
         // mint: { contract, msg, buttonLabel },
     },
 }: WidgetRendererProps<InfusionWidgetData>) => {
+    const { t } = useTranslation()
+    const queryClient = useQueryClient()
+    const { chainId, bech32Prefix } = useChain()
+    const {
+        address: walletAddress = '',
+        getSigningClient,
+        isWalletConnected,
+    } = useWallet()
 
     const formMethods = useForm<InfusionWidgetData>({
         defaultValues: {
@@ -43,14 +51,6 @@ export const InfusionsRenderer = ({
             infusionId,
         },
     })
-
-    const { t } = useTranslation()
-    const { chainId, bech32Prefix } = useChain()
-    const {
-        address: walletAddress = '',
-        getSigningClient,
-        isWalletConnected,
-    } = useWallet()
 
     const {
         watch,
@@ -63,10 +63,10 @@ export const InfusionsRenderer = ({
     const watchInfusionMinter = watch((fieldNamePrefix + 'infusionMinter') as 'infusionMinter')
     const watchInfusionId = watch((fieldNamePrefix + 'infusionId') as 'infusionId')
 
-    const queryClient = useQueryClient()
-
     const infusionInfoLDWE = useInfusionContract(queryClient, chainId, watchInfusionMinter, watchInfusionId)
     const infusionInfo = !infusionInfoLDWE.errored && !infusionInfoLDWE.loading ? infusionInfoLDWE.data : []
+
+    // create  bundle form 
 
     return (
         <FormProvider {...formMethods}>
@@ -110,9 +110,12 @@ export const InfusionsRenderer = ({
                                     return (
                                         <>
                                             <InfusionItem infusionInfo={ii}
+                                                isProposalAction={false}
+                                                wallet={walletAddress}
                                                 chainId={chainId}
                                                 queryClient={queryClient}
                                                 index={index.toString()}
+                                                fieldNamePrefix={fieldNamePrefix}
                                             />
                                             {/* display map of eligible infusion collections and the minimum needed */}
                                         </>
