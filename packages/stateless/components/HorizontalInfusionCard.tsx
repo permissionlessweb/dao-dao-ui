@@ -351,6 +351,18 @@ export const HorizontalInfusionCard = forwardRef<
               items={{ loading: false, data: eligibleCollectionCardProps }}
               shadowClassName=" "
             />
+            {infusion.selectedNfts && !infusion.isProposalAction &&
+              (infusion.selectedNfts.loading ? (
+                <HorizontalNftCardLoader />
+              ) : infusion.selectedNfts.errored ? (
+                <ErrorPage error={infusion.selectedNfts.error} />
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {infusion.selectedNfts.data.map(({ key, ...nftInfo }) => (
+                    <HorizontalNftCard key={key} {...nftInfo} />
+                  ))}
+                </div>
+              ))}
           </div>
           {/* Source chain */}
           {/* {chainImageNode ? (
@@ -372,18 +384,7 @@ export const HorizontalInfusionCard = forwardRef<
           >
             {t('button.selectNfts')}
           </Button>
-          {infusion.selectedNfts && !infusion.isProposalAction &&
-            (infusion.selectedNfts.loading ? (
-              <HorizontalNftCardLoader />
-            ) : infusion.selectedNfts.errored ? (
-              <ErrorPage error={infusion.selectedNfts.error} />
-            ) : (
-              <div className="flex flex-col gap-1">
-                {infusion.selectedNfts.data.map(({ key, ...nftInfo }) => (
-                  <HorizontalNftCard key={key} {...nftInfo} />
-                ))}
-              </div>
-            ))}
+
         </div>
         {/* add funds selector if payment subsitute enabled */}
         {/* Preview json action option */}

@@ -144,8 +144,7 @@ const getShitstrapContractsOwnedByEntityQueries = (
   widgetData?: ShitstrapPaymentWidgetData
 ) => {
   // retrieves shitstrap manager data from items saved in dao contract state.
-  const sources =
-    widgetData && getShitstrapSourcesFromWidgetData(options, widgetData)
+  const sources = widgetData && getShitstrapSourcesFromWidgetData(options, widgetData)
 
   const allShitstrapsForSelectedChain = options.context.accounts.flatMap(({ chainId, address: accountAddr }) =>
     sources?.[chainId]?.factory ?
@@ -179,21 +178,17 @@ const useShitstrapContractsOwnedByEntity = () => {
 
 
 
-const Component: ComponentType<
-  ActionComponentProps<undefined, ManageShitStrapData> & {
-    widgetData?: ShitstrapPaymentWidgetData
-  }
+const Component: ComponentType<ActionComponentProps<undefined, ManageShitStrapData> & {
+  widgetData?: ShitstrapPaymentWidgetData
+}
 > = ({ widgetData, ...props }) => {
   const { t } = useTranslation()
-  const {
-    chain: { chainId: nativeChainId },
-  } = useActionOptions()
+  const queryClient = useQueryClient()
+  const { chain: { chainId: nativeChainId } } = useActionOptions()
   const { setValue, watch, register } = useFormContext<ManageShitStrapData>()
 
   const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
 
-  const tokenBalances = useTokenBalances()
-  
   const selectedChainId =
     mode === 'create'
       ? watch((props.fieldNamePrefix + 'create.chainId') as 'create.chainId')
@@ -245,7 +240,7 @@ const Component: ComponentType<
   ]
   const selectedTab = tabs.find((tab) => tab.value === mode)
 
-  const queryClient = useQueryClient()
+  const tokenBalances = useTokenBalances()
 
   return (
     <SuspenseLoader
@@ -379,15 +374,13 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
       )
     )
 
-    const infoQueries = contractsResults.flat()
-      .map((result) =>
-        result.contracts.map((contract) =>
-          cwShitstrapExtraQueries.info(this.options.queryClient, {
-            chainId: result.chainId,
-            contractAddress: contract.contract,
-          })
-        )
-      )
+    const infoQueries = contractsResults.flat().map((result) => result.contracts.map((contract) =>
+      cwShitstrapExtraQueries.info(this.options.queryClient, {
+        chainId: result.chainId,
+        contractAddress: contract.contract,
+      })
+    )
+    )
       .flat()
 
     this.shitstrapInfosOwnedByEntity = (
@@ -533,34 +526,21 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
             send: {
               amount: create.tokenToShit.toString(),
               contract: shitstrapSource.factory,
-              msg: encodeJsonToBase64({
-                instantiate_shitstrap_factory_contract: msg,
-              }),
+              msg: encodeJsonToBase64({ instantiate_shitstrap_factory_contract: msg, }),
             },
           },
         })
-      } else {
-        throw new Error(this.options.t('error.unexpectedError'))
-      }
+      } else { throw new Error(this.options.t('error.unexpectedError')) }
     } else if (mode === 'payment' || mode === 'overflow') {
       chainId = mode === 'payment' ? payment.chainId : overflow.chainId
 
-      const contractAddress =
-        mode === 'payment'
-          ? payment.shitstrapAddress
-          : overflow.shitstrapAddress
+      const contractAddress = mode === 'payment' ? payment.shitstrapAddress : overflow.shitstrapAddress
 
-      const shitstrapInfo = this.shitstrapInfosOwnedByEntity.find(
-        ({ shitstrapContractAddr }) => shitstrapContractAddr === contractAddress
-      )
-      if (!shitstrapInfo) {
-        throw new Error(this.options.t('error.noShitstrapContractSelected'))
-      }
+      const shitstrapInfo = this.shitstrapInfosOwnedByEntity.find(({ shitstrapContractAddr }) => shitstrapContractAddr === contractAddress)
+      if (!shitstrapInfo) { throw new Error(this.options.t('error.noShitstrapContractSelected')) }
 
       const from = getChainAddressForActionOptions(this.options, chainId)
-      if (!from) {
-        throw new Error(this.options.t('error.loadingData'))
-      }
+      if (!from) { throw new Error(this.options.t('error.loadingData')) }
 
       const total = HugeDecimal.fromHumanReadable(payment.amount, 6)
 
@@ -568,30 +548,18 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
         chainId,
         contractAddress,
         sender: from,
-        funds: payment.shitToken
-          ? total.toCoins(payment.shitToken.denomOrAddress)
-          : [],
-        msg:
-          mode === 'overflow'
-            ? {
-              overflow: {},
-            }
-            : {
-              shit_strap: {
-                shit: {
-                  amount: total.toString(),
-                  denom:
-                    payment.shitToken &&
-                      payment.shitToken.type === TokenType.Native
-                      ? { native: payment.shitToken?.denomOrAddress }
-                      : { native: payment.shitToken?.denomOrAddress },
-                },
-              },
+        funds: payment.shitToken ? total.toCoins(payment.shitToken.denomOrAddress) : [],
+        msg: mode === 'overflow' ? { overflow: {}, } : {
+          shit_strap: {
+            shit: {
+              amount: total.toString(),
+              denom: payment.shitToken && payment.shitToken.type === TokenType.Native ?
+                { native: payment.shitToken?.denomOrAddress } : { native: payment.shitToken?.denomOrAddress },
             },
+          },
+        },
       })
-    } else {
-      throw new Error(this.options.t('error.unexpectedError'))
-    }
+    } else { throw new Error(this.options.t('error.unexpectedError')) }
 
     return maybeMakePolytoneExecuteMessages(
       this.options.chain.chainId,
@@ -608,9 +576,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
           execute: {
             contract_addr: {},
             funds: {},
-            msg: {
-              instantiate_native_payroll_contract: instantiateStructure,
-            },
+            msg: { instantiate_native_payroll_contract: instantiateStructure, },
           },
         },
       }) &&

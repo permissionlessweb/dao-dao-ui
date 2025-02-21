@@ -1,4 +1,4 @@
-import { ActionBase, Button, ChainProvider, Dropdown, ErrorPage, HorizontalNftCard, HorizontalInfusionCard, HorizontalNftCardLoader, InputErrorMessage, InputLabel, NativeCoinSelector, NumericInput, HorizontalInfusionCardProps, FormSwitch } from "@dao-dao/stateless";
+import { ActionBase, Button, ChainProvider, Dropdown, ErrorPage, HorizontalNftCard, HorizontalInfusionCard, HorizontalNftCardLoader, InputErrorMessage, InputLabel, NativeCoinSelector, NumericInput, HorizontalInfusionCardProps, FormSwitch, useActionOptions } from "@dao-dao/stateless";
 import { ActionComponent, ActionOptions, AddressInputProps, GenericToken, GenericTokenBalance, LazyNftCardInfo, LoadingData, LoadingDataWithError, NftCardInfo, NftSelectionModalProps, TypedOption } from "@dao-dao/types";
 import { Bundle, Infusion, NFT, NFTCollection } from "@dao-dao/types/contracts/CwInfuser";
 import { TransferNftData } from "../TransferNft/Component";
@@ -59,10 +59,11 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     options: { options, selectedNfts, tokens, infusionInfo, AddressInput, NftSelectionModal },
 }) => {
     const { t } = useTranslation()
+    const actionOptions = useActionOptions()
     const { control, watch, setValue, setError, register, clearErrors, } =
         useFormContext<InfuseNftsData>()
 
-    const queryClient = useQueryClient();
+    const queryClient = actionOptions.queryClient
     const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
     const chain = getChainForChainId(watchChainId)
 
@@ -72,8 +73,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     const watchTokenId = watch((fieldNamePrefix + 'tokenId') as 'tokenId')
     const watchPaymentInfusionExists = watch((fieldNamePrefix + 'paymentSubstituteExists') as 'paymentSubstituteExists')
 
-    const watchInfuionBundles = watch(
-        (fieldNamePrefix + 'infusionBundles') as 'infusionBundles'
+    const watchInfuionBundles = watch((fieldNamePrefix + 'infusionBundles') as 'infusionBundles'
     )
 
     // bundles
@@ -303,7 +303,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
 
                 <div className="flex grow flex-col gap-2">
                     {isCreating && (
-                        <InputLabel name={t('title.numNfts', { count: watchInfuionBundles.length, })} />
+                    <></>    // <InputLabel name={t('title.numNfts', { count: watchInfuionBundles.length() })} />
                     )}
 
                     {selectedNfts &&

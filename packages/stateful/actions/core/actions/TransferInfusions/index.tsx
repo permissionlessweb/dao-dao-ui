@@ -1,17 +1,57 @@
-import { ActionBase, AddressInput, BoxEmoji, useActionOptions, useCachedLoadingWithError } from "@dao-dao/stateless";
-import { ActionComponent, ActionContextType, ActionKey, ActionMatch, ActionOptions, Coin, LazyNftCardInfo, LoadingDataWithError, ProcessedMessage, TokenType, UnifiedCosmosMsg } from "@dao-dao/types";
+import { ActionBase, AddressInput, BoxEmoji, Loader, SegmentedControls, useActionOptions, useCachedLoadingWithError } from "@dao-dao/stateless";
+import { ActionComponent, ActionComponentProps, ActionContextType, ActionKey, ActionMatch, ActionOptions, Coin, LazyNftCardInfo, LoadingDataWithError, ProcessedMessage, SegmentedControlsProps, TokenType, TypedOption, UnifiedCosmosMsg } from "@dao-dao/types";
 import { InfuseNftsComponent, InfuseNftsData } from "./Component";
 import { chainIsIndexed, combineLoadingDataWithErrors, encodeJsonToBase64, getChainAddressForActionOptions, makeCombineQueryResultsIntoLoadingDataWithError, makeExecuteSmartContractMessage, maybeMakePolytoneExecuteMessages, objectMatchesStructure } from "@dao-dao/utils";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { lazyNftCardInfosForDaoSelector, walletLazyNftCardInfosSelector } from "@dao-dao/state/recoil";
 import { useCw721CommonGovernanceTokenInfoIfExists } from "../../../../voting-module-adapter";
 import { constSelector } from "recoil";
-import { NftSelectionModal } from "../../../../components";
+import { NftSelectionModal, SuspenseLoader } from "../../../../components";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { cw721BaseQueries, cwInfuserExtraQueries, cwInfuserQueries, nftQueries } from "@dao-dao/state/query";
-import { NFT } from "@dao-dao/types/contracts/CwInfuser";
+import { ExecuteMsg, NFT } from "@dao-dao/types/contracts/CwInfuser";
 import { useTokenBalances } from "../../../hooks";
 import { HugeDecimal } from "@dao-dao/math";
+import { CreateInfusionData } from "./CreateInfusion";
+import { useTranslation } from "react-i18next";
+import { ComponentType } from "react";
+import { InfusionWidgetData } from "../../../../widgets/widgets/Infusions/types";
+
+enum InfusionActionMode {
+    Create = 'create',
+    Infuse = 'infuse'
+}
+
+// data coming from action tabs content
+export type ManageInfusionsData = {
+    mode: InfusionActionMode
+    create: CreateInfusionData
+    infuse: InfuseNftsData
+
+}
+
+// init shitstrap json object
+const instantiateStructure = {
+    instantiate_msg: {
+        admin: {},
+        admin_fee: {},
+        min_creation_fee: {},
+        min_infusion_fee: {},
+        min_per_bundle: {},
+        max_per_bundle: {},
+        max_bundles: {},
+        max_infusions: {},
+        cw721_code_id: {},
+        //   sg: {},
+    },
+    label: {},
+}
+
+// create new infusion structure
+const createInfusionStructure = { create_infusion: { infusions: {} } }
+
+// infuse bundles structure
+const infuseBundlesStructure = { infuse: { infusion_id: {}, bundle: {} } }
 
 /**  
  * Get infusion config
@@ -70,24 +110,38 @@ const useAppendAnyBundleNftApproveMsgs = (options: ActionOptions, infusionMinter
     })
 }
 
-const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
+const Component: ComponentType<ActionComponentProps<undefined, ManageInfusionsData>> = ({ ...props }) => {
+    const { t } = useTranslation()
     const queryClient = useQueryClient()
     const options = useActionOptions()
     const currentChainId = options.chain.chainId
+    const { watch, setValue } = useFormContext<ManageInfusionsData>()
 
-    const { watch, } = useFormContext<InfuseNftsData>()
-    const { denomOrAddress: governanceCollectionAddress } =
-        useCw721CommonGovernanceTokenInfoIfExists() ?? {}
+    const { denomOrAddress: governanceCollectionAddress } = useCw721CommonGovernanceTokenInfoIfExists() ?? {}
 
-    const watchChainId = watch((props.fieldNamePrefix + 'chainId') as 'chainId')
-    const watchInfusionMinter = watch((props.fieldNamePrefix + 'infusionMinter') as 'infusionMinter')
-    const watchInfusionId = watch((props.fieldNamePrefix + 'infusionId') as 'infusionId')
-    const watchInfusionBundles = watch((props.fieldNamePrefix + 'infusionBundles') as 'infusionBundles')
-    const watchFunds = watch((props.fieldNamePrefix + 'funds') as 'funds')
-    const watchTokenId = watch((props.fieldNamePrefix + 'tokenId') as 'tokenId')
-    const watchCollection = watch((props.fieldNamePrefix + 'collection') as 'collection')
-
+    const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
+    const watchChainId = mode === 'create' ? watch((props.fieldNamePrefix + 'create.chainId') as 'create.chainId') : watch((props.fieldNamePrefix + 'infuse.chainId') as 'infuse.chainId')
+    const watchInfusionMinter = watch((props.fieldNamePrefix + 'infuse.infusionMinter') as 'infuse.infusionMinter')
+    const watchInfusionId = watch((props.fieldNamePrefix + 'infuse.infusionId') as 'infuse.infusionId')
+    const watchInfusionBundles = watch((props.fieldNamePrefix + 'infuse.infusionBundles') as 'infuse.infusionBundles')
+    const watchFunds = watch((props.fieldNamePrefix + 'infuse.funds') as 'infuse.funds')
+    const watchTokenId = watch((props.fieldNamePrefix + 'infuse.tokenId') as 'infuse.tokenId')
+    const watchCollection = watch((props.fieldNamePrefix + 'infuse.collection') as 'infuse.collection')
     const cw20 = false
+
+    const tabs: SegmentedControlsProps<ManageInfusionsData['mode']>['tabs'] = [
+        // Only allow beginning a vest if widget is setup. ([
+        {
+            label: t('title.createInfusion'),
+            value: InfusionActionMode.Create,
+        },
+        {
+            label: t('title.infuseNfts'),
+            value: InfusionActionMode.Infuse,
+        },
+    ] as TypedOption<ManageInfusionsData['mode']>[]
+    const selectedTab = tabs.find((tab) => tab.value === mode)
+
 
     const tokens = useTokenBalances({
         // Load selected tokens when not creating in case they are no longer
@@ -101,7 +155,6 @@ const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
                 denomOrAddress: denom,
             })),
     })
-
 
     // gets the nfts owned by wallet or dao
     const nftOptions = useCachedLoadingWithError(
@@ -133,7 +186,6 @@ const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
         combine: makeCombineQueryResultsIntoLoadingDataWithError(),
     })
 
-
     const allChainOptions =
         nftOptions.loading || nftOptions.errored
             ? nftOptions : combineLoadingDataWithErrors(
@@ -161,22 +213,52 @@ const Component: ActionComponent<undefined, InfuseNftsData> = (props) => {
         : allChainOptions;
 
     return (
-        <InfuseNftsComponent
-            {...props}
-            options={{
-                infusionInfo: infusionInfoLDWE,
-                options: availableToInfuse,
-                selectedNfts: watchChainId && watchInfusionBundles ? nftInfos : undefined,
-                tokens,
-                AddressInput,
-                NftSelectionModal,
-            }}
-        />)
+        <SuspenseLoader fallback={<Loader />}>
+            {props.isCreating ? (
+                <SegmentedControls<ManageInfusionsData['mode']>
+                    className="mb-2"
+                    onSelect={(value) =>
+                        setValue((props.fieldNamePrefix + 'mode') as 'mode', value)
+                    }
+                    selected={mode}
+                    tabs={tabs}
+                />
+            ) : (<p className="title-text mb-2">{selectedTab?.label}</p>)}
+
+            {mode === InfusionActionMode.Infuse ? (
+                <InfuseNftsComponent
+                    {...props}
+                    fieldNamePrefix={props.fieldNamePrefix + 'infuse.'}
+                    options={{
+                        infusionInfo: infusionInfoLDWE,
+                        options: availableToInfuse,
+                        selectedNfts: watchChainId && watchInfusionBundles ? nftInfos : undefined,
+                        tokens,
+                        AddressInput,
+                        NftSelectionModal,
+                    }}
+                />) : null}
+            {mode === InfusionActionMode.Create ? (
+                <></>) : null}
+
+
+        </SuspenseLoader>)
 }
 
-export class InfusedNftAction extends ActionBase<InfuseNftsData> {
+// Only check if widget exists in DAOs.
+const DaoComponent: ActionComponent<undefined, ManageInfusionsData> = (
+    props
+) => {
+    return <Component {...props} />
+}
+
+const WalletComponent: ActionComponent<undefined, ManageInfusionsData> = (
+    props
+) => <Component {...props} />
+
+export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
     public readonly key = ActionKey.InfuseNfts
-    public readonly Component = Component
+    public readonly Component: ActionComponent<undefined, ManageInfusionsData>
 
     constructor(options: ActionOptions) {
         super(options, {
@@ -184,115 +266,214 @@ export class InfusedNftAction extends ActionBase<InfuseNftsData> {
             label: options.t('title.infuseNfts'),
             description: options.t('info.infuseNftsDescription', {
                 context: options.context.type,
-            }),
-        })
-
-        this.defaults = {
-            paymentSubstituteExists: false,
-            chainId: options.chain.chainId,
-            infusionMinter: '',
-            infusionId: '0',
-            infusionBundles: [],
-            collection: '',
-            tokenId: '',
-            funds: []
-        }
-
-
-    }
-
-    encode({
-        chainId,
-        infusionMinter,
-        infusionId,
-        infusionBundles,
-        funds,
-    }: InfuseNftsData): UnifiedCosmosMsg[] {
-        const sender = getChainAddressForActionOptions(this.options, chainId)
-        if (!sender) {
-            throw new Error('No sender found for chain.')
-        }
-
-        // for each nft in infusion Bundles, create the approve msgs
-        const approveNftsMsgs = infusionBundles.flatMap((ib) => {
-            return ib.nfts.map((bnfts) => {
-                return makeExecuteSmartContractMessage({
-                    chainId,
-                    sender,
-                    contractAddress: bnfts.addr,
-                    msg: {
-                        approve: {
-                            token_id: bnfts.token_id.toString(),
-                            spender: sender,
-                            //todo: add expiration
-                        },
-                    },
-                });
             })
         })
 
-        const infusionMsg = makeExecuteSmartContractMessage({
-            chainId,
-            sender,
-            contractAddress: infusionMinter,
-            msg: {
-                infuse: {
-                    infusion_id: infusionId,
-                    bundle: infusionBundles,
-                },
-            },
-            funds: funds
-                .map(({ denom, amount, decimals }) =>
-                    HugeDecimal.fromHumanReadable(amount, decimals).toCoin(denom)
-                )
-                // Neutron errors with `invalid coins` if the funds list is not
-                // alphabetized.
-                .sort((a, b) => a.denom.localeCompare(b.denom)),
+        this.Component =
+            options.context.type === ActionContextType.Dao
+                ? DaoComponent
+                : WalletComponent
 
-        });
-        return maybeMakePolytoneExecuteMessages(
-            this.options.chain.chainId,
-            chainId,
-            approveNftsMsgs.concat([infusionMsg]),
-        )
+
+        // Fire async init immediately since we may hide this action.
+        this.init().catch(() => { })
     }
 
-    match([{ decodedMessage }]: ProcessedMessage[]): ActionMatch {
-        return (
-            objectMatchesStructure(decodedMessage, {
-                wasm: {
-                    execute: {
-                        contract_addr: {},
-                        funds: {},
+    async setup() {
+        this.defaults = {
+            mode: InfusionActionMode.Infuse,
+            create: {
+                chainId: this.options.chain.chainId,
+                collections: [],
+                infusedCollection: { base_uri: '', name: '', num_tokens: 0, sg: true, symbol: '' },
+                infusionParams: {},
+                paymentRecipient: this.options.address,
+                owner: this.options.address,
+            },
+            infuse: {
+                paymentSubstituteExists: false,
+                chainId: this.options.chain.chainId,
+                infusionMinter: '',
+                infusionId: '0',
+                infusionBundles: [],
+                collection: '',
+                tokenId: '',
+                funds: []
+            },
+        }
+
+    }
+
+    async encode({
+        mode, create, infuse
+    }: ManageInfusionsData): Promise<UnifiedCosmosMsg[]> {
+        let chainId: string
+        let cosmosMsg: UnifiedCosmosMsg
+
+        if (mode === 'create') {
+            chainId = create.chainId
+            const sender = getChainAddressForActionOptions(this.options, chainId)
+            if (!sender) {
+                throw new Error('No sender found for chain.')
+            }
+
+            const createInfusionMsg = makeExecuteSmartContractMessage({
+                chainId,
+                sender,
+                contractAddress: infuse.infusionMinter,
+                msg: {
+                    create_infusion: [
+                        {
+                            owner: create.owner,
+                            paymentRecipient: create.paymentRecipient,
+                            collections: create.collections,
+                            infused_collection: create.infusedCollection,
+                            infusion_params: create.infusionParams,
+                            // description: create.description
+                        }]
+                },
+                funds: infuse.funds
+                    .map(({ denom, amount, decimals }) =>
+                        HugeDecimal.fromHumanReadable(amount, decimals).toCoin(denom)
+                    )
+                    // Neutron errors with `invalid coins` if the funds list is not
+                    // alphabetized.
+                    .sort((a, b) => a.denom.localeCompare(b.denom)),
+
+            });
+
+            return maybeMakePolytoneExecuteMessages(
+                this.options.chain.chainId,
+                chainId,
+                createInfusionMsg,
+            )
+        } else if (mode === 'infuse') {
+            chainId = infuse.chainId
+            const sender = getChainAddressForActionOptions(this.options, chainId)
+            if (!sender) {
+                throw new Error('No sender found for chain.')
+            }
+
+            // for each nft in infusion Bundles, create the approve msgs
+            const approveNftsMsgs = infuse.infusionBundles.flatMap((ib) => {
+                return ib.nfts.map((bnfts) => {
+                    return makeExecuteSmartContractMessage({
+                        chainId,
+                        sender,
+                        contractAddress: bnfts.addr,
                         msg: {
-                            infuse: {
-                                infusion_id: {},
-                                bundle: {},
+                            approve: {
+                                token_id: bnfts.token_id.toString(),
+                                spender: sender,
+                                //todo: add expiration
                             },
                         },
+                    });
+                })
+            })
+            const infusionMsg = makeExecuteSmartContractMessage({
+                chainId,
+                sender,
+                contractAddress: infuse.infusionMinter,
+                msg: {
+                    infuse: {
+                        infusion_id: infuse.infusionId,
+                        bundle: infuse.infusionBundles,
                     },
                 },
-            })
-        )
+                funds: infuse.funds
+                    .map(({ denom, amount, decimals }) =>
+                        HugeDecimal.fromHumanReadable(amount, decimals).toCoin(denom)
+                    )
+                    // Neutron errors with `invalid coins` if the funds list is not
+                    // alphabetized.
+                    .sort((a, b) => a.denom.localeCompare(b.denom)),
+
+            });
+            return maybeMakePolytoneExecuteMessages(
+                this.options.chain.chainId,
+                chainId,
+                approveNftsMsgs.concat([infusionMsg]),
+            )
+        } else {
+            throw new Error(this.options.t('error.unexpectedError'))
+        }
     }
 
-    decode([
-        {
-            decodedMessage,
-            account: { chainId },
-        },
-    ]: ProcessedMessage[]): InfuseNftsData {
+    // helper to be used in match and decode
+    breakDownMessage({ decodedMessage, account: { chainId } }: ProcessedMessage) {
+        const isNativeCreate = objectMatchesStructure(decodedMessage, {
+            wasm: {
+                execute: {
+                    contract_addr: {},
+                    funds: {},
+                    msg: createInfusionStructure,
+                },
+            },
+        })
+        const isNativeInfuse = objectMatchesStructure(decodedMessage, {
+            wasm: {
+                execute: {
+                    contract_addr: {},
+                    funds: {},
+                    msg: infuseBundlesStructure,
+                },
+            },
+        })
 
         return {
-            paymentSubstituteExists: false,
             chainId,
-            infusionMinter: decodedMessage.wasm.execute.contract_addr,
-            infusionId: decodedMessage.wasm.execute.msg.infuse.infusion_id,
-            infusionBundles: decodedMessage.wasm.execute.msg.infuse.bundle,
-            collection: '',
-            tokenId: '',
-            funds: decodedMessage.wasm.execute.funds,
+            decodedMessage,
+            isNativeCreate,
+            isNativeInfuse
         }
+    }
+
+    match([message]: ProcessedMessage[]): ActionMatch {
+        const { isNativeCreate, isNativeInfuse, } =
+            this.breakDownMessage(message)
+
+        return isNativeCreate || isNativeInfuse
+    }
+
+    async decode([message]: ProcessedMessage[]): Promise<
+        Partial<ManageInfusionsData>
+    > {
+        const {
+            chainId,
+            decodedMessage,
+            isNativeCreate,
+            isNativeInfuse,
+        } = this.breakDownMessage(message)
+
+        if (isNativeCreate) {
+            return {
+                mode: InfusionActionMode.Create,
+                create: {
+                    chainId,
+                    collections: decodedMessage.wasm.execute.msg.create_infusion.collections,
+                    infusedCollection: decodedMessage.wasm.execute.msg.create_infusion.infused_collection,
+                    infusionParams: decodedMessage.wasm.execute.msg.create_infusion.infusion_params,
+                    paymentRecipient: decodedMessage.wasm.execute.msg.create_infusion.payment_recipient,
+                },
+            }
+        } else if (isNativeInfuse) {
+            return {
+                mode: InfusionActionMode.Infuse,
+                infuse: {
+                    paymentSubstituteExists: false,
+                    chainId,
+                    infusionMinter: decodedMessage.wasm.execute.contract_addr,
+                    infusionId: decodedMessage.wasm.execute.msg.infuse.infusion_id,
+                    infusionBundles: decodedMessage.wasm.execute.msg.infuse.bundle,
+                    collection: '',
+                    tokenId: '',
+                    funds: decodedMessage.wasm.execute.funds,
+                }
+            }
+        }
+        // Should never happen.
+        throw new Error('Unexpected message')
     }
 
 }

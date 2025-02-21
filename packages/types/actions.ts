@@ -42,7 +42,6 @@ export enum ActionKey {
   ManageCw721 = 'manageCw721',
   CreateNftCollection = 'createNftCollection',
   TransferNft = 'transferNft',
-  InfuseNfts = 'infuseNfts',
   MintNft = 'mintNft',
   BurnNft = 'burnNft',
   ManageSubDaos = 'manageSubDaos',
@@ -125,6 +124,8 @@ export enum ActionKey {
   // Shitstrap
   ConfigureShitstrapPayments = 'configureShitstrapPayments',
   ManageShitstrap = 'manageShitstrap',
+  // Infusions
+  InfuseNfts = 'infuseNfts',
   FixRewardDistributor = 'fixRewardDistributor',
 }
 
