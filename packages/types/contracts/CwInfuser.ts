@@ -63,7 +63,6 @@ export interface InfusedCollection {
   external_link?: string | null;
 }
 export interface InfusionParams {
-  min_per_bundle?: number | null;
   mint_fee?: Coin | null;
   params?: BurnParams | null;
 }

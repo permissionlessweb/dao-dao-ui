@@ -241,9 +241,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
             <div className="flex flex-col gap-y-4 gap-x-12 lg:flex-row lg:flex-wrap">
                 <div className="flex grow flex-col gap-4">
                     <div className="flex flex-col gap-1">
-
                         <p className="primary-text mb-3">{isCreating ? t('form.whichInfusionMinter') : t('form.infusionMinter')}</p>
-
                         <ChainProvider chainId={watchChainId}>
                             <AddressInput
                                 disabled={!isCreating}
@@ -260,24 +258,23 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                                     makeValidateAddress(chain.bech32Prefix)
                                 ]}
                             />
-                            <p className="primary-text mb-3">
-                                {isCreating
-                                    ? t('form.whichInfusionId')
-                                    : t('form.infusionId')}
-                            </p>
 
                             {isValidBech32Address(watchInfusionMinter) ?
-                                <NumericInput
-                                    disabled={!isCreating}
-                                    error={errors?.codeId}
-                                    fieldName={fieldNamePrefix + 'infusionId' as 'infusionId'}
-                                    min={0}
-                                    numericValue
-                                    register={register}
-                                    sizing="sm"
-                                    step={1}
-                                    validation={[validateRequired, validatePositive]}
-                                /> : null}
+                                <>
+                                    <p className="primary-text mb-3">
+                                        {isCreating ? t('form.whichInfusionId') : t('form.infusionId')}
+                                    </p>
+                                    <NumericInput
+                                        disabled={!isCreating}
+                                        error={errors?.codeId}
+                                        fieldName={fieldNamePrefix + 'infusionId' as 'infusionId'}
+                                        min={0}
+                                        numericValue
+                                        register={register}
+                                        sizing="sm"
+                                        step={1}
+                                        validation={[validateRequired, validatePositive]}
+                                    /></> : null}
 
                             {
                                 paymentSubstituteEligibleCollection && paymentSubstituteEligibleCollection.length != 0 ? <>
@@ -302,8 +299,8 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                 </div>
 
                 <div className="flex grow flex-col gap-2">
-                    {isCreating && (
-                    <></>    // <InputLabel name={t('title.numNfts', { count: watchInfuionBundles.length() })} />
+                    {isCreating && infusion?.length != 0 && (
+                        <></>    // <InputLabel name={t('title.numNfts', { count: watchInfuionBundles.length() })} />
                     )}
 
                     {selectedNfts &&
@@ -319,7 +316,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                             </div>
                         ))}
 
-                    {isCreating && (
+                    {isCreating && infusion && (
                         <Button
                             className={clsx(
                                 selectedNfts && !selectedNfts.loading && !selectedNfts.errored
@@ -341,13 +338,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                 {infusion && selectedNfts && !selectedNfts.errored && !selectedNfts.loading && (<>
                     {infusion.map((ii, index) => {
                         const newIi: HorizontalInfusionCardProps = { ...ii, chainId: watchChainId, EntityDisplay, fieldNamePrefix, entityEligibleNFTs: options, selectedNfts, isProposalAction: true };
-                        return (
-                            <>
-                                <HorizontalInfusionCard key={index.toString()} {...newIi} />
-                                {/* display map of eligible infusion collections and the minimum needed */}
-
-                            </>
-                        )
+                        return (<HorizontalInfusionCard key={index.toString()} {...newIi} />)
                     })}
 
 

@@ -12,7 +12,7 @@ import { cw721BaseQueries, cwInfuserExtraQueries, cwInfuserQueries, nftQueries }
 import { ExecuteMsg, NFT } from "@dao-dao/types/contracts/CwInfuser";
 import { useTokenBalances } from "../../../hooks";
 import { HugeDecimal } from "@dao-dao/math";
-import { CreateInfusionData } from "./CreateInfusion";
+import { CreateInfusion, CreateInfusionData } from "./CreateInfusion";
 import { useTranslation } from "react-i18next";
 import { ComponentType } from "react";
 import { InfusionWidgetData } from "../../../../widgets/widgets/Infusions/types";
@@ -224,7 +224,14 @@ const Component: ComponentType<ActionComponentProps<undefined, ManageInfusionsDa
                     tabs={tabs}
                 />
             ) : (<p className="title-text mb-2">{selectedTab?.label}</p>)}
-
+            {mode === InfusionActionMode.Create ? (
+                <CreateInfusion
+                    {...props}
+                    fieldNamePrefix={props.fieldNamePrefix + 'create.'}
+                    options={{
+                        tokens, AddressInput,
+                    }}
+                />) : null}
             {mode === InfusionActionMode.Infuse ? (
                 <InfuseNftsComponent
                     {...props}
@@ -238,9 +245,6 @@ const Component: ComponentType<ActionComponentProps<undefined, ManageInfusionsDa
                         NftSelectionModal,
                     }}
                 />) : null}
-            {mode === InfusionActionMode.Create ? (
-                <></>) : null}
-
 
         </SuspenseLoader>)
 }
@@ -283,6 +287,7 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
         this.defaults = {
             mode: InfusionActionMode.Infuse,
             create: {
+                infusionMinter: '',
                 chainId: this.options.chain.chainId,
                 collections: [],
                 infusedCollection: { base_uri: '', name: '', num_tokens: 0, sg: true, symbol: '' },
@@ -451,6 +456,7 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                 mode: InfusionActionMode.Create,
                 create: {
                     chainId,
+                    infusionMinter: decodedMessage.wasm.execute.contract_addr,
                     collections: decodedMessage.wasm.execute.msg.create_infusion.collections,
                     infusedCollection: decodedMessage.wasm.execute.msg.create_infusion.infused_collection,
                     infusionParams: decodedMessage.wasm.execute.msg.create_infusion.infusion_params,

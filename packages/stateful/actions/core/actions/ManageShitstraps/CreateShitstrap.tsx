@@ -115,8 +115,8 @@ export const CreateShitstrap: ComponentType<
     // get connected wallet balance info
     const { address: walletAddress, getSigningClient } = useWallet()
     const { chainId, bech32Prefix } = useChain()
-
     const tokenBalances = useTokenBalances()
+
 
     if (chainContext.type !== ActionChainContextType.Supported) {
       throw new Error('Unsupported chain context')
@@ -134,21 +134,14 @@ export const CreateShitstrap: ComponentType<
       clearErrors,
     } = useFormContext<CreateShitstrapData>()
 
-
     const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
     const watchCutoffAmount = watch((fieldNamePrefix + 'cutoff') as 'cutoff')
-    const watchDescription = watch(
-      (fieldNamePrefix + 'description') as 'description'
-    )
-    const watchEligibleAssets = watch(
-      (fieldNamePrefix + 'possibleShit') as 'possibleShit'
-    )
-    const watchShitstrapOwner = watch(
-      (fieldNamePrefix + 'ownerEntity') as 'ownerEntity'
-    )
-    const watchTokentoShit = watch(
-      (fieldNamePrefix + 'tokenToShit') as 'tokenToShit'
-    )
+    const watchDescription = watch((fieldNamePrefix + 'description') as 'description')
+    const watchEligibleAssets = watch((fieldNamePrefix + 'possibleShit') as 'possibleShit')
+    const watchShitstrapOwner = watch((fieldNamePrefix + 'ownerEntity') as 'ownerEntity')
+    const watchTokentoShit = watch((fieldNamePrefix + 'tokenToShit') as 'tokenToShit')
+    const ownerEntityAddress: string | undefined = watch((fieldNamePrefix + 'ownerEntity.address') as 'ownerEntity.address')
+    const watchSelfEntity = watch((fieldNamePrefix + 'selfEntity') as 'selfEntity')
     const {
       fields: eligibleAssetFields,
       append: appendEligibleAsset,
@@ -195,9 +188,6 @@ export const CreateShitstrap: ComponentType<
     ]
 
     // Only set defaults once.
-    const watchSelfEntity = watch(
-      (fieldNamePrefix + 'selfEntity') as 'selfEntity'
-    )
     const [defaultsSet, setDefaultsSet] = useState(
       !!watchSelfEntity && !!watchShitstrapOwner
     )
@@ -248,9 +238,7 @@ export const CreateShitstrap: ComponentType<
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    const ownerEntityAddress: string | undefined = watch(
-      (fieldNamePrefix + 'ownerEntity.address') as 'ownerEntity.address'
-    )
+
 
     // Get counterparty entity, which reverse engineers a DAO from its polytone
     // proxy.
@@ -506,14 +494,8 @@ export const CreateShitstrap: ComponentType<
                           data: watchShitstrapOwnerTokenBalances.data.map(
                             ({ token, balance }) => ({
                               ...token,
-                              description:
-                                t('title.balance') +
-                                ': ' +
-                                HugeDecimal.from(
-                                  balance
-                                ).toInternationalizedHumanReadableString({
-                                  decimals: 6,
-                                }),
+                              description: t('title.balance') + ': ' + HugeDecimal
+                                .from(balance).toInternationalizedHumanReadableString({ decimals: 6, }),
                             })
                           ),
                         }
@@ -535,10 +517,7 @@ export const CreateShitstrap: ComponentType<
           <InputLabel name={t('form.possibleShit')} primary />
           {eligibleAssetFields.map((props, index) => {
             return (
-              <div
-                key={props.id}
-                className="flex flex-row flex-wrap items-center gap-2"
-              >
+              <div key={props.id} className="flex flex-row flex-wrap items-center gap-2">
                 <div className="flex shrink-0 flex-col gap-1">
                   <div className="flex flex-row items-end justify-between gap-2"></div>
                   <div className="flex flex-row gap-1">
