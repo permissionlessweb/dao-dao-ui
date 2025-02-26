@@ -72,9 +72,8 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     const watchCollection = watch((fieldNamePrefix + 'collection') as 'collection')
     const watchTokenId = watch((fieldNamePrefix + 'tokenId') as 'tokenId')
     const watchPaymentInfusionExists = watch((fieldNamePrefix + 'paymentSubstituteExists') as 'paymentSubstituteExists')
+    const watchInfuionBundles = watch((fieldNamePrefix + 'infusionBundles') as 'infusionBundles')
 
-    const watchInfuionBundles = watch((fieldNamePrefix + 'infusionBundles') as 'infusionBundles'
-    )
 
     // bundles
     const {
@@ -107,7 +106,6 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     // if there are more than one bundle that have the nft collection being added, we check the number of the current nft collection are in the bundle. 
     /// if there is a bundle we can add the nft to, we add it to that one, or else we create a new bundle.
     const updateInfusionBundles = (nft: LazyNftCardInfo, remove: boolean = false) => {
-
         const required = infusion?.[0]?.collections.find(
             (accNftColl) => accNftColl.addr === nft.collectionAddress
         )?.min_req

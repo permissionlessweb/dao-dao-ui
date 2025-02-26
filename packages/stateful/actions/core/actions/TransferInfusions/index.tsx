@@ -1,13 +1,13 @@
 import { ActionBase, AddressInput, BoxEmoji, Loader, SegmentedControls, useActionOptions, useCachedLoadingWithError } from "@dao-dao/stateless";
 import { ActionComponent, ActionComponentProps, ActionContextType, ActionKey, ActionMatch, ActionOptions, Coin, LazyNftCardInfo, LoadingDataWithError, ProcessedMessage, SegmentedControlsProps, TokenType, TypedOption, UnifiedCosmosMsg } from "@dao-dao/types";
-import { InfuseNftsComponent, InfuseNftsData } from "./Component";
+import { InfuseNftsComponent, InfuseNftsData } from "./InfuseNfts";
 import { chainIsIndexed, combineLoadingDataWithErrors, encodeJsonToBase64, getChainAddressForActionOptions, makeCombineQueryResultsIntoLoadingDataWithError, makeExecuteSmartContractMessage, maybeMakePolytoneExecuteMessages, objectMatchesStructure } from "@dao-dao/utils";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { lazyNftCardInfosForDaoSelector, walletLazyNftCardInfosSelector } from "@dao-dao/state/recoil";
 import { useCw721CommonGovernanceTokenInfoIfExists } from "../../../../voting-module-adapter";
 import { constSelector } from "recoil";
 import { NftSelectionModal, SuspenseLoader } from "../../../../components";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { QueryClient, useQueries, useQueryClient } from "@tanstack/react-query";
 import { cw721BaseQueries, cwInfuserExtraQueries, cwInfuserQueries, nftQueries } from "@dao-dao/state/query";
 import { ExecuteMsg, NFT } from "@dao-dao/types/contracts/CwInfuser";
 import { useTokenBalances } from "../../../hooks";
@@ -57,13 +57,15 @@ const infuseBundlesStructure = { infuse: { infusion_id: {}, bundle: {} } }
  * Get infusion config
  */
 const getInfusionConfig = (
-    options: ActionOptions,
+
+    queryClient: QueryClient,
+    chainId: string,
     infuserAddr: string,
 ) => {
-    const infusionConfig = chainIsIndexed(options.chain.chainId) ? cwInfuserExtraQueries.config(options.queryClient, {
-        chainId: options.chain.chainId,
+    const infusionConfig = cwInfuserExtraQueries.config(queryClient, {
+        chainId: chainId,
         address: infuserAddr,
-    }) : []
+    })
     return infusionConfig
 }
 
@@ -90,7 +92,15 @@ const getIsInfuserApproved = (options: ActionOptions, nftAddr: string, spender: 
     return infusionInfo
 }
 
-
+// grabs the infusion config from the infusion minter defined in form
+const useInfusionConfigFromForm = (queryClient: QueryClient, chainId: string, infusionMinter: string,) => {
+    return useQueries({
+        queries: [getInfusionConfig(queryClient, chainId, infusionMinter)],
+        combine: makeCombineQueryResultsIntoLoadingDataWithError({
+            transform: (infos) => infos.flat(),
+        }),
+    })
+}
 const useInfusionContractFromForm = (options: ActionOptions, infusionMinter: string, infusionId: string) => {
     return useQueries({
         queries: [getInfusionById(options, infusionMinter, parseInt(infusionId))],
@@ -121,13 +131,16 @@ const Component: ComponentType<ActionComponentProps<undefined, ManageInfusionsDa
 
     const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
     const watchChainId = mode === 'create' ? watch((props.fieldNamePrefix + 'create.chainId') as 'create.chainId') : watch((props.fieldNamePrefix + 'infuse.chainId') as 'infuse.chainId')
-    const watchInfusionMinter = watch((props.fieldNamePrefix + 'infuse.infusionMinter') as 'infuse.infusionMinter')
+    const watchInfusionMinter = mode === 'create' ?
+        watch((props.fieldNamePrefix + 'create.infusionMinter') as 'create.infusionMinter') :
+        watch((props.fieldNamePrefix + 'infuse.infusionMinter') as 'infuse.infusionMinter')
     const watchInfusionId = watch((props.fieldNamePrefix + 'infuse.infusionId') as 'infuse.infusionId')
     const watchInfusionBundles = watch((props.fieldNamePrefix + 'infuse.infusionBundles') as 'infuse.infusionBundles')
     const watchFunds = watch((props.fieldNamePrefix + 'infuse.funds') as 'infuse.funds')
     const watchTokenId = watch((props.fieldNamePrefix + 'infuse.tokenId') as 'infuse.tokenId')
     const watchCollection = watch((props.fieldNamePrefix + 'infuse.collection') as 'infuse.collection')
     const cw20 = false
+
 
     const tabs: SegmentedControlsProps<ManageInfusionsData['mode']>['tabs'] = [
         // Only allow beginning a vest if widget is setup. ([
@@ -194,6 +207,7 @@ const Component: ComponentType<ActionComponentProps<undefined, ManageInfusionsDa
                 )
             )
 
+    const infusionConfig = useInfusionConfigFromForm(options.queryClient, watchChainId, watchInfusionMinter)
     const infusionInfoLDWE = useInfusionContractFromForm(options, watchInfusionMinter, watchInfusionId)
     const infusionInfo = !infusionInfoLDWE.errored && !infusionInfoLDWE.loading ? infusionInfoLDWE.data : []
 
@@ -225,10 +239,12 @@ const Component: ComponentType<ActionComponentProps<undefined, ManageInfusionsDa
                 />
             ) : (<p className="title-text mb-2">{selectedTab?.label}</p>)}
             {mode === InfusionActionMode.Create ? (
+
                 <CreateInfusion
                     {...props}
                     fieldNamePrefix={props.fieldNamePrefix + 'create.'}
                     options={{
+                        infusion: infusionConfig,
                         tokens, AddressInput,
                     }}
                 />) : null}
@@ -292,8 +308,9 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                 collections: [],
                 infusedCollection: { base_uri: '', name: '', num_tokens: 0, sg: true, symbol: '' },
                 infusionParams: {},
-                paymentRecipient: this.options.address,
-                owner: this.options.address,
+                paymentRecipient: '',
+                owner: '',
+                deposit: []
             },
             infuse: {
                 paymentSubstituteExists: false,
@@ -325,26 +342,52 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
             const createInfusionMsg = makeExecuteSmartContractMessage({
                 chainId,
                 sender,
-                contractAddress: infuse.infusionMinter,
+                contractAddress: create.infusionMinter,
                 msg: {
-                    create_infusion: [
-                        {
-                            owner: create.owner,
-                            paymentRecipient: create.paymentRecipient,
-                            collections: create.collections,
-                            infused_collection: create.infusedCollection,
-                            infusion_params: create.infusionParams,
-                            // description: create.description
-                        }]
+                    create_infusion: {
+                        infusions: [
+                            {
+                                owner: create.owner,
+                                collections: create.collections.map((coll) => {
+                                    return {
+                                        addr: coll.addr,
+                                        min_req: coll.min_req,
+                                        max_req: coll.max_req ?
+                                            HugeDecimal.from(coll.max_req).toNumber() : HugeDecimal.from(coll.min_req).toNumber(),
+                                        payment_substitute: {
+                                            denom: coll.payment_substitute?.denom,
+                                            amount: coll.payment_substitute?.amount
+                                        },
+                                    }
+                                }),
+                                infused_collection: {
+                                    sg: chainId == "stargaze-1" ? true : false,
+                                    admin: create.infusedCollection.admin,
+                                    name: create.infusedCollection.name,
+                                    symbol: create.infusedCollection.symbol,
+                                    base_uri: create.infusedCollection.base_uri,
+                                    num_tokens: HugeDecimal.from(create.infusedCollection.num_tokens).toNumber(),
+                                    royalty_info: {
+                                        payment_address: create.infusedCollection.royalty_info?.payment_address,
+                                        share: HugeDecimal.fromHumanReadable(create.infusedCollection.royalty_info?.share!, 0),
+                                    },
+                                    // explicit_content:  create.infusedCollection.explicit_content,
+                                    // external_link: create.infusedCollection.external_link,
+                                },
+                                infusion_params: create.infusionParams,
+                                payment_recipient: create.paymentRecipient,
+                                // description: create.description
+                            }
+                        ]
+                    }
                 },
-                funds: infuse.funds
-                    .map(({ denom, amount, decimals }) =>
-                        HugeDecimal.fromHumanReadable(amount, decimals).toCoin(denom)
+                funds: create.deposit
+                    .map(({ denom, amount }) =>
+                        HugeDecimal.from(amount).toCoin(denom)
                     )
                     // Neutron errors with `invalid coins` if the funds list is not
                     // alphabetized.
                     .sort((a, b) => a.denom.localeCompare(b.denom)),
-
             });
 
             return maybeMakePolytoneExecuteMessages(
@@ -461,6 +504,7 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                     infusedCollection: decodedMessage.wasm.execute.msg.create_infusion.infused_collection,
                     infusionParams: decodedMessage.wasm.execute.msg.create_infusion.infusion_params,
                     paymentRecipient: decodedMessage.wasm.execute.msg.create_infusion.payment_recipient,
+                    deposit: decodedMessage.wasm.execute.funds,
                 },
             }
         } else if (isNativeInfuse) {

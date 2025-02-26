@@ -12,7 +12,7 @@ import { LazyNftCardInfo, LoadingDataWithError } from "@dao-dao/types";
 import { useEntity, useWallet } from "../../hooks";
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
-import { InfuseNftsData } from "../../actions/core/actions/TransferInfusions/Component";
+import { InfuseNftsData } from "../../actions/core/actions/TransferInfusions/InfuseNfts";
 
 interface InfusionItemProps {
     isProposalAction: boolean;

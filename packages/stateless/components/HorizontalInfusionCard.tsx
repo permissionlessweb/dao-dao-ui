@@ -26,9 +26,10 @@ import { EligibleCollectionCard } from './infusions'
 import { HorizontalScroller } from './HorizontalScroller'
 import { NftSelectionModal } from '@dao-dao/stateful'
 import { useFieldArray, useFormContext } from 'react-hook-form'
-import { InfuseNftsData } from '@dao-dao/stateful/actions/core/actions/TransferInfusions/Component'
+
 import { HorizontalNftCard, HorizontalNftCardLoader } from './HorizontalNftCard'
 import { ErrorPage } from './error'
+import { InfuseNftsData } from '@dao-dao/stateful/actions/core/actions/TransferInfusions/InfuseNfts'
 
 
 export interface HorizontalInfusionCardProps extends Infusion {

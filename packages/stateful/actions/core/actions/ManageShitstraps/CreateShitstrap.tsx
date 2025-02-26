@@ -112,15 +112,14 @@ export const CreateShitstrap: ComponentType<
       ActionKey.ConfigureShitstrapPayments
     )
 
+    if (chainContext.type !== ActionChainContextType.Supported) {
+      throw new Error('Unsupported chain context')
+    }
+
     // get connected wallet balance info
     const { address: walletAddress, getSigningClient } = useWallet()
     const { chainId, bech32Prefix } = useChain()
     const tokenBalances = useTokenBalances()
-
-
-    if (chainContext.type !== ActionChainContextType.Supported) {
-      throw new Error('Unsupported chain context')
-    }
 
     // create forms
     const {
@@ -169,9 +168,7 @@ export const CreateShitstrap: ComponentType<
 
 
     const shitstrapFactoryExists = !!widgetData?.factories?.[watchChainId]
-    const shitstrapOwnerAddrValid =
-      !!watchShitstrapOwner &&
-      isValidBech32Address(watchShitstrapOwner.address, currentChain.bech32Prefix)
+    const shitstrapOwnerAddrValid = !!watchShitstrapOwner && isValidBech32Address(watchShitstrapOwner.address, currentChain.bech32Prefix)
 
     const crossChainAccountActionExists = allActionsWithData.some(
       (action) => action.actionKey === ActionKey.ConfigureShitstrapPayments
@@ -355,8 +352,8 @@ export const CreateShitstrap: ComponentType<
                 })}
                 style="warning"
               >
-                {console.log("crossChainAccountActionExists", crossChainAccountActionExists)}
-                {console.log("configureCreateShitStrapActionDefaults", configureCreateShitStrapActionDefaults)}
+                {/* {console.log("crossChainAccountActionExists", crossChainAccountActionExists)}
+                {console.log("configureCreateShitStrapActionDefaults", configureCreateShitStrapActionDefaults)} */}
                 <Button
                   disabled={shitstrapFactoryExists}
                   onClick={() => {

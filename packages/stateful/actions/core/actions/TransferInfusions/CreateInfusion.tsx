@@ -1,13 +1,13 @@
-import { InfusedCollection, InfusionParams, NFTCollection } from "@dao-dao/types/contracts/CwInfuser"
+import { Config, InfusedCollection, InfusionParams, NFTCollection } from "@dao-dao/types/contracts/CwInfuser"
 import { Counterparty } from "../token_swap/types"
-import { ComponentType } from "react"
-import { ActionChainContextType, ActionComponentProps, ActionKey, AddressInputProps, EntityType, GenericTokenBalance, GenericTokenBalanceWithOwner, LoadingData, TokenType } from "@dao-dao/types"
+import { ComponentType, useEffect } from "react"
+import { ActionChainContextType, ActionComponentProps, ActionContextType, ActionKey, AddressInputProps, EntityType, GenericTokenBalance, GenericTokenBalanceWithOwner, LoadingData, LoadingDataWithError, TokenType } from "@dao-dao/types"
 import { useTranslation } from "react-i18next"
-import { AddressInput, Button, FormSwitch, IconButton, InputLabel, NumericInput, TextInput, TokenInput, useActionOptions, useCachedLoading, useChain, useInitializedActionForKey } from "@dao-dao/stateless"
+import { AddressInput, Button, DaoSupportedChainPickerInput, FormSwitch, IconButton, InputLabel, NumericInput, TextInput, TokenAmountDisplay, TokenInput, useActionOptions, useCachedLoading, useChain, useInitializedActionForKey } from "@dao-dao/stateless"
 import { useEntity, useWallet } from "../../../../hooks"
 import { useTokenBalances } from "../../../hooks"
 import { useFieldArray, useFormContext } from "react-hook-form"
-import { getChainForChainId, getSupportedChainConfig, isValidBech32Address, makeValidateAddress } from "@dao-dao/utils"
+import { getChainAddressForActionOptions, getChainForChainId, getSupportedChainConfig, isValidBech32Address, makeValidateAddress, validatePositive, validateRequired } from "@dao-dao/utils"
 import { HugeDecimal } from "@dao-dao/math"
 import { constSelector, useRecoilValueLoadable } from "recoil"
 import { DaoDaoCoreSelectors, genericTokenBalancesSelector } from "@dao-dao/state/recoil"
@@ -22,12 +22,16 @@ export type CreateInfusionData = {
     infusionParams: InfusionParams
     paymentRecipient: string
     owner?: string
+    deposit: {
+        amount: string
+        denom: string
+    }[]
     //   description: string
 }
 
 export type CreateInfusionOptions = {
     tokens: LoadingData<GenericTokenBalance[]>
-
+    infusion: LoadingDataWithError<Config[]>
     AddressInput: ComponentType<AddressInputProps<CreateInfusionData>>
 }
 
@@ -48,6 +52,7 @@ export const CreateInfusion: ComponentType<
             chainContext,
             chain: { chainId: nativeChainId },
         } = actionOptions
+
         const configureCreateInfusionActionDefaults = useInitializedActionForKey(
             ActionKey.ConfigureShitstrapPayments
         )
@@ -71,12 +76,6 @@ export const CreateInfusion: ComponentType<
             ),
         ]
 
-
-        if (chainContext.type !== ActionChainContextType.Supported) {
-            throw new Error('Unsupported chain context')
-        }
-
-
         // create forms
         const {
             control,
@@ -96,7 +95,7 @@ export const CreateInfusion: ComponentType<
         const watchInfusedParams = watch((fieldNamePrefix + 'infusionParams') as 'infusionParams')
         const watchPaymentRecipient = watch((fieldNamePrefix + 'paymentRecipient') as 'paymentRecipient')
         const watchOwner = watch((fieldNamePrefix + 'owner') as 'owner')
-        const watchRoyaltyInfo = watch((fieldNamePrefix + 'royaltyInfo') as 'owner')
+        const watchCreationFee = watch((fieldNamePrefix + 'deposit') as 'deposit')
 
         const {
             fields: eligibleCollectionField,
@@ -139,31 +138,64 @@ export const CreateInfusion: ComponentType<
             []
         )
 
-
-
         const currentChain = getChainForChainId(watchChainId)
+        const chainAddressOwner = getChainAddressForActionOptions(
+            actionOptions,
+            currentChain.chainId
+        )
+        const validInfusionMinterAddr = !!watchInfusionMinter && isValidBech32Address(watchInfusionMinter, currentChain.bech32Prefix)
+        const infusionConfig = options.infusion.loading || options.infusion.errored ? null : options.infusion.data[0]
+
+
+        useEffect(() => {
+            console.log("options.infusion:", options.infusion)
+            if (!options.infusion.errored && !options.infusion.loading && infusionConfig?.min_creation_fee) {
+                setValue((fieldNamePrefix + 'deposit.0.amount') as 'deposit.0.amount', infusionConfig.min_creation_fee.amount)
+                setValue((fieldNamePrefix + 'deposit.0.denom') as 'deposit.0.denom', infusionConfig.min_creation_fee.denom)
+
+            } else {
+                setValue((fieldNamePrefix + 'deposit') as 'deposit', [])
+            }
+            console.log("watchCreationFee:", watchCreationFee)
+        }, [options.infusion])
+
         return (
             <>
                 <div className="flex flex-col gap-4">
                     {isCreating && (<>
+                        {context.type === ActionContextType.Dao && (
+                            <DaoSupportedChainPickerInput
+                                disabled={!isCreating}
+                                fieldName={fieldNamePrefix + 'chainId'}
+                                onChange={(chainId) => {
+                                    // Reset when switching chain.
+                                    setValue((fieldNamePrefix + 'chainId') as 'chainId', chainId)
+                                    setValue((fieldNamePrefix + 'collections') as 'collections', [])
+                                    setValue((fieldNamePrefix + 'infusionParams') as 'infusionParams', {})
+                                    setValue((fieldNamePrefix + 'owner') as 'owner', chainAddressOwner ? chainAddressOwner : '')
+                                    setValue((fieldNamePrefix + 'paymentRecipient') as 'paymentRecipient', chainAddressOwner ? chainAddressOwner : '')
+                                }}
+                            />
+                        )}
                         <div className="space-y-2">
                             <InputLabel name={t('form.infusionMinter')} />
                             <AddressInput
                                 containerClassName="grow"
                                 disabled={!isCreating}
                                 error={errors?.recipient}
-                                fieldName={(fieldNamePrefix + 'infusedCollection.royalty_info.payment_address') as 'infusedCollection.royalty_info.payment_address'}
+                                fieldName={(fieldNamePrefix + 'infusionMinter') as 'infusionMinter'}
                                 register={register}
                                 validation={[
                                     makeValidateAddress(currentChain.bech32Prefix),
                                 ]}
                             />
-                            {isValidBech32Address(watchInfusionMinter) ? (<>
-
+                            {validInfusionMinterAddr ? (<>
+                                <p className="primary-text mb-3">{t('form.infusedCollectionDetails')}</p>
                                 <div className="flex flex-row gap-3">
                                     {/* define new infused params */}
                                     <InputLabel name={t('form.infusedName')} />
                                     <TextInput
+                                        className="w-1/3"
                                         disabled={!isCreating}
                                         error={errors?.title}
                                         fieldName={(fieldNamePrefix + 'infusedCollection.name') as 'infusedCollection.name'}
@@ -172,6 +204,7 @@ export const CreateInfusion: ComponentType<
                                     />
                                     <InputLabel name={t('form.infusedSymbol')} />
                                     <TextInput
+                                        className="w-1/4"
                                         disabled={!isCreating}
                                         error={errors?.title}
                                         fieldName={(fieldNamePrefix + 'infusedCollection.symbol') as 'infusedCollection.symbol'}
@@ -180,10 +213,15 @@ export const CreateInfusion: ComponentType<
                                     />
                                     <InputLabel name={t('form.infusedNumToken')} />
                                     <NumericInput
+                                        className="!w-9"
+                                        getValues={getValues}
+                                        register={register}
+                                        setValue={setValue}
+                                        validation={[validatePositive, validateRequired]}
+                                        min={1}
                                         disabled={!isCreating}
                                         error={errors?.title}
                                         fieldName={(fieldNamePrefix + 'infusedCollection.num_tokens') as 'infusedCollection.num_tokens'}
-                                        register={register}
                                         required
                                     />
                                 </div>
@@ -198,16 +236,13 @@ export const CreateInfusion: ComponentType<
                                     />
                                     <InputLabel name={t('form.infusedExternalLink')} />
                                     <TextInput
+                                        className="width-auto"
                                         disabled={!isCreating}
                                         error={errors?.title}
                                         fieldName={(fieldNamePrefix + 'infusedCollection.external_link') as 'infusedCollection.external_link'}
                                         register={register}
                                     />
                                 </div>
-
-
-                                {/* optional values */}
-                                <InputLabel name={t('form.infusedRoyaltyInfo')} />
                                 <div className="flex flex-row gap-3">
                                     <InputLabel name={t('form.royaltyRecipientAddress')} />
                                     <AddressInput
@@ -224,15 +259,20 @@ export const CreateInfusion: ComponentType<
                                     <NumericInput
                                         disabled={!isCreating}
                                         error={errors?.title}
-                                        fieldName={(fieldNamePrefix + 'infusedCollection.num_tokens') as 'infusedCollection.num_tokens'}
+                                        fieldName={(fieldNamePrefix + 'infusedCollection.royalty_info.share') as 'infusedCollection.royalty_info.share'}
+                                        getValues={getValues}
                                         register={register}
+                                        min={0.01}
+                                        max={100}
+                                        step={0.01}
+                                        setValue={setValue}
                                         placeholder={t('form.infusionRoyaltyShares')}
                                     />
 
                                 </div>
                                 {/* input for eligible collections */}
                                 <div className="flex flex-col gap-3">
-                                    <InputLabel name={t('form.infusedEligibleCollections')} />
+                                    <p className="primary-text mb-3">{t('form.infusedEligibleCollections')}</p>
                                     {eligibleCollectionField.map((props, index) => {
                                         return (
                                             <div key={props.id} className={`flex rounded-lg p-3 flex-row flex-wrap items-center gap-2 ${index % 2 === 0
@@ -267,17 +307,25 @@ export const CreateInfusion: ComponentType<
                                                                 disabled={!isCreating}
                                                                 error={errors?.title}
                                                                 fieldName={(fieldNamePrefix + `collections.${index}.min_req`) as `collections.${number}.min_req`}
+                                                                getValues={getValues}
                                                                 register={register}
+                                                                setValue={setValue}
+                                                                min={1}
+                                                                numericValue
+                                                                max={10}
                                                                 required
                                                             />
                                                         </div>
                                                         <div className="flex flex-col gap-4">
                                                             <InputLabel name={t('form.infusedEligibleCollectionMaxRequired')} />
                                                             <NumericInput
+                                                                max={25}
                                                                 disabled={!isCreating}
                                                                 error={errors?.title}
                                                                 fieldName={(fieldNamePrefix + `collections.${index}.max_req`) as `collections.${number}.max_req`}
+                                                                getValues={getValues}
                                                                 register={register}
+                                                                setValue={setValue}
                                                             />
                                                         </div>
 
@@ -287,20 +335,20 @@ export const CreateInfusion: ComponentType<
                                                         <TokenInput
                                                             amount={{
                                                                 watch, setValue, register, getValues,
-                                                                fieldName: (fieldNamePrefix + `collections.${index}.payment_substitute`) as `collections.${number}.payment_substitute`,
+                                                                fieldName: (fieldNamePrefix + `collections.${index}.payment_substitute.amount`) as `collections.${number}.payment_substitute.amount`,
                                                                 error: errors?.amount,
                                                                 min: HugeDecimal.one.toHumanReadableNumber(6),
                                                                 step: HugeDecimal.one.toHumanReadableNumber(6),
                                                             }}
                                                             // disabled={!shitstrapOwnerAddrValid}
                                                             onSelectToken={(token) => {
-                                                                setValue((fieldNamePrefix + 'infusionParams.mint_fee.denom') as 'infusionParams.mint_fee.denom', token?.denomOrAddress!)
+                                                                setValue((fieldNamePrefix + `collections.${index}.payment_substitute.denom`) as `collections.${number}.payment_substitute.denom`, token?.denomOrAddress!)
                                                             }}
                                                             onCustomTokenChange={(custom) => {
-                                                                setValue((fieldNamePrefix + 'infusionParams.mint_fee.denom') as 'infusionParams.mint_fee.denom', custom)
+                                                                setValue((fieldNamePrefix + `collections.${index}.payment_substitute.denom`) as `collections.${number}.payment_substitute.denom`, custom)
                                                             }}
                                                             allowCustomToken
-                                                            // readOnly={!isCreating}
+                                                            readOnly={!isCreating}
                                                             selectedToken={{
                                                                 type: TokenType.Native,
                                                                 denomOrAddress: watchInfusedParams.mint_fee?.denom!,
@@ -319,8 +367,7 @@ export const CreateInfusion: ComponentType<
                                                                             description:
                                                                                 t('title.balance') +
                                                                                 ': ' +
-                                                                                HugeDecimal.from(
-                                                                                    balance
+                                                                                HugeDecimal.from(balance
                                                                                 ).toInternationalizedHumanReadableString({
                                                                                     decimals: 6,
                                                                                 }),
@@ -333,7 +380,6 @@ export const CreateInfusion: ComponentType<
                                             </div>
                                         )
                                     })}
-
                                 </div>
                                 {
                                     isCreating && (
@@ -364,12 +410,9 @@ export const CreateInfusion: ComponentType<
                                     containerClassName="grow"
                                     disabled={!isCreating}
                                     error={errors?.recipient}
-                                    fieldName={(fieldNamePrefix + 'owner') as 'owner'}
+                                    fieldName={(fieldNamePrefix + 'paymentRecipient') as 'paymentRecipient'}
                                     register={register}
-                                    validation={[
-
-                                        makeValidateAddress(currentChain.bech32Prefix),
-                                    ]}
+                                    validation={[makeValidateAddress(currentChain.bech32Prefix)]}
                                 />
                                 <InputLabel name={t('form.infusionParams')} />
                                 <InputLabel name={t('form.infusionMintFee')} />
@@ -422,6 +465,19 @@ export const CreateInfusion: ComponentType<
                                 /></>) : null}
 
                         </div>
+                        {infusionConfig?.min_creation_fee && (
+                            <>
+                                <TokenAmountDisplay
+                                    amount={HugeDecimal.from(infusionConfig.min_creation_fee.amount)}
+                                    decimals={6}
+                                    // iconUrl={distribution.token.imageUrl}
+                                    showAllDecimals
+                                    showFullAmount
+                                    symbol={infusionConfig.min_creation_fee.denom}
+                                />
+                            </>
+
+                        )}
                     </>)}
                 </div>
             </>)
