@@ -1281,7 +1281,7 @@
       "DaoProposalMultiple": 91,
       "DaoProposalSingle": 92,
       "DaoVotingCw4": 93,
-      "CwInfuser": 592
+      "CwInfuser": 595
     },
     "2.3.0": {
       "Cw4Group": 83,
@@ -1297,7 +1297,7 @@
       "DaoVotingCw4": 133,
       "DaoVotingCw721Staked": 120,
       "DaoVotingTokenStaked": 121,
-      "CwInfuser": 592
+      "CwInfuser": 595
     },
     "2.4.0": {
       "Cw1Whitelist": 152,
@@ -1318,7 +1318,7 @@
       "DaoVotingTokenStaked": 162,
       "ShitStrap": 4734,
       "ShitStrapFactory": 4733,
-      "CwInfuser": 592
+      "CwInfuser": 595
     },
     "2.5.0": {
       "Cw1Whitelist": 152,
@@ -1341,7 +1341,7 @@
       "DaoVotingTokenStaked": 351,
       "ShitStrap": 4734,
       "ShitStrapFactory": 4733,
-      "CwInfuser": 592
+      "CwInfuser": 595
     },
     "2.6.0": {
       "Cw1Whitelist": 152,
@@ -1363,7 +1363,7 @@
       "DaoVotingCw4": 439,
       "DaoVotingCw721Staked": 441,
       "DaoVotingTokenStaked": 443,
-      "CwInfuser": 592
+      "CwInfuser": 595
     }
   },
   "theta-testnet-001": {

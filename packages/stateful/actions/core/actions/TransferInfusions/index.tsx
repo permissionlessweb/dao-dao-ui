@@ -303,14 +303,23 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
         this.defaults = {
             mode: InfusionActionMode.Infuse,
             create: {
-                infusionMinter: '',
                 chainId: this.options.chain.chainId,
-                collections: [],
-                infusedCollection: { base_uri: '', name: '', num_tokens: 0, sg: true, symbol: '' },
-                infusionParams: {},
-                paymentRecipient: '',
+                infusionMinter: '',
                 owner: '',
-                deposit: []
+                paymentRecipient: '',
+                description: '',
+                infusedCollection: {
+                    name: '',
+                    symbol: '',
+                    description: '',
+                    base_uri: '',
+                    image: '',
+                    num_tokens: 0,
+                    sg: true,
+                },
+                collections: [],
+                infusionParams: {},
+                deposit: [],
             },
             infuse: {
                 paymentSubstituteExists: false,
@@ -348,6 +357,8 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                         infusions: [
                             {
                                 owner: create.owner,
+                                payment_recipient: create.paymentRecipient,
+                                description: create.description,
                                 collections: create.collections.map((coll) => {
                                     return {
                                         addr: coll.addr,
@@ -364,19 +375,18 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                                     sg: chainId == "stargaze-1" ? true : false,
                                     admin: create.infusedCollection.admin,
                                     name: create.infusedCollection.name,
+                                    description: create.infusedCollection.description,
                                     symbol: create.infusedCollection.symbol,
                                     base_uri: create.infusedCollection.base_uri,
+                                    image: create.infusedCollection.image,
                                     num_tokens: HugeDecimal.from(create.infusedCollection.num_tokens).toNumber(),
                                     royalty_info: {
                                         payment_address: create.infusedCollection.royalty_info?.payment_address,
                                         share: HugeDecimal.fromHumanReadable(create.infusedCollection.royalty_info?.share!, 0),
                                     },
                                     // explicit_content:  create.infusedCollection.explicit_content,
-                                    // external_link: create.infusedCollection.external_link,
                                 },
                                 infusion_params: create.infusionParams,
-                                payment_recipient: create.paymentRecipient,
-                                // description: create.description
                             }
                         ]
                     }
@@ -505,6 +515,7 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                     infusionParams: decodedMessage.wasm.execute.msg.create_infusion.infusion_params,
                     paymentRecipient: decodedMessage.wasm.execute.msg.create_infusion.payment_recipient,
                     deposit: decodedMessage.wasm.execute.funds,
+                    description: decodedMessage.wasm.execute.msg.create_infusion.description,
                 },
             }
         } else if (isNativeInfuse) {

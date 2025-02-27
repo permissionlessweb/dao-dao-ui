@@ -3,7 +3,7 @@ import { Counterparty } from "../token_swap/types"
 import { ComponentType, useEffect } from "react"
 import { ActionChainContextType, ActionComponentProps, ActionContextType, ActionKey, AddressInputProps, EntityType, GenericTokenBalance, GenericTokenBalanceWithOwner, LoadingData, LoadingDataWithError, TokenType } from "@dao-dao/types"
 import { useTranslation } from "react-i18next"
-import { AddressInput, Button, DaoSupportedChainPickerInput, FormSwitch, IconButton, InputLabel, NumericInput, TextInput, TokenAmountDisplay, TokenInput, useActionOptions, useCachedLoading, useChain, useInitializedActionForKey } from "@dao-dao/stateless"
+import { AddressInput, Button, DaoSupportedChainPickerInput, FormSwitch, IconButton, InputErrorMessage, InputLabel, NumericInput, TextAreaInput, TextInput, TokenAmountDisplay, TokenInput, useActionOptions, useCachedLoading, useChain, useInitializedActionForKey } from "@dao-dao/stateless"
 import { useEntity, useWallet } from "../../../../hooks"
 import { useTokenBalances } from "../../../hooks"
 import { useFieldArray, useFormContext } from "react-hook-form"
@@ -16,6 +16,7 @@ import { Close } from "@mui/icons-material"
 
 export type CreateInfusionData = {
     chainId: string
+    description: string
     infusionMinter: string  //todo: replace for widget
     collections: NFTCollection[]
     infusedCollection: InfusedCollection
@@ -147,189 +148,214 @@ export const CreateInfusion: ComponentType<
         const infusionConfig = options.infusion.loading || options.infusion.errored ? null : options.infusion.data[0]
 
 
+        // automatically set the required infusion creation fee, 
+        // if one exists and current entity is not owner of infusion contract.
         useEffect(() => {
-            console.log("options.infusion:", options.infusion)
-            if (!options.infusion.errored && !options.infusion.loading && infusionConfig?.min_creation_fee) {
+            // console.log("options.infusion:", options.infusion)
+            if (!options.infusion.errored && !options.infusion.loading && infusionConfig?.min_creation_fee && chainAddressOwner != infusionConfig.contract_owner) {
                 setValue((fieldNamePrefix + 'deposit.0.amount') as 'deposit.0.amount', infusionConfig.min_creation_fee.amount)
                 setValue((fieldNamePrefix + 'deposit.0.denom') as 'deposit.0.denom', infusionConfig.min_creation_fee.denom)
 
             } else {
                 setValue((fieldNamePrefix + 'deposit') as 'deposit', [])
             }
-            console.log("watchCreationFee:", watchCreationFee)
+            // console.log("watchCreationFee:", watchCreationFee)
         }, [options.infusion])
 
         return (
             <>
                 <div className="flex flex-col gap-4">
-                    {isCreating && (<>
-                        {context.type === ActionContextType.Dao && (
-                            <DaoSupportedChainPickerInput
-                                disabled={!isCreating}
-                                fieldName={fieldNamePrefix + 'chainId'}
-                                onChange={(chainId) => {
-                                    // Reset when switching chain.
-                                    setValue((fieldNamePrefix + 'chainId') as 'chainId', chainId)
-                                    setValue((fieldNamePrefix + 'collections') as 'collections', [])
-                                    setValue((fieldNamePrefix + 'infusionParams') as 'infusionParams', {})
-                                    setValue((fieldNamePrefix + 'owner') as 'owner', chainAddressOwner ? chainAddressOwner : '')
-                                    setValue((fieldNamePrefix + 'paymentRecipient') as 'paymentRecipient', chainAddressOwner ? chainAddressOwner : '')
-                                }}
-                            />
-                        )}
-                        <div className="space-y-2">
-                            <InputLabel name={t('form.infusionMinter')} />
-                            <AddressInput
-                                containerClassName="grow"
-                                disabled={!isCreating}
-                                error={errors?.recipient}
-                                fieldName={(fieldNamePrefix + 'infusionMinter') as 'infusionMinter'}
-                                register={register}
-                                validation={[
-                                    makeValidateAddress(currentChain.bech32Prefix),
-                                ]}
-                            />
-                            {validInfusionMinterAddr ? (<>
-                                <p className="primary-text mb-3">{t('form.infusedCollectionDetails')}</p>
-                                <div className="flex flex-row gap-3">
-                                    {/* define new infused params */}
-                                    <InputLabel name={t('form.infusedName')} />
-                                    <TextInput
-                                        className="w-1/3"
-                                        disabled={!isCreating}
-                                        error={errors?.title}
-                                        fieldName={(fieldNamePrefix + 'infusedCollection.name') as 'infusedCollection.name'}
-                                        register={register}
-                                        required
-                                    />
-                                    <InputLabel name={t('form.infusedSymbol')} />
-                                    <TextInput
-                                        className="w-1/4"
-                                        disabled={!isCreating}
-                                        error={errors?.title}
-                                        fieldName={(fieldNamePrefix + 'infusedCollection.symbol') as 'infusedCollection.symbol'}
-                                        register={register}
-                                        required
-                                    />
-                                    <InputLabel name={t('form.infusedNumToken')} />
-                                    <NumericInput
-                                        className="!w-9"
-                                        getValues={getValues}
-                                        register={register}
-                                        setValue={setValue}
-                                        validation={[validatePositive, validateRequired]}
-                                        min={1}
-                                        disabled={!isCreating}
-                                        error={errors?.title}
-                                        fieldName={(fieldNamePrefix + 'infusedCollection.num_tokens') as 'infusedCollection.num_tokens'}
-                                        required
-                                    />
-                                </div>
-                                <div className="flex flex-row gap-3">
-                                    <InputLabel name={t('form.infusedBaseUri')} />
-                                    <TextInput
-                                        disabled={!isCreating}
-                                        error={errors?.title}
-                                        fieldName={(fieldNamePrefix + 'infusedCollection.base_uri') as 'infusedCollection.base_uri'}
-                                        register={register}
-                                        required
-                                    />
-                                    <InputLabel name={t('form.infusedExternalLink')} />
-                                    <TextInput
-                                        className="width-auto"
-                                        disabled={!isCreating}
-                                        error={errors?.title}
-                                        fieldName={(fieldNamePrefix + 'infusedCollection.external_link') as 'infusedCollection.external_link'}
-                                        register={register}
-                                    />
-                                </div>
-                                <div className="flex flex-row gap-3">
-                                    <InputLabel name={t('form.royaltyRecipientAddress')} />
-                                    <AddressInput
-                                        containerClassName="grow"
-                                        disabled={!isCreating}
-                                        error={errors?.recipient}
-                                        fieldName={(fieldNamePrefix + 'infusedCollection.royalty_info.payment_address') as 'infusedCollection.royalty_info.payment_address'}
-                                        register={register}
-                                        validation={[
-                                            makeValidateAddress(currentChain.bech32Prefix),
-                                        ]}
-                                    />
-                                    <InputLabel name={t('form.royaltyPercentage')} />
-                                    <NumericInput
-                                        disabled={!isCreating}
-                                        error={errors?.title}
-                                        fieldName={(fieldNamePrefix + 'infusedCollection.royalty_info.share') as 'infusedCollection.royalty_info.share'}
-                                        getValues={getValues}
-                                        register={register}
-                                        min={0.01}
-                                        max={100}
-                                        step={0.01}
-                                        setValue={setValue}
-                                        placeholder={t('form.infusionRoyaltyShares')}
-                                    />
 
-                                </div>
-                                {/* input for eligible collections */}
-                                <div className="flex flex-col gap-3">
-                                    <p className="primary-text mb-3">{t('form.infusedEligibleCollections')}</p>
-                                    {eligibleCollectionField.map((props, index) => {
-                                        return (
-                                            <div key={props.id} className={`flex rounded-lg p-3 flex-row flex-wrap items-center gap-2 ${index % 2 === 0
-                                                ? 'bg-background-secondary'
-                                                : 'bg-background-tertiary'
-                                                }`}>
-                                                {isCreating && (
-                                                    <IconButton
-                                                        Icon={Close}
-                                                        className="mt-6"
-                                                        onClick={() => removeEligibleCollection(index)}
-                                                        size="sm"
-                                                        variant="ghost"
-                                                    />
-                                                )}
-                                                <div className="flex shrink-0 flex-col gap-1">
-                                                    <div className="flex flex-row gap-1">
-                                                        <div className="flex flex-col gap-4">
-                                                            <InputLabel name={t('form.infusedEligibleCollectionAddr')} />
-                                                            <AddressInput
-                                                                containerClassName="grow"
-                                                                disabled={!isCreating}
-                                                                error={errors?.recipient}
-                                                                fieldName={(fieldNamePrefix + `collections.${index}.addr`) as `collections.${number}.addr`}
-                                                                register={register}
-                                                                validation={[makeValidateAddress(currentChain.bech32Prefix)]}
-                                                            />
-                                                        </div>
-                                                        <div className="flex flex-col gap-4">
-                                                            <InputLabel name={t('form.infusedEligibleCollectionMinRequired')} />
-                                                            <NumericInput
-                                                                disabled={!isCreating}
-                                                                error={errors?.title}
-                                                                fieldName={(fieldNamePrefix + `collections.${index}.min_req`) as `collections.${number}.min_req`}
-                                                                getValues={getValues}
-                                                                register={register}
-                                                                setValue={setValue}
-                                                                min={1}
-                                                                numericValue
-                                                                max={10}
-                                                                required
-                                                            />
-                                                        </div>
-                                                        <div className="flex flex-col gap-4">
-                                                            <InputLabel name={t('form.infusedEligibleCollectionMaxRequired')} />
-                                                            <NumericInput
-                                                                max={25}
-                                                                disabled={!isCreating}
-                                                                error={errors?.title}
-                                                                fieldName={(fieldNamePrefix + `collections.${index}.max_req`) as `collections.${number}.max_req`}
-                                                                getValues={getValues}
-                                                                register={register}
-                                                                setValue={setValue}
-                                                            />
-                                                        </div>
+                    {context.type === ActionContextType.Dao && (
+                        <DaoSupportedChainPickerInput
+                            disabled={!isCreating}
+                            fieldName={fieldNamePrefix + 'chainId'}
+                            onChange={(chainId) => {
+                                // Reset when switching chain.
+                                setValue((fieldNamePrefix + 'chainId') as 'chainId', chainId)
+                                setValue((fieldNamePrefix + 'collections') as 'collections', [])
+                                setValue((fieldNamePrefix + 'infusionParams') as 'infusionParams', {})
+                                setValue((fieldNamePrefix + 'owner') as 'owner', chainAddressOwner ? chainAddressOwner : '')
+                                setValue((fieldNamePrefix + 'paymentRecipient') as 'paymentRecipient', chainAddressOwner ? chainAddressOwner : '')
+                            }}
+                        />
+                    )}
+                    <div className="space-y-2">
+                        <InputLabel name={t('form.infusionMinter')} />
+                        <AddressInput
+                            containerClassName="grow"
+                            disabled={!isCreating}
+                            error={errors?.recipient}
+                            fieldName={(fieldNamePrefix + 'infusionMinter') as 'infusionMinter'}
+                            register={register}
+                            validation={[
+                                makeValidateAddress(currentChain.bech32Prefix),
+                            ]}
+                        />
+                        {validInfusionMinterAddr ? (<>
+                            <p className="primary-text mb-3">{t('form.infusedCollectionDetails')}</p>
+                            <div className="flex flex-row gap-3">
+                                <InputLabel name={t('form.infusedName')} />
+                                <TextInput
+                                    className="w-1/3"
+                                    disabled={!isCreating}
+                                    error={errors?.title}
+                                    fieldName={(fieldNamePrefix + 'infusedCollection.name') as 'infusedCollection.name'}
+                                    register={register}
+                                    required
+                                />
+                                <InputLabel name={t('form.infusedSymbol')} />
+                                <TextInput
+                                    className="w-1/4"
+                                    disabled={!isCreating}
+                                    error={errors?.title}
+                                    fieldName={(fieldNamePrefix + 'infusedCollection.symbol') as 'infusedCollection.symbol'}
+                                    register={register}
+                                    required
+                                />
+                                <InputLabel name={t('form.infusedNumToken')} />
+                                <NumericInput
+                                    className="!w-9"
+                                    getValues={getValues}
+                                    register={register}
+                                    setValue={setValue}
+                                    validation={[validatePositive, validateRequired]}
+                                    min={1}
+                                    disabled={!isCreating}
+                                    error={errors?.title}
+                                    fieldName={(fieldNamePrefix + 'infusedCollection.num_tokens') as 'infusedCollection.num_tokens'}
+                                    required
+                                />
+                            </div>
+                            <div className="flex flex-col space-y-2">
+                                <InputLabel name={t('form.infusedCollectionDescription')} />
+                                <TextAreaInput
+                                    disabled={!isCreating}
+                                    fieldName={(fieldNamePrefix + 'infusedCollection.description') as 'infusedCollection.description'}
+                                    placeholder={t('form.infusionDescriptionMaxCharacters')}
+                                    register={register}
+                                    rows={5}
+                                    validation={[validateRequired]}
+                                />
+                                {/* <InputErrorMessage error={errors.newProposal?.description} /> */}
+                            </div>
+                            <div className="flex flex-row gap-3">
+                                {/* define new infused params */}
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <InputLabel name={t('form.infusedBaseUri')} />
+                                <TextInput
+                                    disabled={!isCreating}
+                                    error={errors?.title}
+                                    fieldName={(fieldNamePrefix + 'infusedCollection.base_uri') as 'infusedCollection.base_uri'}
+                                    register={register}
+                                    required
+                                />
+                                <InputLabel name={t('form.infusedCollectionImage')} />
+                                <TextInput
+                                    disabled={!isCreating}
+                                    error={errors?.title}
+                                    fieldName={(fieldNamePrefix + 'infusedCollection.image') as 'infusedCollection.image'}
+                                    register={register}
+                                    required
+                                />
+                                <InputLabel name={t('form.infusedExternalLink')} />
+                                <TextInput
+                                    className="width-auto"
+                                    disabled={!isCreating}
+                                    error={errors?.title}
+                                    fieldName={(fieldNamePrefix + 'infusedCollection.external_link') as 'infusedCollection.external_link'}
+                                    register={register}
+                                />
+                            </div>
+                            <div className="flex flex-row gap-3">
+                                <InputLabel name={t('form.royaltyRecipientAddress')} />
+                                <AddressInput
+                                    containerClassName="grow"
+                                    disabled={!isCreating}
+                                    error={errors?.recipient}
+                                    fieldName={(fieldNamePrefix + 'infusedCollection.royalty_info.payment_address') as 'infusedCollection.royalty_info.payment_address'}
+                                    register={register}
+                                    validation={[
+                                        makeValidateAddress(currentChain.bech32Prefix),
+                                    ]}
+                                />
+                                <InputLabel name={t('form.royaltyPercentage')} />
+                                <NumericInput
+                                    disabled={!isCreating}
+                                    error={errors?.title}
+                                    fieldName={(fieldNamePrefix + 'infusedCollection.royalty_info.share') as 'infusedCollection.royalty_info.share'}
+                                    getValues={getValues}
+                                    register={register}
+                                    min={0.01}
+                                    max={100}
+                                    step={0.01}
+                                    setValue={setValue}
+                                    placeholder={t('form.infusionRoyaltyShares')}
+                                />
 
+                            </div>
+                            {/* input for eligible collections */}
+                            <div className="flex flex-col gap-3">
+                                <p className="primary-text mb-3">{t('form.infusedEligibleCollections')}</p>
+                                {eligibleCollectionField.map((props, index) => {
+                                    return (
+                                        <div key={props.id} className={`flex rounded-lg p-3 flex-row flex-wrap items-center gap-2 ${index % 2 === 0
+                                            ? 'bg-background-secondary'
+                                            : 'bg-background-tertiary'
+                                            }`}>
+                                            {isCreating && (
+                                                <IconButton
+                                                    Icon={Close}
+                                                    className="mt-6"
+                                                    onClick={() => removeEligibleCollection(index)}
+                                                    size="sm"
+                                                    variant="ghost"
+                                                />
+                                            )}
+                                            <div className="flex shrink-0 flex-col gap-1">
+                                                <div className="flex flex-row gap-1">
+                                                    <div className="flex flex-col gap-4">
+                                                        <InputLabel name={t('form.infusedEligibleCollectionAddr')} />
+                                                        <AddressInput
+                                                            containerClassName="grow"
+                                                            disabled={!isCreating}
+                                                            error={errors?.recipient}
+                                                            fieldName={(fieldNamePrefix + `collections.${index}.addr`) as `collections.${number}.addr`}
+                                                            register={register}
+                                                            validation={[makeValidateAddress(currentChain.bech32Prefix)]}
+                                                        />
                                                     </div>
+                                                    <div className="flex flex-col gap-4">
+                                                        <InputLabel name={t('form.infusedEligibleCollectionMinRequired')} />
+                                                        <NumericInput
+                                                            disabled={!isCreating}
+                                                            error={errors?.title}
+                                                            fieldName={(fieldNamePrefix + `collections.${index}.min_req`) as `collections.${number}.min_req`}
+                                                            getValues={getValues}
+                                                            register={register}
+                                                            setValue={setValue}
+                                                            min={1}
+                                                            numericValue
+                                                            max={10}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="flex flex-col gap-4">
+                                                        <InputLabel name={t('form.infusedEligibleCollectionMaxRequired')} />
+                                                        <NumericInput
+                                                            max={25}
+                                                            disabled={!isCreating}
+                                                            error={errors?.title}
+                                                            fieldName={(fieldNamePrefix + `collections.${index}.max_req`) as `collections.${number}.max_req`}
+                                                            getValues={getValues}
+                                                            register={register}
+                                                            setValue={setValue}
+                                                        />
+                                                    </div>
+
+                                                </div>
+                                                {isCreating &&
                                                     <div className="flex flex-col gap-4">
                                                         <InputLabel name={t('form.paymmentSubtitute')} />
                                                         <TokenInput
@@ -376,46 +402,48 @@ export const CreateInfusion: ComponentType<
                                                             }}
                                                         />
                                                     </div>
-                                                </div>
+                                                }
                                             </div>
-                                        )
-                                    })}
-                                </div>
-                                {
-                                    isCreating && (
-                                        <Button
-                                            className="self-start"
-                                            onClick={() => appendEligibleCollection({})}
-                                            variant="secondary"
-                                        >
-                                            {t('button.addEligibleCollection')}
-                                        </Button>
+                                        </div>
                                     )
-                                }
+                                })}
+                            </div>
+                            {
+                                isCreating && (
+                                    <Button
+                                        className="self-start"
+                                        onClick={() => appendEligibleCollection({})}
+                                        variant="secondary"
+                                    >
+                                        {t('button.addEligibleCollection')}
+                                    </Button>
+                                )
+                            }
 
-                                <InputLabel name={t('form.infusedAdmin')} />
-                                <AddressInput
-                                    containerClassName="grow"
-                                    disabled={!isCreating}
-                                    error={errors?.recipient}
-                                    fieldName={(fieldNamePrefix + 'owner') as 'owner'}
-                                    register={register}
-                                    validation={[
+                            <InputLabel name={t('form.infusedAdmin')} />
+                            <AddressInput
+                                containerClassName="grow"
+                                disabled={!isCreating}
+                                error={errors?.recipient}
+                                fieldName={(fieldNamePrefix + 'owner') as 'owner'}
+                                register={register}
+                                validation={[
 
-                                        makeValidateAddress(currentChain.bech32Prefix),
-                                    ]}
-                                />
-                                <InputLabel name={t('form.infusedPaymentRecipient')} />
-                                <AddressInput
-                                    containerClassName="grow"
-                                    disabled={!isCreating}
-                                    error={errors?.recipient}
-                                    fieldName={(fieldNamePrefix + 'paymentRecipient') as 'paymentRecipient'}
-                                    register={register}
-                                    validation={[makeValidateAddress(currentChain.bech32Prefix)]}
-                                />
-                                <InputLabel name={t('form.infusionParams')} />
-                                <InputLabel name={t('form.infusionMintFee')} />
+                                    makeValidateAddress(currentChain.bech32Prefix),
+                                ]}
+                            />
+                            <InputLabel name={t('form.infusedPaymentRecipient')} />
+                            <AddressInput
+                                containerClassName="grow"
+                                disabled={!isCreating}
+                                error={errors?.recipient}
+                                fieldName={(fieldNamePrefix + 'paymentRecipient') as 'paymentRecipient'}
+                                register={register}
+                                validation={[makeValidateAddress(currentChain.bech32Prefix)]}
+                            />
+                            <InputLabel name={t('form.infusionParams')} />
+                            <InputLabel name={t('form.infusionMintFee')} />
+                            {isCreating && <>
                                 <TokenInput
                                     amount={{
                                         watch,
@@ -435,7 +463,7 @@ export const CreateInfusion: ComponentType<
                                         setValue((fieldNamePrefix + 'infusionParams.mint_fee.denom') as 'infusionParams.mint_fee.denom', custom)
                                     }}
                                     allowCustomToken
-                                    // readOnly={!isCreating}
+                                    readOnly={!isCreating}
                                     selectedToken={{
                                         type: TokenType.Native,
                                         denomOrAddress: watchInfusedParams.mint_fee?.denom!,
@@ -462,23 +490,38 @@ export const CreateInfusion: ComponentType<
                                                 }))
                                             : [],
                                     }}
-                                /></>) : null}
-
-                        </div>
-                        {infusionConfig?.min_creation_fee && (
-                            <>
-                                <TokenAmountDisplay
-                                    amount={HugeDecimal.from(infusionConfig.min_creation_fee.amount)}
-                                    decimals={6}
-                                    // iconUrl={distribution.token.imageUrl}
-                                    showAllDecimals
-                                    showFullAmount
-                                    symbol={infusionConfig.min_creation_fee.denom}
                                 />
-                            </>
+                            </>}
+                        </>) : null}
 
-                        )}
-                    </>)}
+                        <div className="flex flex-col space-y-2">
+                            <InputLabel name={t('form.infusionDescription')} />
+                            <TextAreaInput
+                                fieldName={(fieldNamePrefix + 'description') as 'description'}
+                                placeholder={t('form.infusionDescriptionMaxCharacters')}
+                                register={register}
+                                rows={5}
+                                validation={[validateRequired]}
+                            />
+                            {/* <InputErrorMessage error={errors.newProposal?.description} /> */}
+                        </div>
+
+                    </div>
+                    {infusionConfig?.min_creation_fee && (
+                        <>
+                            <p className="primary-text mb-3">{t('form.globalInfusionCreationFee')}</p>
+                            <TokenAmountDisplay
+                                amount={HugeDecimal.from(infusionConfig.min_creation_fee.amount)}
+                                decimals={6}
+                                // iconUrl={distribution.token.imageUrl}
+                                showAllDecimals
+                                showFullAmount
+                                symbol={infusionConfig.min_creation_fee.denom}
+                            />
+                        </>
+
+                    )}
+
                 </div>
             </>)
     }

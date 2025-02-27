@@ -57,6 +57,8 @@ export const fetchInfusionById = async (
     ])
 
     return {
+        owner: infusion[0].owner,
+        description: infusion[0].description,
         collections: infusion[0].collections,
         infused_collection: infusion[0].infused_collection,
         infusion_params: infusion[0].infusion_params,

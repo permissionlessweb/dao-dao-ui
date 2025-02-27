@@ -38,6 +38,8 @@ export type ExecuteMsg = {
 };
 export type Addr = string;
 export interface Infusion {
+  owner: string;
+  description: string | null;
   collections: NFTCollection[];
   infused_collection: InfusedCollection;
   infusion_params: InfusionParams;
@@ -52,13 +54,15 @@ export interface NFTCollection {
 export interface InfusedCollection {
   addr?: string | null;
   admin?: string | null;
-  base_uri: string;
   name: string;
+  description: string;
+  base_uri: string;
+  image: string;
   num_tokens: number;
   sg: boolean;
   symbol: string;
-  royalty_info?: RoyaltyInfoResponse |  null;
-  start_trading_time?: Timestamp  | null;
+  royalty_info?: RoyaltyInfoResponse | null;
+  start_trading_time?: Timestamp | null;
   explicit_content?: boolean | null;
   external_link?: string | null;
 }
@@ -104,7 +108,7 @@ export type QueryMsg = {
 };
 export type HexBinary = string;
 export interface Config {
-  admin: Addr;
+  contract_owner: Addr;
   admin_fee: number;
   code_hash: HexBinary;
   code_id: number;
