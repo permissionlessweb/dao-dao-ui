@@ -14,7 +14,7 @@ import { useTokenBalances } from "../../../hooks";
 import { HugeDecimal } from "@dao-dao/math";
 import { CreateInfusion, CreateInfusionData } from "./CreateInfusion";
 import { useTranslation } from "react-i18next";
-import { ComponentType } from "react";
+import { ComponentType, useEffect } from "react";
 import { InfusionWidgetData } from "../../../../widgets/widgets/Infusions/types";
 
 enum InfusionActionMode {
@@ -73,15 +73,13 @@ const getInfusionConfig = (
  * Get infusion info by infusion id
  */
 const getInfusionById = (
-    options: ActionOptions,
-    infuserAddr: string,
-    infusionId: number
+    queryClient: QueryClient,
+    chainId: string,
+    address: string,
+    id: number
 ) => {
-    const infusionInfo = cwInfuserExtraQueries.infusionById(options.queryClient, {
-        chainId: options.chain.chainId,
-        address: infuserAddr,
-        id: infusionId,
-    })
+    const infusionInfo = cwInfuserExtraQueries.infusionById(queryClient, { chainId, address, id, })
+    console.log("infusionInfo:", infusionInfo)
     return infusionInfo
 }
 
@@ -101,9 +99,10 @@ const useInfusionConfigFromForm = (queryClient: QueryClient, chainId: string, in
         }),
     })
 }
-const useInfusionContractFromForm = (options: ActionOptions, infusionMinter: string, infusionId: string) => {
+
+const useInfusionContractFromForm = (queryClient: QueryClient, chainId: string, infusionMinter: string, infusionId: string) => {
     return useQueries({
-        queries: [getInfusionById(options, infusionMinter, parseInt(infusionId))],
+        queries: [getInfusionById(queryClient, chainId, infusionMinter, parseInt(infusionId))],
         combine: makeCombineQueryResultsIntoLoadingDataWithError({
             transform: (infos) => infos.flat(),
         }),
@@ -130,10 +129,12 @@ const Component: ComponentType<ActionComponentProps<undefined, ManageInfusionsDa
     const { denomOrAddress: governanceCollectionAddress } = useCw721CommonGovernanceTokenInfoIfExists() ?? {}
 
     const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
-    const watchChainId = mode === 'create' ? watch((props.fieldNamePrefix + 'create.chainId') as 'create.chainId') : watch((props.fieldNamePrefix + 'infuse.chainId') as 'infuse.chainId')
+    const watchChainId = mode === 'create' ?
+        watch((props.fieldNamePrefix + 'create.chainId') as 'create.chainId')
+        : watch((props.fieldNamePrefix + 'infuse.chainId') as 'infuse.chainId')
     const watchInfusionMinter = mode === 'create' ?
-        watch((props.fieldNamePrefix + 'create.infusionMinter') as 'create.infusionMinter') :
-        watch((props.fieldNamePrefix + 'infuse.infusionMinter') as 'infuse.infusionMinter')
+        watch((props.fieldNamePrefix + 'create.infusionMinter') as 'create.infusionMinter')
+        : watch((props.fieldNamePrefix + 'infuse.infusionMinter') as 'infuse.infusionMinter')
     const watchInfusionId = watch((props.fieldNamePrefix + 'infuse.infusionId') as 'infuse.infusionId')
     const watchInfusionBundles = watch((props.fieldNamePrefix + 'infuse.infusionBundles') as 'infuse.infusionBundles')
     const watchFunds = watch((props.fieldNamePrefix + 'infuse.funds') as 'infuse.funds')
@@ -208,8 +209,19 @@ const Component: ComponentType<ActionComponentProps<undefined, ManageInfusionsDa
             )
 
     const infusionConfig = useInfusionConfigFromForm(options.queryClient, watchChainId, watchInfusionMinter)
-    const infusionInfoLDWE = useInfusionContractFromForm(options, watchInfusionMinter, watchInfusionId)
+    const infusionInfoLDWE = useInfusionContractFromForm(options.queryClient, watchChainId, watchInfusionMinter, watchInfusionId)
     const infusionInfo = !infusionInfoLDWE.errored && !infusionInfoLDWE.loading ? infusionInfoLDWE.data : []
+
+    useEffect(() => {
+        console.log("watchInfusionMinter: ", watchInfusionMinter);
+        console.log("watchInfusionId: ", watchInfusionId);
+        const timer = setTimeout(() => {
+            console.log("infusionInfo: ", infusionInfo);
+            console.log("infusionInfoLDWE: ", infusionInfoLDWE);
+        }, 500); // 500 milliseconds = 0.5 seconds
+
+        return () => clearTimeout(timer); // Clean up the timer
+    }, [watchInfusionMinter, watchInfusionId]);
 
     // filter nft info by accepted collection for current infusion 
     const availableToInfuse: LoadingDataWithError<LazyNftCardInfo[]> = !allChainOptions.errored && !allChainOptions.loading
@@ -218,7 +230,7 @@ const Component: ComponentType<ActionComponentProps<undefined, ManageInfusionsDa
             errored: false,
             data: allChainOptions.data.filter((nft) =>
                 infusionInfo.some((infusion) =>
-                    infusion.collections.some((collection) =>
+                    infusion.eligilbeCollections.some((collection) =>
                         collection.addr == nft.collectionAddress
                     )
                 )

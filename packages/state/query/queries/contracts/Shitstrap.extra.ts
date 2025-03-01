@@ -19,18 +19,13 @@ export const fetchShitstrapInfo = async (
     contractAddress: string
   }
 ): Promise<ShitstrapInfoGeneric> => {
-  const [config] = await Promise.all(
-    [
-      queryClient
-        .fetchQuery(
+  const [config] = await Promise.all([
+      queryClient.fetchQuery(
           shitStrapQueries.config(queryClient, {
             chainId,
             contractAddress,
           })
-        )
-        .then(async (config) => {
-          config.accepted
-
+        ).then(async (config) => {
           return config
         }),
     ])

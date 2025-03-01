@@ -4,8 +4,9 @@
 * and run the @cosmwasm/ts-codegen generate command to regenerate this file.
 */
 
+import { GenericToken, GenericTokenBalance } from "../token";
 import { Timestamp } from "./common";
-import { RoyaltyInfoResponse } from "./Sg721Base";
+import { CollectionInfoResponse, RoyaltyInfoResponse } from "./Sg721Base";
 
 export type Uint128 = string;
 export interface InstantiateMsg {
@@ -37,6 +38,20 @@ export type ExecuteMsg = {
   };
 };
 export type Addr = string;
+
+/// extends default infusion type with data for tokens & nft collections
+export type InfusionWithDetails = Omit<Infusion, 'collections'> & {
+  eligilbeCollections: InfusionsEligibleCollection[];
+}
+
+export type InfusionsEligibleCollection = {
+  addr: string;
+  collectionInfo: CollectionInfoResponse;
+  max_req: number | null | undefined;
+  min_req: number;
+  payment_substitute: GenericToken | null | undefined;
+};
+
 export interface Infusion {
   owner: string;
   description: string | null;
@@ -107,6 +122,14 @@ export type QueryMsg = {
   };
 };
 export type HexBinary = string;
+
+/// extends default infusion type with data for tokens & nft collections
+export type InfusionConfig = Omit<Config, 'min_creation_fee' | 'max_creation_fee'> & {
+  creation_fee?: GenericTokenBalance | null;
+  infusion_fee?: GenericTokenBalance | null;
+}
+
+
 export interface Config {
   contract_owner: Addr;
   admin_fee: number;

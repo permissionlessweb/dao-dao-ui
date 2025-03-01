@@ -1,6 +1,6 @@
-import { ActionBase, Button, ChainProvider, Dropdown, ErrorPage, HorizontalNftCard, HorizontalInfusionCard, HorizontalNftCardLoader, InputErrorMessage, InputLabel, NativeCoinSelector, NumericInput, HorizontalInfusionCardProps, FormSwitch, useActionOptions } from "@dao-dao/stateless";
-import { ActionComponent, ActionOptions, AddressInputProps, GenericToken, GenericTokenBalance, LazyNftCardInfo, LoadingData, LoadingDataWithError, NftCardInfo, NftSelectionModalProps, TypedOption } from "@dao-dao/types";
-import { Bundle, Infusion, NFT, NFTCollection } from "@dao-dao/types/contracts/CwInfuser";
+import { ActionBase, Button, ChainProvider, Dropdown, ErrorPage, HorizontalNftCard, HorizontalInfusionCard, HorizontalNftCardLoader, InputErrorMessage, InputLabel, NativeCoinSelector, NumericInput, HorizontalInfusionCardProps, FormSwitch, useActionOptions, DaoSupportedChainPickerInput } from "@dao-dao/stateless";
+import { ActionComponent, ActionContextType, ActionOptions, AddressInputProps, GenericToken, GenericTokenBalance, LazyNftCardInfo, LoadingData, LoadingDataWithError, NftCardInfo, NftSelectionModalProps, TypedOption } from "@dao-dao/types";
+import { Bundle, Infusion, InfusionWithDetails, NFT, NFTCollection } from "@dao-dao/types/contracts/CwInfuser";
 import { TransferNftData } from "../TransferNft/Component";
 import { ComponentType, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -43,7 +43,7 @@ export interface InfuseNftsOptions {
     // Information about the NFT currently selected.
     selectedNfts: LoadingDataWithError<NftCardInfo[]> | undefined
     // Information from the Infusion currently selected.
-    infusionInfo: LoadingDataWithError<Infusion[] | undefined>
+    infusionInfo: LoadingDataWithError<InfusionWithDetails[] | undefined>
     // // Information about the approval status of NFTs selected to be infused.
     // approvalInfo: LoadingDataWithError<Approval[] | undefined>
 
@@ -60,10 +60,15 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
 }) => {
     const { t } = useTranslation()
     const actionOptions = useActionOptions()
+    const {
+        context,
+        chainContext,
+        chain: { chainId: nativeChainId },
+        queryClient,
+    } = actionOptions
     const { control, watch, setValue, setError, register, clearErrors, } =
         useFormContext<InfuseNftsData>()
 
-    const queryClient = actionOptions.queryClient
     const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
     const chain = getChainForChainId(watchChainId)
 
@@ -106,7 +111,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     // if there are more than one bundle that have the nft collection being added, we check the number of the current nft collection are in the bundle. 
     /// if there is a bundle we can add the nft to, we add it to that one, or else we create a new bundle.
     const updateInfusionBundles = (nft: LazyNftCardInfo, remove: boolean = false) => {
-        const required = infusion?.[0]?.collections.find(
+        const required = infusion?.[0]?.eligilbeCollections.find(
             (accNftColl) => accNftColl.addr === nft.collectionAddress
         )?.min_req
 
@@ -203,7 +208,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
 
     const possibleCollections: TypedOption<InfusionCollections[]>[] = !infusion ? [] :
         infusion.flatMap((infusion, index) => {
-            const infsuions = infusion.collections.flatMap((ii) => {
+            const infsuions = infusion.eligilbeCollections.flatMap((ii) => {
                 return {
                     collection: ii.addr,
                     minRequired: ii.min_req,
@@ -228,7 +233,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
         console.log(option, index)
     }
 
-    const paymentSubstituteEligibleCollection = watchInfusionMinter && infusion && infusion[0].collections.filter((a) => {
+    const paymentSubstituteEligibleCollection = watchInfusionMinter && infusion && infusion[0].eligilbeCollections.filter((a) => {
         if (a.payment_substitute) {
             return a
         }
@@ -237,6 +242,17 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     return (
         <>
             <div className="flex flex-col gap-y-4 gap-x-12 lg:flex-row lg:flex-wrap">
+                {context.type === ActionContextType.Dao && (
+                    <DaoSupportedChainPickerInput
+                        disabled={!isCreating}
+                        fieldName={fieldNamePrefix + 'chainId'}
+                        onChange={(chainId) => {
+                            // Reset when switching chain.
+                            setValue((fieldNamePrefix + 'chainId') as 'chainId', chainId)
+
+                        }}
+                    />
+                )}
                 <div className="flex grow flex-col gap-4">
                     <div className="flex flex-col gap-1">
                         <p className="primary-text mb-3">{isCreating ? t('form.whichInfusionMinter') : t('form.infusionMinter')}</p>

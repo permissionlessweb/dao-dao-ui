@@ -1774,7 +1774,6 @@
     "availableShitstraps": "SEZ's Current Shitstrap List",
     "infusionCollection": "Infusion Collections",
     "infusedCollectionTitle": "Infused Collection",
-    "infusionsEligibleCollections": "Eligible Collection #${{index}}.",
     "infusedCollectionTotalSupply": "Infused Collection Total Supply",
     "infusedCollectionMintFee": "Infused Collection Mint Fee",
     "infusionPaymentRecipient": "Infusion Fee Recipient",

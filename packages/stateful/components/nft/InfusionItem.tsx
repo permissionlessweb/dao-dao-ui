@@ -3,7 +3,7 @@
 import { nftQueries } from "@dao-dao/state/query";
 import { CommonNftSelectors, walletLazyNftCardInfosSelector } from "@dao-dao/state/recoil";
 import { HorizontalInfusionCard, HorizontalInfusionCardProps, HorizontalScroller, NftCard, useCachedLoadable, useCachedLoadingWithError, useDao } from "@dao-dao/stateless";
-import { Infusion } from "@dao-dao/types/contracts/CwInfuser";
+import { Infusion, InfusionWithDetails } from "@dao-dao/types/contracts/CwInfuser";
 import { combineLoadingDataWithErrors, makeCombineQueryResultsIntoLoadingData, makeCombineQueryResultsIntoLoadingDataWithError, transformLoadingDataWithError } from "@dao-dao/utils";
 import { QueryClient, useQueries } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -18,7 +18,7 @@ interface InfusionItemProps {
     isProposalAction: boolean;
     wallet: string;
     fieldNamePrefix: string;
-    infusionInfo: Infusion;
+    infusionInfo: InfusionWithDetails;
     chainId: string;
     queryClient: QueryClient;
     index: string,
@@ -85,9 +85,8 @@ const InfusionItem: React.FC<InfusionItemProps> = ({ infusionInfo, chainId, quer
             loading: false,
             errored: false,
             data: allChainOptions.data.filter((nft) =>
-                infusionInfo.collections.some((collection) =>
+                infusionInfo.eligilbeCollections.some((collection) =>
                     collection.addr == nft.collectionAddress
-
                 )
             ),
         }

@@ -18,6 +18,7 @@ export const InfusionsWidget: Widget<InfusionWidgetData> = {
     location: WidgetLocation.Tab,
     visibilityContext: WidgetVisibilityContext.Always,
     defaultValues: {
+        chainId: '',
         infusionId: '',
         infusionMinter: '',
         fieldNamePrefix: 'infusion.'

@@ -1,4 +1,4 @@
-import { AudiotrackRounded, ImageNotSupported } from '@mui/icons-material'
+import { ArrowOutwardRounded, AudiotrackRounded, ImageNotSupported } from '@mui/icons-material'
 import clsx from 'clsx'
 import NextImage from 'next/image'
 import { ComponentType, forwardRef, useEffect, useState } from 'react'
@@ -18,7 +18,7 @@ import {
 import { AudioPlayer } from './AudioPlayer'
 import { CopyToClipboard } from './CopyToClipboard'
 import { LinkWrapper } from './LinkWrapper'
-import { Infusion } from '@dao-dao/types/contracts/CwInfuser'
+import { Infusion, InfusionWithDetails } from '@dao-dao/types/contracts/CwInfuser'
 import { Button } from './buttons'
 import { TokenAmountDisplay } from './token'
 import { HugeDecimal } from '@dao-dao/math'
@@ -30,9 +30,10 @@ import { useFieldArray, useFormContext } from 'react-hook-form'
 import { HorizontalNftCard, HorizontalNftCardLoader } from './HorizontalNftCard'
 import { ErrorPage } from './error'
 import { InfuseNftsData } from '@dao-dao/stateful/actions/core/actions/TransferInfusions/InfuseNfts'
+import { TooltipLikeDisplay } from './tooltip'
 
 
-export interface HorizontalInfusionCardProps extends Infusion {
+export interface HorizontalInfusionCardProps extends InfusionWithDetails {
   EntityDisplay: ComponentType<StatefulEntityDisplayProps>
   selectedNfts: LoadingDataWithError<NftCardInfo[]>
   entityEligibleNFTs: LoadingDataWithError<LazyNftCardInfo[]>
@@ -87,7 +88,7 @@ export const HorizontalInfusionCard = forwardRef<
   })
 
   const updateInfusionBundles = (nft: LazyNftCardInfo, remove: boolean = false) => {
-    const required = infusion.collections.find(
+    const required = infusion.eligilbeCollections.find(
       (accNftColl) => accNftColl.addr === nft.collectionAddress
     )?.min_req
 
@@ -159,7 +160,7 @@ export const HorizontalInfusionCard = forwardRef<
   useEffect(() => {
 
     console.log("infusion.entityEligibleNFTs", infusion.entityEligibleNFTs)
-    console.log("infusion.collections", infusion.collections)
+    console.log("infusion.collections", infusion.eligilbeCollections)
     console.log("infusion.infused_collection", infusion.infused_collection)
 
   }, [showModal, setShowModal])
@@ -189,7 +190,7 @@ export const HorizontalInfusionCard = forwardRef<
     />
   )
 
-  const eligibleCollectionCardProps: EligibleCollectionCardProps[] = infusion.collections.map((eligible, index) => {
+  const eligibleCollectionCardProps: EligibleCollectionCardProps[] = infusion.eligilbeCollections.map((eligible, index) => {
     return {
       index,
       address: eligible.addr,
@@ -304,43 +305,57 @@ export const HorizontalInfusionCard = forwardRef<
             <p className="secondary-text text-xs">{t('title.infusedCollectionTitle')}</p>
 
             <p className="primary-text truncate font-normal">
-              <CopyToClipboard
-                className="text-xs"
-                label={infusion.infused_collection.name}
-                textClassName="primary-text"
-                tooltip={t('button.copyAddressToClipboard')}
-                value={infusion.infused_collection.addr!}
-              />
+              <LinkWrapper
+                href={`https://www.stargaze.zone/m/${infusion.infused_collection.addr!}/tokens`}
+                // Don't click on anything else, such as the checkbox.
+                onClick={(e) => e.stopPropagation()}
+                openInNewTab
+              >
+                <p className="truncate font-mono title-text transition-opacity hover:opacity-80 active:opacity-70">{infusion.infused_collection.name}</p>
+
+                <TooltipLikeDisplay
+                  className="primary-text group-hover/nft:opacity-100 absolute bottom-4 left-4 opacity-0 shadow-dp4 transition-opacity hover:!opacity-90"
+                  icon={<ArrowOutwardRounded className="!h-5 !w-5" />}
+                  label={t('button.openInDestination', {
+                    destination: "Stargaze",
+                  })}
+                />
+              </LinkWrapper>
+
             </p>
             <p className="secondary-text text-xs">{t('title.infusedCollectionTotalSupply')}</p>
             <div className="flex flex-row gap-2">
               <p className="primary-text text-lg truncate font-semibold">{infusion.infused_collection.num_tokens}</p>
-              <Button className={clsx('self-end')}
-                onClick={() => { }}
-                variant={'primary'}
-              >
-                {t('button.viewInfusedCollection')}
-              </Button>
             </div>
-            <p className="secondary-text text-xs">{t('title.infusedCollectionMintFee')}</p>
-            <p className="primary-text truncate font-normal">
-              {infusion.infusion_params.mint_fee ? <TokenAmountDisplay
-                amount={HugeDecimal.from(infusion.infusion_params.mint_fee.amount)}
-                decimals={6}
-                // iconUrl={ }
-                showFullAmount
-                symbol={infusion.infusion_params.mint_fee.denom}
-              /> : <>{t('title.noInfusionFee')}</>}
-            </p>
-            <p className="secondary-text text-xs">{t('title.infusionPaymentRecipient')}</p>
+            <div className="flex gap-4">
+              <div className="flex flex-col align-items-center">
+                <p className="secondary-text text-xs text-center">{t('title.infusedCollectionMintFee')}</p>
+                <p className="primary-text truncate font-normal">
+                  {infusion.infusion_params.mint_fee ? (
+                    <TokenAmountDisplay
+                      amount={HugeDecimal.from(infusion.infusion_params.mint_fee.amount)}
+                      decimals={6}
+                      // iconUrl={ }
+                      showFullAmount
+                      symbol={infusion.infusion_params.mint_fee.denom}
+                    />
+                  ) : (
+                    <>{t('title.noInfusionFee')}</>
+                  )}
+                </p>
+              </div>
 
-            {infusion.payment_recipient ? (
-              <infusion.EntityDisplay address={infusion.payment_recipient!} />
-            ) : (
-              <p className="body-text italic">
-                {t('info.failedToDecodeAddressUnrecognizedMessage')}
-              </p>
-            )}
+              <div className="flex flex-col align-items-center">
+                <p className="secondary-text text-xs text-center">{t('title.infusionPaymentRecipient')}</p>
+                {infusion.payment_recipient ? (
+                  <infusion.EntityDisplay address={infusion.payment_recipient!} />
+                ) : (
+                  <p className="body-text italic">
+                    {t('info.failedToDecodeAddressUnrecognizedMessage')}
+                  </p>
+                )}
+              </div>
+            </div>
 
             {/* Map  of eligible collections, */}
             <p className="title-text border-b border-border-secondary py-4 px-6" />

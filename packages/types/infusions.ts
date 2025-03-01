@@ -10,7 +10,7 @@ export type EligibleCollectionCardProps = {
     address: string
     index: number
     substituteLabel: string
-    paymentSub: Coin | null | undefined
+    paymentSub: GenericToken | null | undefined
     // ButtonLink: ComponentType<ButtonLinkProps>
 }
 
