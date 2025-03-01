@@ -230,7 +230,7 @@ const Component: ComponentType<ActionComponentProps<undefined, ManageInfusionsDa
             errored: false,
             data: allChainOptions.data.filter((nft) =>
                 infusionInfo.some((infusion) =>
-                    infusion.eligilbeCollections.some((collection) =>
+                    infusion.eligibleCollections.some((collection) =>
                         collection.addr == nft.collectionAddress
                     )
                 )

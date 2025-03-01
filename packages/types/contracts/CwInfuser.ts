@@ -40,8 +40,9 @@ export type ExecuteMsg = {
 export type Addr = string;
 
 /// extends default infusion type with data for tokens & nft collections
-export type InfusionWithDetails = Omit<Infusion, 'collections'> & {
-  eligilbeCollections: InfusionsEligibleCollection[];
+export type InfusionWithDetails = Omit<Infusion, 'collections' | 'infusion_params'> & {
+  eligibleCollections: InfusionsEligibleCollection[];
+  infusionParamsGeneric: InfusionParamsGeneric,
 }
 
 export type InfusionsEligibleCollection = {
@@ -81,6 +82,7 @@ export interface InfusedCollection {
   explicit_content?: boolean | null;
   external_link?: string | null;
 }
+
 export interface InfusionParams {
   mint_fee?: Coin | null;
   params?: BurnParams | null;
@@ -152,8 +154,12 @@ export interface InfusionState {
   infusion_params: InfusionParamState;
   payment_recipient: Addr;
 }
+/// extends default infusion type with data for tokens & nft collections
+export type InfusionParamsGeneric = Omit<InfusionParamState, 'mint_fee'> & {
+  mintFeeGeneric: GenericTokenBalance | null;
+}
+
 export interface InfusionParamState {
-  min_per_bundle: number;
   mint_fee?: Coin | null;
   params?: BurnParams | null;
 }

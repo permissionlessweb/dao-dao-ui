@@ -111,7 +111,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
     // if there are more than one bundle that have the nft collection being added, we check the number of the current nft collection are in the bundle. 
     /// if there is a bundle we can add the nft to, we add it to that one, or else we create a new bundle.
     const updateInfusionBundles = (nft: LazyNftCardInfo, remove: boolean = false) => {
-        const required = infusion?.[0]?.eligilbeCollections.find(
+        const required = infusion?.[0]?.eligibleCollections.find(
             (accNftColl) => accNftColl.addr === nft.collectionAddress
         )?.min_req
 
@@ -208,7 +208,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
 
     const possibleCollections: TypedOption<InfusionCollections[]>[] = !infusion ? [] :
         infusion.flatMap((infusion, index) => {
-            const infsuions = infusion.eligilbeCollections.flatMap((ii) => {
+            const infsuions = infusion.eligibleCollections.flatMap((ii) => {
                 return {
                     collection: ii.addr,
                     minRequired: ii.min_req,
@@ -233,7 +233,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
         console.log(option, index)
     }
 
-    const paymentSubstituteEligibleCollection = watchInfusionMinter && infusion && infusion[0].eligilbeCollections.filter((a) => {
+    const paymentSubstituteEligibleCollection = watchInfusionMinter && infusion && infusion[0].eligibleCollections.filter((a) => {
         if (a.payment_substitute) {
             return a
         }
@@ -361,7 +361,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
             </div>
             <div className="flex flex-col gap-1">
                 {
-                    infusion && infusion[0].infusion_params.mint_fee && (
+                    infusion && infusion[0].infusionParamsGeneric.mintFeeGeneric && (
                         <>
                             {coins.map(({ id }, index) => (
                                 <NativeCoinSelector

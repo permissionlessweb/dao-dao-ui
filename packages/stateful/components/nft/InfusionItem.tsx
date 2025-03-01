@@ -85,7 +85,7 @@ const InfusionItem: React.FC<InfusionItemProps> = ({ infusionInfo, chainId, quer
             loading: false,
             errored: false,
             data: allChainOptions.data.filter((nft) =>
-                infusionInfo.eligilbeCollections.some((collection) =>
+                infusionInfo.eligibleCollections.some((collection) =>
                     collection.addr == nft.collectionAddress
                 )
             ),

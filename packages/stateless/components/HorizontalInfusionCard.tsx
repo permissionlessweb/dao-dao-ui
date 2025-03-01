@@ -88,7 +88,7 @@ export const HorizontalInfusionCard = forwardRef<
   })
 
   const updateInfusionBundles = (nft: LazyNftCardInfo, remove: boolean = false) => {
-    const required = infusion.eligilbeCollections.find(
+    const required = infusion.eligibleCollections.find(
       (accNftColl) => accNftColl.addr === nft.collectionAddress
     )?.min_req
 
@@ -160,7 +160,7 @@ export const HorizontalInfusionCard = forwardRef<
   useEffect(() => {
 
     console.log("infusion.entityEligibleNFTs", infusion.entityEligibleNFTs)
-    console.log("infusion.collections", infusion.eligilbeCollections)
+    console.log("infusion.collections", infusion.eligibleCollections)
     console.log("infusion.infused_collection", infusion.infused_collection)
 
   }, [showModal, setShowModal])
@@ -190,7 +190,7 @@ export const HorizontalInfusionCard = forwardRef<
     />
   )
 
-  const eligibleCollectionCardProps: EligibleCollectionCardProps[] = infusion.eligilbeCollections.map((eligible, index) => {
+  const eligibleCollectionCardProps: EligibleCollectionCardProps[] = infusion.eligibleCollections.map((eligible, index) => {
     return {
       index,
       address: eligible.addr,
@@ -331,13 +331,13 @@ export const HorizontalInfusionCard = forwardRef<
               <div className="flex flex-col align-items-center">
                 <p className="secondary-text text-xs text-center">{t('title.infusedCollectionMintFee')}</p>
                 <p className="primary-text truncate font-normal">
-                  {infusion.infusion_params.mint_fee ? (
+                  {infusion.infusionParamsGeneric.mintFeeGeneric ? (
                     <TokenAmountDisplay
-                      amount={HugeDecimal.from(infusion.infusion_params.mint_fee.amount)}
+                      amount={HugeDecimal.from(infusion.infusionParamsGeneric.mintFeeGeneric?.balance)}
                       decimals={6}
-                      // iconUrl={ }
+                      iconUrl={infusion.infusionParamsGeneric.mintFeeGeneric?.token.imageUrl}
                       showFullAmount
-                      symbol={infusion.infusion_params.mint_fee.denom}
+                      symbol={infusion.infusionParamsGeneric.mintFeeGeneric?.token.symbol}
                     />
                   ) : (
                     <>{t('title.noInfusionFee')}</>

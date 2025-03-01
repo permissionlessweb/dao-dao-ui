@@ -124,6 +124,7 @@ export const fetchInfusionById = async (
             )
         ]) : null
 
+
         return {
             addr: cols.addr,
             collectionInfo: colInfo[0],
@@ -133,14 +134,43 @@ export const fetchInfusionById = async (
         } as InfusionsEligibleCollection
     })
 
+    // grab generic token info for mint fee, if exist
+    const mint_fee_generic = infusion[0].infusion_params.mint_fee ? await Promise.all([
+        queryClient.fetchQuery(
+            tokenQueries.info(queryClient, {
+                chainId, type: TokenType.Native,
+                denomOrAddress: infusion[0].infusion_params.mint_fee.denom
+            })
+        )
+    ]) : null
+
+    // update the infusion param types with generic info
+    const infusion_fee = mint_fee_generic
+        ? {
+            token: mint_fee_generic[0],
+            balance: infusion[0].infusion_params.mint_fee?.amount!,
+        }
+        : null;
+
+    const infusionParamsGeneric = infusion_fee
+        ? {
+            ...infusion[0].infusion_params,
+            mintFeeGeneric: infusion_fee,
+
+        }
+        : {
+            ...infusion[0].infusion_params,
+            mintFeeGeneric: null
+        };
+
     return {
         owner: infusion[0].owner,
         description: infusion[0].description,
-        eligilbeCollections: await Promise.all(collections),
+        eligibleCollections: await Promise.all(collections),
         infused_collection: infusion[0].infused_collection,
-        infusion_params: infusion[0].infusion_params,
+        infusionParamsGeneric: infusionParamsGeneric,
         payment_recipient: infusion[0].payment_recipient,
-    }
+    };
 }
 
 
