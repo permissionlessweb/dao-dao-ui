@@ -4,6 +4,7 @@ import { ComponentType } from 'react'
 import { LoadingData } from '../misc'
 import { UnifiedProfile } from '../profile'
 import { ButtonLinkProps } from './Buttonifier'
+import { Entity } from './EntityDisplay'
 import { NotificationsProps } from './Notifications'
 
 export type NavWalletConnectedProps = {
@@ -15,6 +16,10 @@ export type NavWalletConnectedProps = {
    * The unified profile data.
    */
   profile: LoadingData<UnifiedProfile>
+  /**
+   * The entity.
+   */
+  entity: LoadingData<Entity>
   /**
    * Disconnect the wallet.
    */

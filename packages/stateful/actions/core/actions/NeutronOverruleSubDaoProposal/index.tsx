@@ -80,21 +80,19 @@ export class NeutronOverruleSubDaoProposalAction extends ActionBase<NeutronOverr
     },
   ]: ProcessedMessage[]): Promise<ActionMatch> {
     if (
-      // !objectMatchesStructure(
-      //   decodedMessage,
-      //   {
-      //     wasm: {
-      //       execute: {
-      //         contract_addr: {},
-      //         funds: {},
-      //         msg: {
-      //           overrule_proposal: {
-      //             proposal_id: {},
-      //           },
-      //         },
-      //       },
-      //     },
-      //   } ||
+      !objectMatchesStructure(decodedMessage, {
+        wasm: {
+          execute: {
+            contract_addr: {},
+            funds: {},
+            msg: {
+              overrule_proposal: {
+                proposal_id: {},
+              },
+            },
+          },
+        },
+      }) ||
       !(await this.options.queryClient.fetchQuery(
         contractQueries.isContract(this.options.queryClient, {
           chainId: this.options.chain.chainId,
@@ -102,7 +100,6 @@ export class NeutronOverruleSubDaoProposalAction extends ActionBase<NeutronOverr
           nameOrNames: ContractName.NeutronCwdSubdaoTimelockSingle,
         })
       ))
-      // )
     ) {
       return false
     }

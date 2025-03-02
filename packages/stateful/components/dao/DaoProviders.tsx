@@ -11,7 +11,7 @@ import {
 } from '@dao-dao/stateless'
 import { DaoProvidersProps } from '@dao-dao/types'
 
-import { DaoActionsProvider } from '../../actions'
+import { DaoActionsProvider, GovActionsProvider } from '../../actions'
 import { ChainXGovDao, SecretCwDao, getDao } from '../../clients/dao'
 import { useWallet } from '../../hooks'
 import { VotingModuleAdapterProvider } from '../../voting-module-adapter'
@@ -100,7 +100,7 @@ const InitializedDaoProviders = ({
       {
         // Don't wrap chain governance in voting module or DAO actions provider.
         context.dao instanceof ChainXGovDao ? (
-          children
+          <GovActionsProvider>{children}</GovActionsProvider>
         ) : (
           <VotingModuleAdapterProvider>
             <DaoActionsProvider>{children}</DaoActionsProvider>

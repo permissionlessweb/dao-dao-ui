@@ -268,6 +268,10 @@ export class CodeIdConfig {
     try {
       this.load()
 
+      if (!this._codeIds[chainId]) {
+        return null
+      }
+
       const versionsDescending = Object.keys(this._codeIds[chainId])
         .sort(semverCompare)
         .reverse()
