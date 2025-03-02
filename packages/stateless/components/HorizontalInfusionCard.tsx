@@ -1,7 +1,7 @@
 import { ArrowOutwardRounded, AudiotrackRounded, ImageNotSupported } from '@mui/icons-material'
 import clsx from 'clsx'
 import NextImage from 'next/image'
-import { ComponentType, forwardRef, useEffect, useState } from 'react'
+import { ComponentType, forwardRef, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactPlayer from 'react-player'
 
@@ -34,6 +34,7 @@ import { TooltipLikeDisplay } from './tooltip'
 
 
 export interface HorizontalInfusionCardProps extends InfusionWithDetails {
+  currentEntity: string | undefined
   EntityDisplay: ComponentType<StatefulEntityDisplayProps>
   selectedNfts: LoadingDataWithError<NftCardInfo[]>
   entityEligibleNFTs: LoadingDataWithError<LazyNftCardInfo[]>
@@ -54,8 +55,36 @@ export const HorizontalInfusionCard = forwardRef<
   const { control, watch, setValue, setError, register, clearErrors, } =
     useFormContext<InfuseNftsData>()
 
-
   const [showModal, setShowModal] = useState<boolean>(false)
+  const [imageLoading, setImageLoading] = useState(!!infusion.infused_collection.image)
+  const [imageLoadErrored, setImageLoadErrored] = useState(false)
+  const [loadedImageSrc, setLoadedImgSrc] = useState<string>()
+  useEffect(() => {
+    if (
+      // If showing a video, don't load image.
+      // video ||
+      !infusion.infused_collection.image ||
+      loadedImageSrc === toAccessibleImageUrl(infusion.infused_collection.image)
+    ) {
+      return
+    }
+
+    setImageLoading(true)
+
+    const img = new Image()
+    img.onload = () => {
+      setLoadedImgSrc(img.src)
+      setImageLoading(false)
+      setImageLoadErrored(false)
+    }
+    img.onerror = () => {
+      setLoadedImgSrc(undefined)
+      setImageLoading(false)
+      setImageLoadErrored(true)
+    }
+    img.src = toAccessibleImageUrl(infusion.infused_collection.image)
+  }, [infusion.infused_collection.image, loadedImageSrc,])
+
 
   const watchChainId = watch((infusion.fieldNamePrefix + 'chainId') as 'chainId')
   const watchInfusionMinter = watch((infusion.fieldNamePrefix + 'infusionMinter') as 'infusionMinter')
@@ -158,7 +187,6 @@ export const HorizontalInfusionCard = forwardRef<
 
 
   useEffect(() => {
-
     console.log("infusion.entityEligibleNFTs", infusion.entityEligibleNFTs)
     console.log("infusion.collections", infusion.eligibleCollections)
     console.log("infusion.infused_collection", infusion.infused_collection)
@@ -190,44 +218,39 @@ export const HorizontalInfusionCard = forwardRef<
     />
   )
 
+  const showingImageUrl = infusion.infused_collection.image && !imageLoadErrored
+
+  // set mint fee just once
+  const [mintFeeSet, setMintFee] = useState(false)
+
+  useEffect(() => {
+    if (mintFeeSet) {
+      return
+    }
+    if (infusion.infusionParamsGeneric.mintFeeGeneric && infusion.owner != infusion.currentEntity) {
+      appendCoin({
+        denom: infusion.infusionParamsGeneric.mintFeeGeneric.token.denomOrAddress,
+        amount: infusion.infusionParamsGeneric.mintFeeGeneric.balance,
+        // decimals: infusion.infusionParamsGeneric.mintFeeGeneric.token.decimals
+      })
+    }
+    setMintFee(true)
+  }, [infusion.infusionParamsGeneric.mintFeeGeneric])
+
   const eligibleCollectionCardProps: EligibleCollectionCardProps[] = infusion.eligibleCollections.map((eligible, index) => {
+
     return {
+      fieldNamePrefix: infusion.fieldNamePrefix,
+      nftInfo: eligible.collectionInfo,
+      contractInfo: eligible.contractInfo,
       index,
       address: eligible.addr,
-      substituteLabel: eligible.payment_substitute ? t('title.infusedCollectionTotalSupply') : t('title.infusedCollectionTotalSupply'),
+      requiredParams: eligible,
       paymentSub: eligible.payment_substitute ? eligible.payment_substitute : undefined
     }
   })
 
-  // const [imageLoading, setImageLoading] = useState(!!imageUrl)
-  // const [imageLoadErrored, setImageLoadErrored] = useState(false)
   // // Load image in background so we can listen for loading complete.
-  // const [loadedImageSrc, setLoadedImgSrc] = useState<string>()
-  // useEffect(() => {
-  //   if (
-  //     // If showing a video, don't load image.
-  //     video ||
-  //     !imageUrl ||
-  //     loadedImageSrc === toAccessibleImageUrl(imageUrl)
-  //   ) {
-  //     return
-  //   }
-
-  //   setImageLoading(true)
-
-  //   const img = new Image()
-  //   img.onload = () => {
-  //     setLoadedImgSrc(img.src)
-  //     setImageLoading(false)
-  //     setImageLoadErrored(false)
-  //   }
-  //   img.onerror = () => {
-  //     setLoadedImgSrc(undefined)
-  //     setImageLoading(false)
-  //     setImageLoadErrored(true)
-  //   }
-  //   img.src = toAccessibleImageUrl(imageUrl)
-  // }, [imageUrl, loadedImageSrc, video])
 
   // const audio =
   //   metadata &&
@@ -239,7 +262,6 @@ export const HorizontalInfusionCard = forwardRef<
   //     ? metadata.properties.audio
   //     : null
 
-  // const showingImageUrl = imageUrl && !imageLoadErrored
 
   return (
     <div
@@ -250,17 +272,26 @@ export const HorizontalInfusionCard = forwardRef<
       )}
       ref={ref}
     >
-      <div className="relative aspect-square sm:h-36 sm:w-36">
-        <div className="absolute top-0 right-0 bottom-0 left-0">
-          {/* {video ? (
-            <ReactPlayer
-              controls
-              height="100%"
-              onReady={() => setImageLoading(false)}
-              url={video}
-              width="100%"
-            />
-          ) : showingImageUrl ? (
+
+      <div className="flex min-w-0 grow flex-col">
+        <p className="title-text border-b border-border-secondary py-4 px-6" />
+
+        <div className="flex grow flex-row items-center justify-between gap-8 py-4 px-6 overflow-x-auto">
+          {/* Collection */}
+          <div className="flex flex-col items-stretch justify-between gap-1">
+          <div className="justify-center aspect-square sm:h-72 sm:w-72 rounded-lg overflow-hidden">
+          {/* <div className="absolute top-0 right-0 bottom-0 left-0"> */}
+          {
+          // video ? (
+          //   <ReactPlayer
+          //     controls
+          //     height="100%"
+          //     onReady={() => setImageLoading(false)}
+          //     url={video}
+          //     width="100%"
+          //   />
+          // ) : 
+          showingImageUrl ? (
             <div
               className={clsx(
                 'relative aspect-square bg-cover bg-center transition-opacity',
@@ -272,14 +303,15 @@ export const HorizontalInfusionCard = forwardRef<
             ></div>
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              {audio ? (
+              {/* {audio ? (
                 <AudiotrackRounded className="!h-14 !w-14 text-icon-tertiary" />
               ) : (
                 <ImageNotSupported className="!h-14 !w-14 text-icon-tertiary" />
-              )}
+              )} */}
             </div>
-          )} */}
-        </div>
+          )
+          }
+        {/* </div> */}
 
         {/* {audio && !video && (
           <AudioPlayer
@@ -293,15 +325,7 @@ export const HorizontalInfusionCard = forwardRef<
             }}
           />
         )} */}
-
       </div>
-
-      <div className="flex min-w-0 grow flex-col">
-        <p className="title-text border-b border-border-secondary py-4 px-6" />
-
-        <div className="flex grow flex-row items-center justify-between gap-8 py-4 px-6 overflow-x-auto">
-          {/* Collection */}
-          <div className="flex flex-col items-stretch justify-between gap-1">
             <p className="secondary-text text-xs">{t('title.infusedCollectionTitle')}</p>
 
             <p className="primary-text truncate font-normal">
@@ -321,8 +345,9 @@ export const HorizontalInfusionCard = forwardRef<
                   })}
                 />
               </LinkWrapper>
-
             </p>
+            <p className="primary-text text-xs">{infusion.infused_collection.description}</p>
+
             <p className="secondary-text text-xs">{t('title.infusedCollectionTotalSupply')}</p>
             <div className="flex flex-row gap-2">
               <p className="primary-text text-lg truncate font-semibold">{infusion.infused_collection.num_tokens}</p>

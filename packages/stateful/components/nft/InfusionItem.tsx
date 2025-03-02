@@ -106,7 +106,7 @@ const InfusionItem: React.FC<InfusionItemProps> = ({ infusionInfo, chainId, quer
         combine: makeCombineQueryResultsIntoLoadingDataWithError(),
     })
 
-    const newIi: HorizontalInfusionCardProps = { ...infusionInfo, selectedNfts, chainId, fieldNamePrefix, entityEligibleNFTs, isProposalAction, EntityDisplay };
+    const newIi: HorizontalInfusionCardProps = { ...infusionInfo, currentEntity: wallet, selectedNfts, chainId, fieldNamePrefix, entityEligibleNFTs, isProposalAction, EntityDisplay };
     return <>
         <HorizontalInfusionCard key={index.toString()} {...newIi} />
     </ >;

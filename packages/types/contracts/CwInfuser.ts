@@ -6,7 +6,7 @@
 
 import { GenericToken, GenericTokenBalance } from "../token";
 import { Timestamp } from "./common";
-import { CollectionInfoResponse, RoyaltyInfoResponse } from "./Sg721Base";
+import { CollectionInfoResponse, ContractInfoResponse, RoyaltyInfoResponse } from "./Sg721Base";
 
 export type Uint128 = string;
 export interface InstantiateMsg {
@@ -48,9 +48,10 @@ export type InfusionWithDetails = Omit<Infusion, 'collections' | 'infusion_param
 export type InfusionsEligibleCollection = {
   addr: string;
   collectionInfo: CollectionInfoResponse;
+  contractInfo: ContractInfoResponse;
   max_req: number | null | undefined;
   min_req: number;
-  payment_substitute: GenericToken | null | undefined;
+  payment_substitute: GenericTokenBalance | null | undefined;
 };
 
 export interface Infusion {

@@ -79,7 +79,6 @@ const getInfusionById = (
     id: number
 ) => {
     const infusionInfo = cwInfuserExtraQueries.infusionById(queryClient, { chainId, address, id, })
-    console.log("infusionInfo:", infusionInfo)
     return infusionInfo
 }
 

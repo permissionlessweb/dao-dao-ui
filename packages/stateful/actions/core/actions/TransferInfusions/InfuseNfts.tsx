@@ -5,7 +5,7 @@ import { TransferNftData } from "../TransferNft/Component";
 import { ComponentType, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFieldArray, useFormContext } from "react-hook-form";
-import { getChainForChainId, getNftKey, isValidBech32Address, makeValidateAddress, validatePositive, validateRequired } from "@dao-dao/utils";
+import { getChainAddressForActionOptions, getChainForChainId, getNftKey, isValidBech32Address, makeValidateAddress, validatePositive, validateRequired } from "@dao-dao/utils";
 import clsx from "clsx"
 import { useQueryClient } from "@tanstack/react-query";
 import { cw721BaseQueries, nftQueries } from "@dao-dao/state/query";
@@ -17,7 +17,7 @@ interface InfusionCollections {
     collection: String
     minRequired: number
     maxRequired: number | undefined
-    paymentSubstitute: GenericToken | undefined
+    paymentSubstitute: GenericTokenBalance | undefined
 }
 
 export type InfuseNftsData = {
@@ -70,7 +70,12 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
         useFormContext<InfuseNftsData>()
 
     const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
-    const chain = getChainForChainId(watchChainId)
+    const currentChain = getChainForChainId(watchChainId)
+
+    const chainAddressOwner = getChainAddressForActionOptions(
+        actionOptions,
+        currentChain.chainId
+    )
 
     const watchInfusionMinter = watch((fieldNamePrefix + 'infusionMinter') as 'infusionMinter')
     const watchInfusionId = watch((fieldNamePrefix + 'infusionId') as 'infusionId')
@@ -204,7 +209,6 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
 
 
     const [showModal, setShowModal] = useState<boolean>(false)
-    const [paymentSubstituteEligible, setPaymentSubEligible] = useState<boolean>(false)
 
     const possibleCollections: TypedOption<InfusionCollections[]>[] = !infusion ? [] :
         infusion.flatMap((infusion, index) => {
@@ -233,11 +237,6 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
         console.log(option, index)
     }
 
-    const paymentSubstituteEligibleCollection = watchInfusionMinter && infusion && infusion[0].eligibleCollections.filter((a) => {
-        if (a.payment_substitute) {
-            return a
-        }
-    })
 
     return (
         <>
@@ -269,7 +268,7 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                                     // (executeSmartContract
                                     //     ? makeValidateAddress
                                     //     : makeValidateAddress)(chain.bech32_prefix),
-                                    makeValidateAddress(chain.bech32Prefix)
+                                    makeValidateAddress(currentChain.bech32Prefix)
                                 ]}
                             />
 
@@ -290,23 +289,6 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
                                         validation={[validateRequired, validatePositive]}
                                     /></> : null}
 
-                            {
-                                paymentSubstituteEligibleCollection && paymentSubstituteEligibleCollection.length != 0 ? <>
-                                    <div className="flex flex-row gap-3 items-center">
-                                        <FormSwitch
-                                            fieldName={fieldNamePrefix + 'paymentSubstituteExists' as 'paymentSubstituteExists'}
-                                            setValue={setValue}
-                                            sizing="md"
-                                            value={watchPaymentInfusionExists}
-                                        />
-
-                                        <InputLabel
-                                            name={t('title.usePaymentSubstitute')}
-                                            title
-                                        />
-
-                                    </div></> : undefined
-                            }
                         </ChainProvider>
                         <InputErrorMessage error={errors?.recipient} />
                     </div>
@@ -351,33 +333,13 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
             <div className="flex flex-col gap-1">
                 {infusion && selectedNfts && !selectedNfts.errored && !selectedNfts.loading && (<>
                     {infusion.map((ii, index) => {
-                        const newIi: HorizontalInfusionCardProps = { ...ii, chainId: watchChainId, EntityDisplay, fieldNamePrefix, entityEligibleNFTs: options, selectedNfts, isProposalAction: true };
+                        const newIi: HorizontalInfusionCardProps = { ...ii, currentEntity: chainAddressOwner, chainId: watchChainId, EntityDisplay, fieldNamePrefix, entityEligibleNFTs: options, selectedNfts, isProposalAction: true };
                         return (<HorizontalInfusionCard key={index.toString()} {...newIi} />)
                     })}
 
 
                 </>)
                 }
-            </div>
-            <div className="flex flex-col gap-1">
-                {
-                    infusion && infusion[0].infusionParamsGeneric.mintFeeGeneric && (
-                        <>
-                            {coins.map(({ id }, index) => (
-                                <NativeCoinSelector
-                                    key={id + index}
-                                    errors={errors?.funds?.[index]}
-                                    fieldNamePrefix={fieldNamePrefix + `funds.${index}.`}
-                                    isCreating={isCreating}
-                                    onRemove={isCreating ? () => removeCoin(index) : undefined}
-                                    tokens={tokens}
-                                />
-                            ))}
-
-                        </>
-                    )
-                }
-
             </div>
             {isCreating && (
                 <NftSelectionModal

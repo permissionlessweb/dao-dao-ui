@@ -2,40 +2,82 @@ import clsx from 'clsx'
 import { useTranslation } from 'react-i18next'
 
 import { EligibleCollectionCardProps, EntityType } from '@dao-dao/types'
-import { abbreviateAddress, formatPercentOf100 } from '@dao-dao/utils'
+import { abbreviateAddress, formatPercentOf100, toAccessibleImageUrl } from '@dao-dao/utils'
 
 import { useDaoNavHelpers } from '../../hooks'
-import { ButtonLink } from '../buttons'
+import { Button, ButtonLink } from '../buttons'
 import { CopyToClipboard } from '../CopyToClipboard'
 import { ProfileImage } from '../profile'
 import { TokenAmountDisplay } from '../token'
 import { LinkWrapper } from '../LinkWrapper'
 import { TooltipLikeDisplay } from '../tooltip'
-import { ArrowOutwardRounded } from '@mui/icons-material'
+import { ArrowOutwardRounded, ImageNotSupported } from '@mui/icons-material'
+import { useEffect, useState } from 'react'
+import { FormSwitch } from '../inputs'
+import { useFieldArray, useFormContext } from 'react-hook-form'
+import { InfuseNftsData } from '@dao-dao/stateful/actions/core/actions/TransferInfusions/InfuseNfts'
+import { HugeDecimal } from '@dao-dao/math'
 
 export const EligibleCollectionCard = ({
+    fieldNamePrefix,
     address,
     paymentSub,
-    substituteLabel,
+    requiredParams,
     index,
-
+    nftInfo,
+    contractInfo,
 }: EligibleCollectionCardProps) => {
     const { t } = useTranslation()
     const { getDaoPath } = useDaoNavHelpers()
 
-    // const title = loadingOrHasName ? (
-    //     <p
-    //         className={clsx(
-    //             'title-text text-text-body !text-base',
-    //             (loadingEntity.loading || loadingEntity.updating) && 'animate-pulse'
-    //         )}
-    //     >
-    //         {loadingEntity.loading ||
-    //             (loadingEntity.updating && !loadingEntity.data.name)
-    //             ? '...'
-    //             : loadingEntity.data.name}
-    //     </p>
-    // ) : (
+    const [paymentSubstituteEligible, setPaymentSubEligible] = useState<boolean>(false)
+    const { control, watch, setValue, setError, register, clearErrors, } =
+        useFormContext<InfuseNftsData>()
+
+    const {
+        fields: coins,
+        append: appendCoin,
+        remove: removeCoin,
+    } = useFieldArray({
+        control,
+        name: (fieldNamePrefix + 'funds') as 'funds',
+    })
+    const [paymentSubstituteSet, setPaymentSubstitute] = useState(false)
+
+    const [imageLoading, setImageLoading] = useState(!!nftInfo.image)
+    const [imageLoadErrored, setImageLoadErrored] = useState(false)
+    const [loadedImageSrc, setLoadedImgSrc] = useState<string>()
+    useEffect(() => {
+        if (
+            // If showing a video, don't load image.
+            //   video ||
+            !nftInfo.image ||
+            loadedImageSrc === toAccessibleImageUrl(nftInfo.image)
+        ) {
+            return
+        }
+
+        setImageLoading(true)
+
+        const img = new Image()
+        img.onload = () => {
+            setLoadedImgSrc(img.src)
+            setImageLoading(false)
+            setImageLoadErrored(false)
+        }
+        img.onerror = () => {
+            setLoadedImgSrc(undefined)
+            setImageLoading(false)
+            setImageLoadErrored(true)
+        }
+        console.log("nftInfo.image", nftInfo.image)
+        img.src = toAccessibleImageUrl(nftInfo.image)
+    }, [nftInfo.image, loadedImageSrc,])
+
+    const showingImageUrl = nftInfo.image && !imageLoadErrored
+
+    const title = (<p className={clsx('title-text text-text-body !text-base')}>{contractInfo.name}</p>)
+    // : (
     //     <p className="title-text text-text-tertiary !text-base truncate">
     //         {abbreviateAddress(address)}
     //     </p>
@@ -43,20 +85,13 @@ export const EligibleCollectionCard = ({
 
     return (
         <div className="flex flex-col justify-between rounded-md border border-border-primary">
-
             <div className="flex flex-col items-center p-4 gap-2">
-                {/*   <ProfileImage
-                imageUrl={
-                    loadingEntity.loading ? undefined : loadingEntity.data.imageUrl
-                }
-                loading={loadingEntity.loading || loadingEntity.updating}
-                rounded={
-                    !loadingEntity.loading &&
-                    loadingEntity.data.type !== EntityType.Wallet
-                }
-                size="lg"
-            />        */}
-
+                <ProfileImage
+                    imageUrl={loadedImageSrc}
+                    loading={imageLoading}
+                    rounded={true}
+                    size="lg"
+                />
                 <div className="flex flex-row gap-2 items-center">
                     <LinkWrapper
                         href={`https://www.stargaze.zone/m/${address}/tokens`}
@@ -65,45 +100,71 @@ export const EligibleCollectionCard = ({
                         openInNewTab
                     >
                         <TooltipLikeDisplay
-                            className="group-hover/nft:opacity-100 absolute bottom-4 left-4 opacity-0 shadow-dp4 transition-opacity hover:!opacity-90"
+                            className="group-hover/nft:opacity-100 absolute  left-4 opacity-0 shadow-dp4 transition-opacity hover:!opacity-90"
                             icon={<ArrowOutwardRounded className="!h-5 !w-5" />}
                             label={t('button.openInDestination', {
                                 destination: "Stargaze",
                             })}
                         />
+                        <p className="primary-text text-xs">{title}</p>
                     </LinkWrapper>
 
-                    {/* {!loadingEntity.loading &&
-                        loadingEntity.data.type === EntityType.Dao ? (
-                        <ButtonLink href={getDaoPath(address)} size="none" variant="none">
-                            {title}
-                        </ButtonLink>
-                    ) : (
-                        title
-                    )} */}
-
-
                 </div>
-            </div>
-
-            <div className="flex flex-col gap-2 border-t border-border-interactive-disabled p-4">
-                {/* Balance */}
-                {/* <div className="flex flex-row flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                    <p className="caption-text">{balanceLabel}</p>
-
+                <div className="flex flex-col  border-t border-border-interactive-disabled  " />
+                <p className="secondary-text text-xs">{t('info.minRequired')}</p>
+                <p className="primary-text text-sm">{requiredParams.min_req}</p>
+                {requiredParams.max_req != requiredParams.min_req && (<>
+                    <p className="secondary-text text-xs">{t('info.maxRequired')}</p>
+                    <p className="primary-text text-sm">{requiredParams.max_req}</p>
+                </>)}
+                {requiredParams.payment_substitute && (<>
+                    <p className="secondary-text text-xs">{t('info.paymentSubstitute')}</p>
                     <TokenAmountDisplay
-                        amount={balance.loading ? { loading: true } : balance.data.amount}
-                        className="caption-text font-mono"
-                        decimals={
-                            balance.loading || !balance.data.token
-                                ? 0
-                                : balance.data.token.decimals
-                        }
-                        hideSymbol={!balance.loading && !balance.data.token}
-                        symbol={balance.loading ? '...' : balance.data.token?.symbol || ''}
+                        amount={HugeDecimal.from(requiredParams.payment_substitute.balance)}
+                        decimals={requiredParams.payment_substitute.token.decimals}
+                        iconUrl={requiredParams.payment_substitute.token.imageUrl}
+                        showFullAmount
+                        symbol={requiredParams.payment_substitute.token.symbol}
                     />
-                </div> */}
+                    {paymentSub ?
+                        <div className="flex flex-row gap-3 items-center">
+                            <Button
+                                className="mb-2 self-start"
+                                onClick={() => {
+                                    if (!paymentSubstituteSet) {
+                                        appendCoin({
+                                            amount: paymentSub.balance,
+                                            denom: paymentSub.token.denomOrAddress,
+                                            decimals: paymentSub.token.decimals,
+                                        })
+
+                                        setPaymentSubstitute(true)
+                                    } else {
+                                        coins.findIndex((c, i) => {
+                                            if (c.denom === paymentSub.token.denomOrAddress && c.amount == paymentSub.balance) {
+                                                removeCoin(i);
+                                                return true; // Return true to indicate we found the index
+                                            }
+                                            return false;
+                                        });
+                                        setPaymentSubstitute(false)
+                                    }
+
+                                }
+                                }
+                                variant="secondary"
+                            >
+                           {paymentSubstituteSet ? t('button.removePaymentSubstitute') : t('button.usePaymentSubstitute')}
+                            </Button>
+
+                        </div> : undefined
+                    }
+                </>)}
+
             </div>
+
+
+
         </div >
     )
 }

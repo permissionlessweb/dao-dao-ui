@@ -112,6 +112,7 @@ export const fetchInfusionById = async (
             queryClient.fetchQuery(
                 cw721BaseQueries.collectionInfo({ chainId, contractAddress: cols.addr })
             ),
+            queryClient.fetchQuery(cw721BaseQueries.contractInfo({ chainId, contractAddress: cols.addr }))
         ])
 
         // fetch token info for payment substitute if eligible. 
@@ -125,12 +126,18 @@ export const fetchInfusionById = async (
         ]) : null
 
 
+        const payment_substitute = paymentSub ? {
+            token: paymentSub[0],
+            balance: cols.payment_substitute?.amount,
+        } : null
+
         return {
             addr: cols.addr,
             collectionInfo: colInfo[0],
+            contractInfo: colInfo[1],
             max_req: cols.max_req,
             min_req: cols.min_req,
-            payment_substitute: paymentSub ? paymentSub[0] : cols.payment_substitute,
+            payment_substitute: paymentSub ? payment_substitute : cols.payment_substitute,
         } as InfusionsEligibleCollection
     })
 
