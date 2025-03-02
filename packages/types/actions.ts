@@ -144,6 +144,10 @@ export type ActionKeyAndData = {
   _id: string
   actionKey: ActionKey
   data: any
+  /**
+   * If true, this action should not be editable.
+   */
+  readOnly?: boolean
 }
 
 export type ActionKeyAndDataNoId = Omit<ActionKeyAndData, '_id'>

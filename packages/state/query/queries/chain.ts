@@ -21,6 +21,10 @@ import { ModuleAccount } from '@dao-dao/types/protobuf/codegen/cosmos/auth/v1bet
 import { Metadata } from '@dao-dao/types/protobuf/codegen/cosmos/bank/v1beta1/bank'
 import { DecCoin } from '@dao-dao/types/protobuf/codegen/cosmos/base/v1beta1/coin'
 import {
+  BasicAllowance,
+  Grant,
+} from '@dao-dao/types/protobuf/codegen/cosmos/feegrant/v1beta1/feegrant'
+import {
   ProposalStatus,
   TallyResult,
   Vote,
@@ -38,6 +42,7 @@ import {
   getCosmWasmClientForChainId,
   getNativeTokenForChainId,
   ibcProtoRpcClientRouter,
+  isErrorWithSubstring,
   isNonexistentQueryError,
   isValidBech32Address,
   osmosisProtoRpcClientRouter,
@@ -867,18 +872,26 @@ export const fetchGovProposals = async (
           )) || []
         total = v1Proposals.length
       } else {
-        const response = await client.gov.v1.proposals({
-          proposalStatus: status || ProposalStatus.PROPOSAL_STATUS_UNSPECIFIED,
-          voter: '',
-          depositor: '',
-          pagination: {
-            key: new Uint8Array(),
-            offset: BigInt(offset || 0),
-            limit: BigInt(limit || 0),
-            countTotal: true,
-            reverse: true,
-          },
-        })
+        const getResponse = (countTotal: boolean) =>
+          client.gov.v1.proposals({
+            proposalStatus:
+              status || ProposalStatus.PROPOSAL_STATUS_UNSPECIFIED,
+            voter: '',
+            depositor: '',
+            pagination: {
+              key: new Uint8Array(),
+              offset: BigInt(offset || 0),
+              limit: BigInt(limit || 0),
+              countTotal,
+              reverse: true,
+            },
+          })
+        const response = await getResponse(true).catch((err) =>
+          // some RPCs disallow count_total. If so, just don't count.
+          isErrorWithSubstring(err, 'count_total is disallowed')
+            ? getResponse(false)
+            : Promise.reject(err)
+        )
         v1Proposals = response.proposals
         total = Number(response.pagination?.total || 0)
       }
@@ -912,20 +925,28 @@ export const fetchGovProposals = async (
         )) || []
       total = v1Beta1Proposals.length
     } else {
-      const response = await client.gov.v1beta1.proposals(
-        {
-          proposalStatus: status || ProposalStatus.PROPOSAL_STATUS_UNSPECIFIED,
-          voter: '',
-          depositor: '',
-          pagination: {
-            key: new Uint8Array(),
-            offset: BigInt(offset || 0),
-            limit: BigInt(limit || 0),
-            countTotal: true,
-            reverse: true,
+      const getResponse = (countTotal: boolean) =>
+        client.gov.v1beta1.proposals(
+          {
+            proposalStatus:
+              status || ProposalStatus.PROPOSAL_STATUS_UNSPECIFIED,
+            voter: '',
+            depositor: '',
+            pagination: {
+              key: new Uint8Array(),
+              offset: BigInt(offset || 0),
+              limit: BigInt(limit || 0),
+              countTotal,
+              reverse: true,
+            },
           },
-        },
-        true
+          true
+        )
+      const response = await getResponse(true).catch((err) =>
+        // some RPCs disallow count_total. If so, just don't count.
+        isErrorWithSubstring(err, 'count_total is disallowed')
+          ? getResponse(false)
+          : Promise.reject(err)
       )
       v1Beta1Proposals = response.proposals
       total = Number(response.pagination?.total || 0)
@@ -1229,16 +1250,23 @@ export const fetchGovProposalVotes = async (
 }> => {
   const client = await cosmosProtoRpcClientRouter.connect(chainId)
 
-  const { votes, pagination } = await client.gov.v1beta1.votes({
-    proposalId: BigInt(proposalId),
-    pagination: {
-      key: new Uint8Array(),
-      offset: BigInt(offset),
-      limit: BigInt(limit),
-      countTotal: true,
-      reverse: true,
-    },
-  })
+  const getResponse = (countTotal: boolean) =>
+    client.gov.v1beta1.votes({
+      proposalId: BigInt(proposalId),
+      pagination: {
+        key: new Uint8Array(),
+        offset: BigInt(offset),
+        limit: BigInt(limit),
+        countTotal,
+        reverse: true,
+      },
+    })
+  const { votes, pagination } = await getResponse(true).catch((err) =>
+    // some RPCs disallow count_total. If so, just don't count.
+    isErrorWithSubstring(err, 'count_total is disallowed')
+      ? getResponse(false)
+      : Promise.reject(err)
+  )
 
   const stakes = await Promise.all(
     votes.map(({ voter }) =>
@@ -1294,6 +1322,33 @@ export const fetchWalletHexPublicKey = async ({
     throw new Error('No pubkey found for address')
   }
   return toHex(fromBase64(account.pubkey.value))
+}
+
+/**
+ * Fetch feegrants granted to an address, optionally only those that are basic.
+ */
+export const fetchFeeGrantsByGrantee = async ({
+  chainId,
+  address,
+  basic = false,
+}: {
+  chainId: string
+  address: string
+  /**
+   * Filter by basic allowances only. Defaults to false.
+   */
+  basic?: boolean
+}): Promise<Grant[]> => {
+  const client = await cosmosProtoRpcClientRouter.connect(chainId)
+  const { allowances } = await client.feegrant.v1beta1.allowances({
+    grantee: address,
+  })
+  return allowances.filter(
+    (g) =>
+      !basic ||
+      (g.allowance?.$typeUrl === BasicAllowance.typeUrl &&
+        (!g.allowance.expiration || g.allowance.expiration > new Date()))
+  )
 }
 
 export const chainQueries = {
@@ -1551,5 +1606,16 @@ export const chainQueries = {
     queryOptions({
       queryKey: ['chain', 'walletHexPublicKey', options],
       queryFn: () => fetchWalletHexPublicKey(options),
+    }),
+  /**
+   * Fetch feegrants granted to an address, optionally only those that are
+   * basic.
+   */
+  feeGrantsByGrantee: (
+    options: Parameters<typeof fetchFeeGrantsByGrantee>[0]
+  ) =>
+    queryOptions({
+      queryKey: ['chain', 'feeGrantsByGrantee', options],
+      queryFn: () => fetchFeeGrantsByGrantee(options),
     }),
 }

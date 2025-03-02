@@ -139,6 +139,8 @@ export const deploySets: DeploySet[] = [
 
       ChainId.TerraMainnet,
       ChainId.TerraClassicMainnet,
+
+      ChainId.BabylonTestnet,
     ],
   },
 
@@ -157,6 +159,8 @@ export const deploySets: DeploySet[] = [
 
       ChainId.TerraMainnet,
       ChainId.TerraClassicMainnet,
+
+      ChainId.BabylonTestnet,
     ],
   },
 
@@ -251,8 +255,6 @@ export const deploySets: DeploySet[] = [
       ChainId.OmniflixHubMainnet,
       ChainId.OmniflixHubTestnet,
 
-      ChainId.OraichainMainnet,
-
       ChainId.OsmosisMainnet,
       ChainId.OsmosisTestnet,
 
@@ -274,6 +276,19 @@ export const deploySets: DeploySet[] = [
       },
     ],
     chainIds: [ChainId.KujiraMainnet, ChainId.KujiraTestnet],
+  },
+
+  // token factory cosmwasm contract to deploy every time
+  {
+    name: 'token factory cosmwasm',
+    type: 'always',
+    contracts: [
+      {
+        file: 'cw_tokenfactory_issuer-cosmwasm',
+        alias: 'cw_tokenfactory_issuer',
+      },
+    ],
+    chainIds: [ChainId.OraichainMainnet],
   },
 
   // token staking contract to deploy every time
@@ -314,6 +329,8 @@ export const deploySets: DeploySet[] = [
       ChainId.StargazeTestnet,
 
       ChainId.TerraMainnet,
+
+      ChainId.BabylonTestnet,
     ],
   },
 
@@ -359,6 +376,7 @@ export const chainIdToIndexerGroupVarsName: Record<string, string> = {
   [ChainId.StargazeTestnet]: 'stargaze_testnet',
   [ChainId.TerraMainnet]: 'terra_mainnet',
   [ChainId.TerraClassicMainnet]: 'terraClassic_mainnet',
+  [ChainId.BabylonTestnet]: 'babylon_testnet',
 }
 
 /**

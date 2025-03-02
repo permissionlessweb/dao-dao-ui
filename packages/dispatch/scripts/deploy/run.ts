@@ -318,7 +318,11 @@ const main = async () => {
       }
     }
 
-    log(chalk.red(`${contract}.wasm not found in contract directories`))
+    log(
+      chalk.red(
+        `${getContractName(contract)}.wasm not found in contract directories`
+      )
+    )
     process.exit(1)
   }
 

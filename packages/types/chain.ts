@@ -100,6 +100,7 @@ export enum ChainId {
   OmniflixHubTestnet = 'flixnet-4',
   SecretMainnet = 'secret-4',
   SecretTestnet = 'pulsar-3',
+  BabylonTestnet = 'bbn-test-5',
 }
 
 export type BaseChainConfig = {
@@ -217,6 +218,11 @@ export type SupportedChainConfig = Omit<BaseChainConfig, 'chainId'> & {
    */
   noTokenFactory?: boolean
   /**
+   * Disallow creating new tokens for token-based DAOs and show a tooltip that
+   * token creation is not supported on this chain. Defaults to false.
+   */
+  noTokenCreation?: boolean
+  /**
    * Token creation factory address to use during DAO creation.
    */
   tokenCreationFactoryAddress?: string
@@ -318,22 +324,38 @@ export type CodeHashConfig = {
 }
 
 export type PolytoneConnection = {
-  // Contract address of note on the local/current chain.
+  /**
+   * Contract address of note on the local/current chain.
+   */
   note: string
-  // Contract address of the note's listener on the local/current chain.
+  /**
+   * Contract address of the note's listener on the local/current chain.
+   */
   listener: string
-  // Contract address of the note's voice on the remote chain.
+  /**
+   * Contract address of the note's voice on the remote chain.
+   */
   voice: string
-  // IBC connection IDs
+  /**
+   * IBC connection IDs
+   */
   localConnection: string
+  /**
+   * IBC connection ID on the remote chain.
+   */
   remoteConnection: string
-  // IBC channel IDs
+  /**
+   * IBC channel ID on the local/current chain.
+   */
   localChannel: string
+  /**
+   * IBC channel ID on the remote chain.
+   */
   remoteChannel: string
-  // Whether or not the user needs to self-relay an execution. This should be
-  // true if no relayers are running on the established connection. If using an
-  // existing active connection, the relayers will automatically perform the
-  // relay.
+  /**
+   * Whether or not the user needs to self-relay an execution. This should be
+   * relay.
+   */
   needsSelfRelay?: boolean
 }
 

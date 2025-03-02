@@ -220,6 +220,10 @@ export class CwDao extends DaoBase {
     return this._proposalModules
   }
 
+  get proposalSaveLocalStorageKey(): string {
+    return this.coreAddress
+  }
+
   getVotingPowerQuery(
     address?: string,
     height?: number
