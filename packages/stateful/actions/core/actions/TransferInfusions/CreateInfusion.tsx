@@ -1,9 +1,10 @@
-import { Config, InfusedCollection, InfusionParams, NFTCollection } from "@dao-dao/types/contracts/CwInfuser"
+import { Config, InfusedCollection, InfusionConfig, InfusionParams, NFTCollection } from "@dao-dao/types/contracts/CwInfuser"
 import { Counterparty } from "../token_swap/types"
 import { ComponentType, useEffect } from "react"
-import { ActionChainContextType, ActionComponentProps, ActionContextType, ActionKey, AddressInputProps, EntityType, GenericTokenBalance, GenericTokenBalanceWithOwner, LoadingData, LoadingDataWithError, TokenType } from "@dao-dao/types"
+import { ActionChainContextType, ActionComponentProps, ActionContextType, ActionKey, AddressInputProps, EntityType, GenericTokenBalance, GenericTokenBalanceWithOwner, LoadingData, LoadingDataWithError, SegmentedControlsProps, TokenType, TypedOption } from "@dao-dao/types"
+import { BundleType } from "@dao-dao/types/contracts/CwInfuser"
 import { useTranslation } from "react-i18next"
-import { AddressInput, Button, DaoSupportedChainPickerInput, FormSwitch, IconButton, InputErrorMessage, InputLabel, NumericInput, TextAreaInput, TextInput, TokenAmountDisplay, TokenInput, useActionOptions, useCachedLoading, useChain, useInitializedActionForKey } from "@dao-dao/stateless"
+import { AddressInput, Button, DaoSupportedChainPickerInput, FormSwitch, IconButton, InputErrorMessage, InputLabel, MarkdownRenderer, NumericInput, SegmentedControls, SelectInput, TextAreaInput, TextInput, TokenAmountDisplay, TokenInput, useActionOptions, useCachedLoading, useChain, useInitializedActionForKey } from "@dao-dao/stateless"
 import { useEntity, useWallet } from "../../../../hooks"
 import { useTokenBalances } from "../../../hooks"
 import { useFieldArray, useFormContext } from "react-hook-form"
@@ -12,7 +13,14 @@ import { HugeDecimal } from "@dao-dao/math"
 import { constSelector, useRecoilValueLoadable } from "recoil"
 import { DaoDaoCoreSelectors, genericTokenBalancesSelector } from "@dao-dao/state/recoil"
 import { Close } from "@mui/icons-material"
+import clsx from "clsx"
 
+
+export enum InfusionBundleType {
+    AllOf = 'allOf',
+    AnyOf = 'anyOf',
+    AnyOfBlend = 'anyOfBlend',
+}
 
 export type CreateInfusionData = {
     chainId: string
@@ -27,12 +35,12 @@ export type CreateInfusionData = {
         amount: string
         denom: string
     }[]
-    //   description: string
+    mode: InfusionBundleType
 }
 
 export type CreateInfusionOptions = {
     tokens: LoadingData<GenericTokenBalance[]>
-    infusion: LoadingDataWithError<Config[]>
+    infusion: LoadingDataWithError<InfusionConfig[]>
     AddressInput: ComponentType<AddressInputProps<CreateInfusionData>>
 }
 
@@ -89,6 +97,7 @@ export const CreateInfusion: ComponentType<
             clearErrors,
         } = useFormContext<CreateInfusionData>()
 
+        const watchMode = watch((fieldNamePrefix + 'mode') as 'mode')
         const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
         const watchInfusionMinter = watch((fieldNamePrefix + 'infusionMinter') as 'infusionMinter')
         const watchEligibleCollections = watch((fieldNamePrefix + 'collections') as 'collections')
@@ -147,14 +156,32 @@ export const CreateInfusion: ComponentType<
         const validInfusionMinterAddr = !!watchInfusionMinter && isValidBech32Address(watchInfusionMinter, currentChain.bech32Prefix)
         const infusionConfig = options.infusion.loading || options.infusion.errored ? null : options.infusion.data[0]
 
+        const tabs: SegmentedControlsProps<InfusionBundleType>['tabs'] = [
+            // Only allow beginning a vest if widget is setup. ([
+            {
+                label: t('title.allOf'),
+                value: InfusionBundleType.AllOf,
+            },
+            {
+                label: t('title.anyOf'),
+                value: InfusionBundleType.AnyOf,
+            },
+            // {
+            //     label: t('title.anyOfBlend'),
+            //     value: InfusionBundleType.AnyOfBlend,
+            // },
+        ] as TypedOption<InfusionBundleType>[]
+
+        const selectedBundleType = tabs.find((tab) => tab.value === watchMode)
+
 
         // automatically set the required infusion creation fee, 
         // if one exists and current entity is not owner of infusion contract.
         useEffect(() => {
             // console.log("options.infusion:", options.infusion)
-            if (!options.infusion.errored && !options.infusion.loading && infusionConfig?.min_creation_fee && chainAddressOwner != infusionConfig.contract_owner) {
-                setValue((fieldNamePrefix + 'deposit.0.amount') as 'deposit.0.amount', infusionConfig.min_creation_fee.amount)
-                setValue((fieldNamePrefix + 'deposit.0.denom') as 'deposit.0.denom', infusionConfig.min_creation_fee.denom)
+            if (!options.infusion.errored && !options.infusion.loading && infusionConfig?.infusion_fee && chainAddressOwner != infusionConfig.contract_owner) {
+                setValue((fieldNamePrefix + 'deposit.0.amount') as 'deposit.0.amount', infusionConfig.infusion_fee.balance)
+                setValue((fieldNamePrefix + 'deposit.0.denom') as 'deposit.0.denom', infusionConfig.infusion_fee.token.denomOrAddress)
 
             } else {
                 setValue((fieldNamePrefix + 'deposit') as 'deposit', [])
@@ -174,7 +201,7 @@ export const CreateInfusion: ComponentType<
                                 // Reset when switching chain.
                                 setValue((fieldNamePrefix + 'chainId') as 'chainId', chainId)
                                 setValue((fieldNamePrefix + 'collections') as 'collections', [])
-                                setValue((fieldNamePrefix + 'infusionParams') as 'infusionParams', {})
+                                setValue((fieldNamePrefix + 'infusionParams') as 'infusionParams', { bundle_type: { all_of: {} } })
                                 setValue((fieldNamePrefix + 'owner') as 'owner', chainAddressOwner ? chainAddressOwner : '')
                                 setValue((fieldNamePrefix + 'paymentRecipient') as 'paymentRecipient', chainAddressOwner ? chainAddressOwner : '')
                             }}
@@ -420,6 +447,57 @@ export const CreateInfusion: ComponentType<
                                 )
                             }
 
+                            <p className="primary-text mb-3">{t('form.infusionBundleType')}</p>
+                            <MarkdownRenderer
+                                className="body-text text-text-secondary text-sm -mt-1"
+                                markdown={t('form.InfusionBundleTypeDescription')}
+                            />
+
+                            {/* form to select bundle: */}
+                            {/* AllOf: no additional stuff */}
+                            {/* AnyOf:Dropdown list from collections to set as eligible to set as accepted as anyOf */}
+                            {/* AnyOfBlend: similar modal as selecting eligible collections */}
+                            {watchMode === InfusionBundleType.AllOf ? (<></>) : null}
+                            {watchMode === InfusionBundleType.AnyOf ? (<>
+                                <SelectInput
+                                    containerClassName={clsx('shrink-0')}
+                                    disabled={!isCreating}
+                                    error={errors?.type}
+                                    fieldName={(fieldNamePrefix + 'type') as 'type'}
+                                    onChange={(value) => {
+                                        // If setting to non-delegate stake type and currently set
+                                        // validator is not one we are staked to, set back to first staked
+                                        // validator in list.
+                                        if (
+                                            value !== StakingActionType.Delegate &&
+                                            !stakedValidatorAddresses.has(validator)
+                                        ) {
+                                            setValue(
+                                                (fieldNamePrefix + 'validator') as 'validator',
+                                                stakes.length > 0 ? stakes[0].validator.address : ''
+                                            )
+                                        }
+                                    }}
+                                    register={register}
+                                >
+                                    {stakeActions.map(({ name, type }, idx) => (
+                                        <option key={idx} value={type}>
+                                            {name}
+                                        </option>
+                                    ))}
+                                </SelectInput>
+
+                            </>) : null}
+                            {watchMode === InfusionBundleType.AnyOfBlend ? (<></>) : null}
+
+                            <SegmentedControls<CreateInfusionData['mode']>
+                                className="mb-2"
+                                onSelect={(value) =>
+                                    setValue((fieldNamePrefix + 'mode') as 'mode', value)
+                                }
+                                selected={watchMode}
+                                tabs={tabs}
+                            />
                             <InputLabel name={t('form.infusedAdmin')} />
                             <AddressInput
                                 containerClassName="grow"
@@ -507,16 +585,16 @@ export const CreateInfusion: ComponentType<
                         </div>
 
                     </div>
-                    {infusionConfig?.min_creation_fee && (
+                    {infusionConfig?.infusion_fee && (
                         <>
                             <p className="primary-text mb-3">{t('form.globalInfusionCreationFee')}</p>
                             <TokenAmountDisplay
-                                amount={HugeDecimal.from(infusionConfig.min_creation_fee.amount)}
-                                decimals={6}
-                                // iconUrl={distribution.token.imageUrl}
+                                amount={HugeDecimal.from(infusionConfig.infusion_fee.balance)}
+                                decimals={infusionConfig.infusion_fee.token.decimals}
+                                iconUrl={infusionConfig.infusion_fee.token.imageUrl}
                                 showAllDecimals
                                 showFullAmount
-                                symbol={infusionConfig.min_creation_fee.denom}
+                                symbol={infusionConfig.infusion_fee.token.symbol}
                             />
                         </>
 

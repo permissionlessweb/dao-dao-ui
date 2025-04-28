@@ -15,6 +15,7 @@ export enum WidgetId {
   Press = 'press',
   RetroactiveCompensation = 'retroactive',
   VestingPayments = 'vesting',
+  DaoDnas = 'dnas',
   ShitStrap = 'shitstrap',
   Infusions = 'infusions',
   Subscribe = 'subscribe',

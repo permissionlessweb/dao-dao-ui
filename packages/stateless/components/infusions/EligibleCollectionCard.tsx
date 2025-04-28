@@ -34,6 +34,8 @@ export const EligibleCollectionCard = ({
     const { control, watch, setValue, setError, register, clearErrors, } =
         useFormContext<InfuseNftsData>()
 
+    const watchTokenId = watch((fieldNamePrefix + 'funds') as 'funds')
+
     const {
         fields: coins,
         append: appendCoin,
@@ -132,29 +134,45 @@ export const EligibleCollectionCard = ({
                                 className="mb-2 self-start"
                                 onClick={() => {
                                     if (!paymentSubstituteSet) {
-                                        appendCoin({
-                                            amount: paymentSub.balance,
-                                            denom: paymentSub.token.denomOrAddress,
-                                            decimals: paymentSub.token.decimals,
-                                        })
-
-                                        setPaymentSubstitute(true)
-                                    } else {
-                                        coins.findIndex((c, i) => {
-                                            if (c.denom === paymentSub.token.denomOrAddress && c.amount == paymentSub.balance) {
-                                                removeCoin(i);
-                                                return true; // Return true to indicate we found the index
+                                        // If the token wasn't found in the existing coins, append it
+                                        var found = false
+                                        const token = watchTokenId.find((coin, i) => {
+                                            found = true
+                                            console.log("watchTokenId:", coin, i)
+                                            let added = HugeDecimal.from(coin.amount).plus(paymentSub.balance).toString()
+                                            if (coin.denom === paymentSub.token.denomOrAddress) {
+                                                setValue((fieldNamePrefix + `funds.${i}.amount`) as `funds.${number}.amount`, added)
                                             }
-                                            return false;
-                                        });
-                                        setPaymentSubstitute(false)
-                                    }
+                                        })
+                                        if (!found) {
+                                            appendCoin({
+                                                amount: paymentSub.balance,
+                                                denom: paymentSub.token.denomOrAddress,
+                                                decimals: 0,
+                                            });
+                                        }  
+                                        setPaymentSubstitute(true);
+                                    } else {
+                                        // Remove payment substitute
+                                        watchTokenId.map((coin, i) => {
+                                            if (coin.denom === paymentSub.token.denomOrAddress) {
+                                                const subtractedAmount = HugeDecimal.from(coin.amount).minus(paymentSub.balance).toString();
+                                                if (subtractedAmount != "0") {
+                                                    removeCoin(i);
+                                                    appendCoin({ ...coin, amount: subtractedAmount })
+                                                } else {
+                                                    removeCoin(i);
+                                                }
+                                            }
 
+                                        });
+                                        setPaymentSubstitute(false);
+                                    }
                                 }
                                 }
                                 variant="secondary"
                             >
-                           {paymentSubstituteSet ? t('button.removePaymentSubstitute') : t('button.usePaymentSubstitute')}
+                                {paymentSubstituteSet ? t('button.removePaymentSubstitute') : t('button.usePaymentSubstitute')}
                             </Button>
 
                         </div> : undefined

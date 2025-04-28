@@ -48,8 +48,8 @@ export const useCfWorkerAuthPostRequest = (
 
       const thisChainWallet = overrideChainId
         ? chainWallet?.mainWallet.getChainWallet(
-            getChainForChainId(overrideChainId).chainName
-          )
+          getChainForChainId(overrideChainId).chainName
+        )
         : chainWallet
 
       // If hex public key not loaded, load it from the wallet.
@@ -135,8 +135,8 @@ export const useCfWorkerAuthPostRequest = (
       const thisChainWallet =
         overrideChainId && overrideChainId !== chain.chainId
           ? chainWallet?.mainWallet.getChainWallet(
-              getChainForChainId(overrideChainId).chainName
-            )
+            getChainForChainId(overrideChainId).chainName
+          )
           : chainWallet
 
       if (!thisChainWallet?.address) {
@@ -173,13 +173,15 @@ export const useCfWorkerAuthPostRequest = (
         offlineSignerAmino,
       })
 
+      const bodyDebug = JSON.stringify(body)
+      console.log("bodyDebug", bodyDebug)
       // Send request.
       const response = await fetch(apiBase + endpoint, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(body),
+        body: bodyDebug,
       })
 
       // If response not OK, throw error.
@@ -200,7 +202,7 @@ export const useCfWorkerAuthPostRequest = (
 
       // If response OK, return response body (unless 204 no content, in which
       // case return undefined).
-      return response.status === 204 ? undefined : await response.json()
+      return response.status === 204 ? undefined as any : await response.json()
     },
     [
       defaultSignatureType,

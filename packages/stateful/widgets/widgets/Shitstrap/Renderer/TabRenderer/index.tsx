@@ -23,7 +23,7 @@ import {
 } from '../../../../../components/shitstrap'
 import { useMembership, useQueryLoadingDataWithError } from '../../../../../hooks'
 import { ShitstrapPaymentWidgetData } from '../../types'
-import { TabRenderer as StatelessTabRenderer } from './TabRenderer'
+import { ShitstrapTabRenderer as StatelessTabRenderer } from './TabRenderer'
 import uniqBy from 'lodash.uniqby'
 import { ShitstrapPaymentCard } from '../../components/stateless/ShitstrapPaymentCard'
 

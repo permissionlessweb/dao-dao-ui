@@ -10,8 +10,8 @@ import { CollectionInfoResponse, ContractInfoResponse, RoyaltyInfoResponse } fro
 
 export type Uint128 = string;
 export interface InstantiateMsg {
-  admin?: string | null;
-  admin_fee: number;
+  contract_owner?: string | null;
+  owner_fee: number;
   cw721_code_id: number;
   max_bundles?: number | null;
   max_infusions?: number | null;
@@ -35,6 +35,22 @@ export type ExecuteMsg = {
   infuse: {
     bundle: Bundle[];
     infusion_id: number;
+  };
+} | {
+  upate_infusion_base_uri: {
+    id: number;
+    base_uri: String;
+  };
+} | {
+  upate_infusion_eligible_collections: {
+    id: number;
+    to_add: NFTCollection[];
+    to_remove: NFTCollection[];
+  };
+} | {
+  upate_infusion_mint_fee: {
+    id: number;
+    mint_fee?: Coin | null;
   };
 };
 export type Addr = string;
@@ -85,6 +101,7 @@ export interface InfusedCollection {
 }
 
 export interface InfusionParams {
+  bundle_type: BundleType,
   mint_fee?: Coin | null;
   params?: BurnParams | null;
 }
@@ -130,6 +147,7 @@ export type HexBinary = string;
 export type InfusionConfig = Omit<Config, 'min_creation_fee' | 'max_creation_fee'> & {
   creation_fee?: GenericTokenBalance | null;
   infusion_fee?: GenericTokenBalance | null;
+
 }
 
 
@@ -165,3 +183,18 @@ export interface InfusionParamState {
   params?: BurnParams | null;
 }
 export type Boolean = boolean;
+
+export type BlendNFTs = {
+  addr: Addr;
+  min_req: number;
+  payment_substitute: boolean;
+}
+
+export type BundleBlend = {
+  blend_nfts: BlendNFTs[];
+};
+
+export type BundleType =
+  | { all_of: Record<string, unknown> }
+  | { any_of: { addrs: Addr[] } }
+  | { any_of_blend: { blends: BundleBlend[] } };

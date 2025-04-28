@@ -333,7 +333,16 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
             <div className="flex flex-col gap-1">
                 {infusion && selectedNfts && !selectedNfts.errored && !selectedNfts.loading && (<>
                     {infusion.map((ii, index) => {
-                        const newIi: HorizontalInfusionCardProps = { ...ii, currentEntity: chainAddressOwner, chainId: watchChainId, EntityDisplay, fieldNamePrefix, entityEligibleNFTs: options, selectedNfts, isProposalAction: true };
+                        const newIi: HorizontalInfusionCardProps = {
+                            ...ii,
+                            currentEntity: chainAddressOwner,
+                            chainId: watchChainId,
+                            EntityDisplay,
+                            fieldNamePrefix,
+                            entityEligibleNFTs: options,
+                            selectedNfts,
+                            isProposalAction: true
+                        };
                         return (<HorizontalInfusionCard key={index.toString()} {...newIi} />)
                     })}
 

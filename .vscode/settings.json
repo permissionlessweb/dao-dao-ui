@@ -18,7 +18,7 @@
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },
   "[json]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    "editor.defaultFormatter": "vscode.json-language-features"
   },
   "css.validate": false,
   "eslint.codeActionsOnSave.mode": "problems",

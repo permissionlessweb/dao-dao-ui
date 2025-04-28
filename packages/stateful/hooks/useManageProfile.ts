@@ -411,27 +411,27 @@ export const useManageProfile = ({
     // current chain wallet profile.
     const profilesToMerge =
       currentChainWallet &&
-      !profile.loading &&
-      !otherChainWalletProfiles.loading
+        !profile.loading &&
+        !otherChainWalletProfiles.loading
         ? otherChainWalletProfiles.data.flatMap((chainProfile) => {
-            if (
-              // If profile exists, UUID matches current chain wallet profile
-              // and this chain wallet has been added to the profile, ignore. If
-              // profile does not exist or chain has not been explicitly added,
-              // we want to merge it into the current profile.
-              chainProfile.uuid &&
-              chainProfile.uuid === profile.data.uuid &&
-              profile.data.chains[chainProfile.source.chainId]?.address ===
-                chainProfile.source.address
-            ) {
-              return []
-            }
+          if (
+            // If profile exists, UUID matches current chain wallet profile
+            // and this chain wallet has been added to the profile, ignore. If
+            // profile does not exist or chain has not been explicitly added,
+            // we want to merge it into the current profile.
+            chainProfile.uuid &&
+            chainProfile.uuid === profile.data.uuid &&
+            profile.data.chains[chainProfile.source.chainId]?.address ===
+            chainProfile.source.address
+          ) {
+            return []
+          }
 
-            return {
-              ...chainProfile.source,
-              profile: chainProfile,
-            }
-          })
+          return {
+            ...chainProfile.source,
+            profile: chainProfile,
+          }
+        })
         : []
 
     // Merge options are only needed if other profiles exist.
@@ -442,12 +442,12 @@ export const useManageProfile = ({
         ...(profile.loading
           ? []
           : [
-              {
-                chainId: walletChainId,
-                address,
-                profile: profile.data,
-              },
-            ]),
+            {
+              chainId: walletChainId,
+              address,
+              profile: profile.data,
+            },
+          ]),
         // Other profiles attached to this wallet that differ from the current
         // chain wallet.
         ...profilesToMerge,

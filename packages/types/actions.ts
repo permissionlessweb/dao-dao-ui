@@ -28,12 +28,18 @@ export enum ActionCategoryKey {
   Treasury = 'treasury',
   Rebalancer = 'rebalancer',
   Nfts = 'nfts',
+  Permissionless = 'permissionless',
   Press = 'press',
   Rewards = 'rewards',
   Advanced = 'advanced',
 }
 
 export enum ActionKey {
+  Headstash = 'headstash',
+  ConfigureShitstrapPayments = 'configureShitstrapPayments',
+  ManageShitstrap = 'manageShitstrap',
+  InfuseNfts = 'infuseNfts',
+  
   Spend = 'spend',
   CommunityPoolSpend = 'communityPoolSpend',
   CommunityPoolDeposit = 'communityPoolDeposit',
@@ -121,12 +127,11 @@ export enum ActionKey {
   WithdrawRewardDistribution = 'withdrawRewardDistribution',
   PauseRewardDistribution = 'pauseRewardDistribution',
   ResumeRewardDistribution = 'resumeRewardDistribution',
-  // Shitstrap
-  ConfigureShitstrapPayments = 'configureShitstrapPayments',
-  ManageShitstrap = 'manageShitstrap',
-  // Infusions
-  InfuseNfts = 'infuseNfts',
+
   FixRewardDistributor = 'fixRewardDistributor',
+  
+  // dnas
+  ManageDnas = 'manageDnas',
 }
 
 export type ActionAndData<

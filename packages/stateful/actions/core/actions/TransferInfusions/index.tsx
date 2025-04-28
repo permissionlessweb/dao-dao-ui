@@ -16,6 +16,7 @@ import { CreateInfusion, CreateInfusionData } from "./CreateInfusion";
 import { useTranslation } from "react-i18next";
 import { ComponentType, useEffect } from "react";
 import { InfusionWidgetData } from "../../../../widgets/widgets/Infusions/types";
+import {InfusionBundleType}from "./CreateInfusion"
 
 enum InfusionActionMode {
     Create = 'create',
@@ -250,7 +251,6 @@ const Component: ComponentType<ActionComponentProps<undefined, ManageInfusionsDa
                 />
             ) : (<p className="title-text mb-2">{selectedTab?.label}</p>)}
             {mode === InfusionActionMode.Create ? (
-
                 <CreateInfusion
                     {...props}
                     fieldNamePrefix={props.fieldNamePrefix + 'create.'}
@@ -329,15 +329,16 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                     sg: true,
                 },
                 collections: [],
-                infusionParams: {},
+                infusionParams: { bundle_type: { all_of: {} } },
                 deposit: [],
+                mode: InfusionBundleType.AllOf
             },
             infuse: {
                 paymentSubstituteExists: false,
                 chainId: this.options.chain.chainId,
-                infusionMinter: '',
-                infusionId: '0',
-                infusionBundles: [],
+                infusionMinter: 'stars1zkdqlly53sdafh6dhcpuapxxc3llxyqw4v9ekk9x553mc4mv0xlqkyvg3l',
+                infusionId: '1',
+                infusionBundles: [{ nfts: [] }],
                 collection: '',
                 tokenId: '',
                 funds: []
@@ -433,7 +434,7 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                         msg: {
                             approve: {
                                 token_id: bnfts.token_id.toString(),
-                                spender: sender,
+                                spender: infuse.infusionMinter,
                                 //todo: add expiration
                             },
                         },
@@ -447,7 +448,7 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                 msg: {
                     infuse: {
                         infusion_id: infuse.infusionId,
-                        bundle: infuse.infusionBundles,
+                        bundle: infuse.infusionBundles.length == 0 ? [{ nfts: [] }] : infuse.infusionBundles,
                     },
                 },
                 funds: infuse.funds
@@ -527,6 +528,7 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                     paymentRecipient: decodedMessage.wasm.execute.msg.create_infusion.payment_recipient,
                     deposit: decodedMessage.wasm.execute.funds,
                     description: decodedMessage.wasm.execute.msg.create_infusion.description,
+                    mode: decodedMessage.wasm.execute.msg.create_infusion.infusion_params.bundle_type,
                 },
             }
         } else if (isNativeInfuse) {

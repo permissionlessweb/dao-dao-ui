@@ -59,6 +59,7 @@ export const HorizontalInfusionCard = forwardRef<
   const [imageLoading, setImageLoading] = useState(!!infusion.infused_collection.image)
   const [imageLoadErrored, setImageLoadErrored] = useState(false)
   const [loadedImageSrc, setLoadedImgSrc] = useState<string>()
+
   useEffect(() => {
     if (
       // If showing a video, don't load image.
@@ -231,7 +232,7 @@ export const HorizontalInfusionCard = forwardRef<
       appendCoin({
         denom: infusion.infusionParamsGeneric.mintFeeGeneric.token.denomOrAddress,
         amount: infusion.infusionParamsGeneric.mintFeeGeneric.balance,
-        // decimals: infusion.infusionParamsGeneric.mintFeeGeneric.token.decimals
+        decimals: 0
       })
     }
     setMintFee(true)

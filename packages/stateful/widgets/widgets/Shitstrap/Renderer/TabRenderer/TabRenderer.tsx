@@ -57,7 +57,7 @@ export interface TabRendererProps {
   Trans: ComponentType<TransProps>
 }
 
-export const TabRenderer = ({
+export const ShitstrapTabRenderer = ({
   shitStrapsLoading,
   queryClient,
   isMember,

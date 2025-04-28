@@ -49,6 +49,12 @@ export const useRefreshProfile = (
               bech32Hash,
             },
           },
+          {
+            category: 'dnas',
+            options: {
+              bech32Hash,
+            },
+          },
         ],
       })
     )

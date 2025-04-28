@@ -42,7 +42,7 @@ export const OpenProposals: FeedSource<OpenProposalsProposalLineProps> = {
               publicKeys: uniquePublicKeys.data.map(
                 ({ publicKey }) => publicKey
               ),
-              profileAddresses: chains.data.map(({ chainId, address }) => ({
+              profileAddresses: chains.data.map(({ chainId, address, }) => ({
                 chainId,
                 address,
               })),

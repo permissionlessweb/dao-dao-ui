@@ -29,6 +29,7 @@ export const makeManageNftsActionCategory: ActionCategoryMaker = ({
           ActionKey.BurnNft,
           ActionKey.ManageCw721,
           ActionKey.InfuseNfts,
+          ActionKey.ManageDnas,
         ],
       }
     : null

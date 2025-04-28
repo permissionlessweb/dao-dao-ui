@@ -1,3 +1,4 @@
+import { UnregisterDnasStatus } from '../stateful/actions/core/actions/ManageDnas/types'
 import { AnyChain } from './chain'
 
 export type PfpkPublicKey = {
@@ -30,11 +31,56 @@ export type PfpkProfile = {
   chains: Record<
     string,
     {
+      dnas: Record<
+        string,  // dao-addr able to use key 
+        DnasObject
+      >,
       publicKey: PfpkPublicKey
       address: string
+
     }
   >
 }
+// Extended type with all form-related properties
+export type DnasObjectWithValues = DnasObject & {
+  daoAddr: string
+  keyOwner: string
+  chainId: string
+  apiKeyValue?: string
+  apiKeyHash?: string
+}
+
+export type DnasObject = {
+  keyMetadata: string
+  uploadLimit: string
+}
+
+export type DnasKeyWithOwnerAndHash = {
+  chainId: string
+  daoAddr: string
+  keyOwner: string
+  keyHash: string
+}
+
+export type UnregisterKeysFromDaoFunction = (
+  data: DnasKeyUnregister,
+  /**
+   * Callbacks
+   */
+  callbacks?: {
+    /**
+     * Status updates handler
+     */
+    unregisteDnasStatus?: (chainId: string, daoAddr: string, status: UnregisterDnasStatus) => void
+  }
+) => Promise<void>
+
+
+export type DnasKeyUnregister = {
+  nonce: number
+  daoAddrs: string[]
+}
+
 
 export type PfpkProfileUpdate = {
   nonce: number
@@ -44,8 +90,15 @@ export type PfpkProfileUpdate = {
     tokenId: string
     collectionAddress: string
   } | null
+  dnas?: Record<string, { keyMetadata?: string, signatureLifespan?: string, uploadLimit?: string, keyValue?: string }> | null
 }
-
+export type DnasKeyUpdate = Omit<PfpkProfileUpdate, 'nft'>
+/**
+ * Function used to update a profile. Throws an error on failure.
+ */
+export type DnasKeyUpdateFunction = (
+  updates: DnasKeyUpdate[]
+) => Promise<void>
 /**
  * Function used to update a profile. Throws an error on failure.
  */
@@ -56,7 +109,7 @@ export type PfpkProfileUpdateFunction = (
 /**
  * The source of the name in the unified profile.
  */
-export type UnifiedProfileNameSource = 'pfpk' | 'stargaze'
+export type UnifiedProfileNameSource = 'pfpk' | 'stargaze' | 'dnas'
 
 /**
  * A unified profile that uses information from backup sources when missing from
@@ -93,11 +146,11 @@ export type UnifiedProfile = PfpkProfile & {
 
 export type KeplrWalletProfile = {
   profile:
-    | {}
-    | {
-        imageUrl: string
-        version: number
-      }
+  | {}
+  | {
+    imageUrl: string
+    version: number
+  }
 }
 
 export type ResolvedProfile = {
@@ -175,3 +228,23 @@ export type OtherProfile = {
    */
   profile: UnifiedProfile
 }
+
+export type RecordOfDnasKeysByDao = Record<
+  string, // dao address key is registered to
+  DnasKeyByDaoObject
+>
+
+export type FetchedDaoKeys = {
+  /**
+   * A parent record mapped by chain id, containing a child record mapped by dao addr to a list of all keys mapped to a DAO
+   */
+  fetchedRecordOfKeysByChain: Record<string, RecordOfDnasKeysByDao>,
+}
+
+export type DnasKeyByDaoObject = {
+  keyHash: string
+  keyOwner: string
+  keyMetadata: string
+  uploadLimit?: string
+}
+export type DnasKeyByDaoObjectWithDAO = DnasKeyByDaoObject & { daoAddr: string }

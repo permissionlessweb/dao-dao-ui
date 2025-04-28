@@ -7,7 +7,6 @@ export const InfusionsEditor = ({
     isCreating,
     errors,
 }: WidgetEditorProps<InfusionWidgetData>) => {
-
     return (
         <div className="flex flex-col gap-6">
             <div className="flex flex-row items-center justify-between gap-8">

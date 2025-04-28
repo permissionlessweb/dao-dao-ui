@@ -1,6 +1,6 @@
 {
   "extends": "@dao-dao/config/ts/react-library.json",
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["**/*.ts", "**/*.tsx", "../stateful/actions/core/actions/ManageDnas/dnas/DnasProfileAddChains.tsx"],
   "exclude": ["build", "dist", "node_modules"],
   "compilerOptions": {
     "module": "commonjs"

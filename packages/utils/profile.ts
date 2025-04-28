@@ -1,4 +1,4 @@
-import { PfpkProfile, UnifiedProfile } from '@dao-dao/types'
+import { FetchedDaoKeys, PfpkProfile, UnifiedProfile } from '@dao-dao/types'
 
 import { getFallbackImage } from './getFallbackImage'
 
@@ -11,16 +11,23 @@ export const makeEmptyPfpkProfile = (): PfpkProfile => ({
   chains: {},
 })
 
+
 export const makeEmptyUnifiedProfile = (
   chainId: string,
-  address: string
+  address: string,
+  dnas?: boolean,
 ): UnifiedProfile => ({
   ...makeEmptyPfpkProfile(),
   source: {
     chainId,
     address,
   },
-  nameSource: 'pfpk',
+  nameSource: dnas && dnas ? 'dnas' : 'pfpk',
   imageUrl: getFallbackImage(address),
   backupImageUrl: getFallbackImage(address),
+})
+
+
+export const makeEmptyDnasApiKeys = (): FetchedDaoKeys => ({
+  fetchedRecordOfKeysByChain: {}
 })
