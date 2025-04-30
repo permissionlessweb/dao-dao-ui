@@ -7,7 +7,6 @@ import { useTokenBalances } from '../../../hooks'
 import { SuspenseLoader } from '../../../../components'
 import { useWidget } from '../../../../widgets'
 import { HugeDecimal } from '@dao-dao/math'
-import { dnasQueries, tokenQueries } from "@dao-dao/state/query"
 import {
   ActionBase,
   AddressInput,

@@ -136,8 +136,9 @@ export type DnasKeyWithValueWithoutId = {
 }
 
 export type ConsumeDnasKeySignatureContent = {
-  apiKeyHash: string,
-  apiKeyOwner: string,
+  dao: string
+  keyOwner: string,
+  keyHash: string,
 }
 
 type DnasKeysWithoutIdsAndValue = Omit<DnasKeyWithValueWithoutId, 'apiKeyValue'> & { apiKeyHash: string };

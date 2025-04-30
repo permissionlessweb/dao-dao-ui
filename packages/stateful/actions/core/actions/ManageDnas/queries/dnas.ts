@@ -29,8 +29,6 @@ import {
   transformBech32Address,
 } from '@dao-dao/utils'
 
-import { stargazeIndexerClient, stargazeTokenQuery } from '../../graphql'
-
 /**
  * Fetch unified profile information for any wallet.
  */

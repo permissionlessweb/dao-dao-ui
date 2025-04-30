@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 
-import { dnasQueries, profileQueries } from '@dao-dao/state'
+import { profileQueries } from '@dao-dao/state'
 import { DnasKeyUnregister, DnasKeyUpdate, DnasKeyUpdateFunction, FetchedDaoKeys, LoadingData, PfpkProfileUpdate, PfpkProfileUpdateFunction, ProfileChain, RecordOfDnasKeysByDao, UnifiedProfile, UnregisterKeysFromDaoFunction } from '@dao-dao/types'
 import {
   MAINNET,
@@ -17,10 +17,12 @@ import {
   toBech32Hash,
 } from '@dao-dao/utils'
 import { useCfWorkerAuthPostRequest, useQueryLoadingData, useRefreshProfile, useWallet } from '../../../../../hooks'
-import { AddDnasKeysToDaoFunction, AddDnasStatus, ConsumeDnasKeySignatureContent, DnasKeyWithValueWithoutId, ExtendedDnasKeys, UnregisterDnasStatus, UpdateDnasKeyStatus, UseDnasKeysFunction, UsingDnasKeysStatus } from '../types'
+import { AddDnasKeysToDaoFunction, AddDnasStatus, ConsumeDnasActionData, ConsumeDnasKeySignatureContent, DnasKeyWithValueWithoutId, ExtendedDnasKeys, UnregisterDnasStatus, UpdateDnasKeyStatus, UseDnasKeysFunction, UsingDnasKeysStatus } from '../types'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toHex } from '@cosmjs/encoding'
+import { dnasQueries } from '../queries'
+import { useFormContext } from 'react-hook-form'
 
 // First, let's define the type for DNAS keys
 export type DnasKeyMap = Map<string, any> | Record<string, any> | null | undefined;
@@ -303,28 +305,103 @@ export const useDnas = ({
     setUsingDnasKeysStatus('dnas')
 
     let error: unknown
-    let key: ConsumeDnasKeySignatureContent = {
-      apiKeyHash: props.dnasKeyHash,
-      apiKeyOwner: props.dnasKeyOwner
-    }
+
+    // Get access to form values from the parent component
+    const { watch } = useFormContext<ConsumeDnasActionData>()
+    const formFiles = watch('files')
+
+
     try {
       const mainWallet = currentChainWallet.mainWallet
 
       // Load nonce from API.
       const nonce = await dnasApi.getNonce()
+      // Load nonce from API.
+
+      // Get the account public key.
+      const { address, pubkey: pubkeyData } =
+        (await mainWallet.client.getAccount?.(walletChainId)) ?? {}
+      if (!address || !pubkeyData) {
+        throw new Error(t('error.failedToGetAccountFromWallet'))
+      }
+
+      const offlineSignerAmino =
+        (await mainWallet.client.getOfflineSignerAmino?.(
+          walletChainId
+        )) ||
+        // Fallback to normal signer function in case amino signer getter is
+        // undefined. This may still return an amino signer, so let's check.
+        (await mainWallet.client.getOfflineSigner?.(walletChainId))
+      if (!offlineSignerAmino || !('signAmino' in offlineSignerAmino)) {
+        throw new Error(
+          t('error.unsupportedAminoWallet', {
+            name: mainWallet.walletPrettyName,
+          })
+        )
+      }
+
+      const hexPublicKey = toHex(pubkeyData)
+
+      const data: ConsumeDnasKeySignatureContent = {
+        dao: props.daoAddr,
+        keyOwner: props.dnasKeyOwner,
+        keyHash: props.dnasKeyHash,
+      }
 
       // sign key hash and owner to auth use 
-      key
-      // form msg 
+      const body = await signOffChainAuth({
+        type: 'DAO DAO DNAS | authorize DNAS key use',
+        nonce,
+        chainId: currentChainWallet.chainId,
+        address: currentChainWallet.address!,
+        hexPublicKey,
+        data,
+        offlineSignerAmino,
+      })
 
+      // Format the files array for the API request
+      // We're filtering out any partial entries and ensuring we only send valid files
+      const formattedFiles = formFiles
+        .filter(file => file.name && file.url && file.mimetype)
+        .map(file => ({
+          name: file,
+          url: file.url,
+          mimetype: file.mimetype
+        }))
+
+      // add files and signed auth body to request
+      const useHeadstashBody = {
+        files: formattedFiles,
+        sign: body
+      }
+
+      try {
+        const response = await dnasApi.postRequest(
+          '/use-dnas',
+          useHeadstashBody,
+          'DAO DAO DNAS | USE DNAS Key'
+        )
+        setUsingDnasKeysStatus('idle')
+        console.log("response:", response)
+      } catch (apiError: any) {
+        console.error('API Error:', apiError)
+        if (apiError.message.includes('<!DOCTYPE')) {
+          throw new Error('Received HTML error page from API instead of JSON response. The API might be down or returning an error.')
+        }
+        throw apiError
+      }
     } catch (err) {
-
-
-
-
+      setUsingDnasKeysStatus('idle')
+      console.error('Error using DNAS key:', err)
+      error = err
+      throw err
+    } finally {
     }
-
   }
+
+
+
+
   const addDnasToDao: AddDnasKeysToDaoFunction = async (props) => {
     if (!currentChainWallet) {
       throw new Error(t('error.logInToContinue'))
@@ -345,8 +422,7 @@ export const useDnas = ({
     try {
       const mainWallet = currentChainWallet.mainWallet
 
-      // Load nonce from API.
-      const nonce = await dnasApi.getNonce()
+
 
       // This will hold our properly formatted request bodies
       const dnasApiKeys: DnasKeyWithValueWithoutId[] = []

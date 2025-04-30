@@ -288,39 +288,6 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, dnasKey
       <div className="mt-6 p-4 bg-bg-secondary rounded-md">
         {/* File upload progress summary */}
         <div className="mt-6 p-4 bg-bg-secondary rounded-md">
-
-          {/* <div className="space-y-2">
-            {steps.map((step, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className={`w-5 h-5 mr-3 rounded-full flex items-center justify-center ${fileFields[index]?.url ? 'bg-success text-white' : 'bg-bg-tertiary'
-                    }`}>
-                    {fileFields[index]?.url && <Check fontSize="small" />}
-                  </div>
-                  <span>{step.title}</span>
-                </div>
-
-                <div className="flex items-center">
-                  {fileFields[index]?.url ? (
-                    <>
-                      <span className="text-text-secondary mr-2 text-sm truncate max-w-64">
-                        {fileFields[index]?.name || t('status.uploaded')}
-                      </span>
-                      <IconButton
-                        Icon={Close}
-                        onClick={() => handleRemoveFile(index)}
-                        size="xs"
-                        variant="ghost"
-                        aria-label={t('button.remove')}
-                      />
-                    </>
-                  ) : (
-                    <span className="text-text-secondary text-sm">{t('status.pending')}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div> */}
         </div>
 
 
