@@ -116,7 +116,7 @@ export const fetchAllDnasApiKeyInfoByDao = async ({
   }
 
   try {
-    const response = await fetch('http://localhost:58229' + `/daoKeys/bech32/${bech32Hash}`)
+    const response = await fetch(DNAS_API_BASE + `/daoKeys/bech32/${bech32Hash}`)
     if (response.ok) {
       return await response.json()
     } else {
@@ -144,7 +144,7 @@ export const fetchdnasProfileInfo = async ({
 
   try {
     console.log("hitting dnas api:")
-    const base = 'http://localhost:58229' + `/bech32/${bech32Hash}`;
+    const base = DNAS_API_BASE + `/bech32/${bech32Hash}`;
     console.log(base)
     const response = await fetch(base)
     if (response.ok) {

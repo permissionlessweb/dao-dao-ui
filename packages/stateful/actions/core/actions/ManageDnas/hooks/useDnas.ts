@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { profileQueries } from '@dao-dao/state'
 import { DnasKeyUnregister, DnasKeyUpdate, DnasKeyUpdateFunction, FetchedDaoKeys, LoadingData, PfpkProfileUpdate, PfpkProfileUpdateFunction, ProfileChain, RecordOfDnasKeysByDao, UnifiedProfile, UnregisterKeysFromDaoFunction } from '@dao-dao/types'
 import {
+  DNAS_API_BASE,
   MAINNET,
   SignedBody,
   getChainIdsForAddress,
@@ -188,7 +189,7 @@ export const useDnas = ({
   )
   const refreshProfile = useRefreshProfile(profileAddress, dnasProfile)
   // cloudflare hook object formed for use with worker db
-  const dnasApi = useCfWorkerAuthPostRequest('http://localhost:58229', '', walletChainId)
+  const dnasApi = useCfWorkerAuthPostRequest(DNAS_API_BASE, '', walletChainId)
   const ready = !dnasProfile.loading && !dnasProfile.updating &&
     // Ensure we have a profile loaded from the server. The nonce is -1 if it
     // failed to load.
