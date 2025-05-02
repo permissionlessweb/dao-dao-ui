@@ -762,9 +762,7 @@ export const  lastDitchEffortFetchShitTokenSource = (
   chainId: string,
   denomOrAddress: string
 ): GenericToken | undefined => {
-
   const patchedIbcShitToken = TokenSourcesIndex[chainId]?.[denomOrAddress]
-  console.log("patchedIbcShitToken", patchedIbcShitToken)
   return patchedIbcShitToken;
 };
 

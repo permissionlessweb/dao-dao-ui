@@ -1,66 +1,49 @@
 ## DAO DAO UI
 
 ## HEADSTASH TODO
-- initial implementation 
-- create hook that communicates with custom api, rendering information regarding specific headstash instance
-- create stateless component displaying headstash information 
-- craete form to sign & broadcast claim for account
-- 
+<!-- - initial implementation  -->
+<!-- - create hook that communicates with custom api, rendering information regarding specific headstash instance -->
+<!-- - create stateless component displaying headstash information  -->
+<!-- - craete form to sign & broadcast claim for account -->
 
 ## DDNAS TODO
-### on wallet connect
-no changes
+- make use of existing logic to form and use form with file blobs (NextApiRequest?)
+- never save used values to form for reuse, in order to prevent keeping  api  key values in local memory.
+- check for all dnas key info registered by wallet
+- handle successful & error upload making use of dnas api key
+- handle custom mint msgs (snails contract) in form for new collection
+- ensure key is selected to use before displaying first file (cover image) upload form.
+- when registering a key, if dao address in form already has key registered, display modal communicating we are updating existing key
 
-### on widget arrive 
 <!-- - check if default profile, meaning need to first register a profile in manage section (still can use consume) -->
 <!-- - check if default public key has a profile registered  (  via `useDnas()`) -->
 <!-- - display modal to select keys, and upon key select, display mbutton to swap/change key use -->
-
-### on no profile exists 
-- default to display DAO addr lookup for registered keys (defaults to current dao if dao proposal or entity is DAO)
-- upon select dao, query for all registered dnas keys 
-- clear all form values on dao change
-
-### on register first profile 
+<!-- -  query current dao registered keys to use for list, modal for custom dao addr input -->
+<!-- -  must always be a member of the custom dao, display error if not default to expect 3 files to be uploaded (cover image, video, and metadata json) -->
+<!-- - default to display DAO addr lookup for registered keys (defaults to current dao if dao proposal or entity is DAO) -->
+<!-- - check if wallet has profile in dnas api, display modal to create one if not  -->
+<!-- - upon select dao, query for all registered dnas keys  -->
+<!-- - clear all form values on dao change -->
 <!-- - refresh query and display new key reigstered in manage keys modal -->
+<!-- - prompt popup to update values (api key will not be present, display current sha256 hash of saved key, along with new sha256 key) -->
+<!-- - also refresh query and display new key reigstered in manage keys modal -->
+<!-- - ensure first file is in form before display second file (video) upload form -->
+<!-- - ensure second file is in form  before display third file (metadata) upload form. -->
+<!-- - display list where button to edit metadata and update value is -->
+<!-- - default to modal to register key -->
+<!-- - base64 key prior to upload -->
 
-### on manage registered keys 
-- prompt popup to update values (api key will not be present, display current sha256 hash of saved key, along with new sha256 key)
-- also refresh query and display new key reigstered in manage keys modal
-
-
-### on first use keys
-- ensure key is selected to use before displaying first file (cover image) upload form.
-- ensure first file is in form before display second file (video) upload form
-- ensure second file is in form  before display third file (metadata) upload form.
-
-- handle successful & error upload making use of dnas api key
-- handle custom mint msgs (snails contract) in form for new collection
-
+  
 
 # goals 
 1. upload dnas key thorugh ui 
 2. display upload keys in ui  
 3. update dnas keys in ui
 
-- check if wallet has profile in dnas api
-  - display modal to create one if not 
- - check for all dnas key info registered by wallet
-    - display list where button to edit metadata and update value is
-    - default to modal to register key
-    - base64 key prior to upload
-- handle successful responses
-- key register
-- key removal 
-- key use
 
--  query current dao registered keys to use for list, modal for custom dao addr input
--  must always be a member of the custom dao, display error if not  default to expect 3 files to be uploaded (cover image, video, and metadata json)
-- register gov prop by pubkey
- 
 ## takeaways
 - prioritize proper env variable assurance 
-- 
+
  
 ## INFUSIONS TODO
 - create: select infusion bundle type and its parameters

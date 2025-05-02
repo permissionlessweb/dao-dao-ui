@@ -15,9 +15,9 @@ const lastSuccessfulNonceForApiAndPublicKey: Record<
 > = {}
 
 /**
- * Hook that makes it easy to interact with our various Cloudflare Workers that
- * use off-chain wallet auth.
- */
+* Hook that makes it easy to interact with our various Cloudflare Workers that
+* use off-chain wallet auth.
+*/
 export const useCfWorkerAuthPostRequest = (
   apiBase: string,
   defaultSignatureType: string,
@@ -215,9 +215,95 @@ export const useCfWorkerAuthPostRequest = (
     ]
   )
 
+
+  const postDnasRequest = useCallback(
+    async <R = any>(
+      endpoint: string,
+      data?: Record<string, unknown>,
+      signatureType = defaultSignatureType,
+      /**
+       * Override the current chain.
+       */
+      overrideChainId?: string,
+      /**
+       * Optionally override the request method. Defaults to POST.
+       */
+      method = 'POST'
+    ): Promise<R> => {
+      const hexPublicKey = await getHexPublicKey(overrideChainId)
+
+      const thisChainWallet =
+        overrideChainId && overrideChainId !== chain.chainId
+          ? chainWallet?.mainWallet.getChainWallet(
+            getChainForChainId(overrideChainId).chainName
+          )
+          : chainWallet
+
+      if (!thisChainWallet?.address) {
+        throw new Error(t('error.logInToContinue'))
+      }
+
+      const offlineSignerAmino =
+        (await thisChainWallet.client.getOfflineSignerAmino?.bind(
+          thisChainWallet.client
+        )?.(thisChainWallet.chainId)) ||
+        // Fallback to normal signer function in case amino signer getter is
+        // undefined. This may still return an amino signer, so let's check.
+        (await thisChainWallet.client.getOfflineSigner?.bind(
+          thisChainWallet.client
+        )?.(thisChainWallet.chainId))
+      if (!offlineSignerAmino || !('signAmino' in offlineSignerAmino)) {
+        throw new Error(
+          t('error.unsupportedAminoWallet', {
+            name: thisChainWallet.walletPrettyName,
+          })
+        )
+      }
+
+      // removed second signOffchain auth for using dnas keys
+      const bodyDebug = JSON.stringify(data)
+      console.log("bodyDebug", bodyDebug)
+      // Send request.
+      const response = await fetch(apiBase + endpoint, {
+        method,
+        headers: {},
+        body: data instanceof FormData ? data : JSON.stringify(data),
+      })
+
+      // If response not OK, throw error.
+      if (!response.ok) {
+        const responseBody = await response.json().catch((err) => ({
+          error: err instanceof Error ? err.message : JSON.stringify(err),
+        }))
+        throw new Error(
+          responseBody && 'error' in responseBody && responseBody.error
+            ? responseBody.error
+            : `${t('error.unexpectedError')} ${responseBody}`
+        )
+      }
+
+      // If succeeded, store nonce.
+      // lastSuccessfulNonceForApiAndPublicKey[apiBase + ':' + hexPublicKey] =nonce
+
+      // If response OK, return response body (unless 204 no content, in which
+      // case return undefined).
+      return response.status === 204 ? undefined as any : await response.json()
+    },
+    [
+      defaultSignatureType,
+      getHexPublicKey,
+      chain.chainId,
+      chainWallet,
+      getNonce,
+      apiBase,
+      t,
+    ]
+  )
+
   return {
     ready,
     postRequest,
+    postDnasRequest,
     getNonce,
   }
 }

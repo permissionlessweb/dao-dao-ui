@@ -55,7 +55,7 @@ import {
 } from '@dao-dao/utils'
 import { useEntity } from '../../../../hooks'
 import { useSetRecoilState } from 'recoil'
-import { ConsumeDnasActionData, DnasProfileHeaderProps } from './types'
+import { AddDnasStatus, ConsumeDnasActionData, DnasProfileHeaderProps, UseDnasKeyData } from './types'
 import { useDnas, UseDnasProfileReturn } from './hooks'
 import { ConsumeDnasKeysRenderer, CreateDnasProfilesModal, ManageDnasActionData, HandleDnasKeysRenderer } from './dnas'
 import { registerDnasKeyVisibleAtom } from '@dao-dao/state/recoil'
@@ -89,7 +89,10 @@ const Component: ActionComponent<undefined, ManageDnasData> = (props) => {
   const { entity } = useEntity(options.address)
   const isDao = !entity.loading && entity.data.type == EntityType.Dao
   // check for current entity keys registered. set these as form values until changed manually or entity is changed
-  const { profile, dnas, daoDnas, refreshProfile } = useDnas({ chainId: options.chain.chainId, daoAddress: options.context.type == ActionContextType.Dao ? options.address : undefined })
+  const { profile, refreshProfile, connected, connecting, useRegisteredDnasKeys } = useDnas({
+    chainId: options.chain.chainId,
+    daoAddress: options.context.type == ActionContextType.Dao ? options.address : undefined
+  })
 
   const tabs: SegmentedControlsProps<ManageDnasData['mode']>['tabs'] = [
     // Only allow beginning a vest if widget is setup.
@@ -127,8 +130,8 @@ const Component: ActionComponent<undefined, ManageDnasData> = (props) => {
         />
       ) : (<p className="title-text mb-2">{selectedTab?.label}</p>)}
 
-      {mode === DnasActionMode.Handle ? <HandleDnasKeysRenderer {...props} options={props.data.handle} /> : null}
-      {mode === DnasActionMode.Consume ? <ConsumeDnasKeysRenderer {...props.data.consume} /> : null}
+      {mode === DnasActionMode.Handle ? <HandleDnasKeysRenderer {...props} options={{ ...props.data.handle }} /> : null}
+      {mode === DnasActionMode.Consume ? <ConsumeDnasKeysRenderer {...{ ...props.data.consume }} /> : null}
     </SuspenseLoader>
   )
 }
@@ -172,7 +175,8 @@ export class ManageDnasAction extends ActionBase<ManageDnasData> {
         dnasKeyInUse: {
           daoAddr: '',
           dnasKeyOwner: '',
-          dnasKeyHash: ''
+          dnasKeyHash: '',
+          chainId: ''
         },
         files: [],
         isCreating: false,
@@ -186,6 +190,7 @@ export class ManageDnasAction extends ActionBase<ManageDnasData> {
           music: '',
           uri: ''
         },
+
       },
       handle: {
         fieldNamePrefix: 'dnas.handle',
@@ -194,6 +199,7 @@ export class ManageDnasAction extends ActionBase<ManageDnasData> {
           keyOwner: '',
           chainId: '',
           apiKeyValue: '',
+          keyHash: '',
           daoAddr: '',
           uploadLimit: '',
         },

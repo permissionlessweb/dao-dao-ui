@@ -1,16 +1,7 @@
 import { Check, Close } from '@mui/icons-material'
 import { useEffect, useMemo, useState } from 'react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFieldArray, useForm, useFormContext } from 'react-hook-form'
 import { Trans, useTranslation } from 'react-i18next'
-import {
-  constSelector,
-  useRecoilValue,
-  useRecoilValueLoadable,
-  useSetRecoilState,
-  waitForAny,
-} from 'recoil'
-
-import { CommonNftSelectors, consumeDnasKeyVisibleAtom, DaoDaoCoreSelectors } from '@dao-dao/state/recoil'
 import toast from 'react-hot-toast'
 import {
   AddressInput,
@@ -18,10 +9,6 @@ import {
   ButtonLink,
   CodeMirrorInput,
   DnasFileUploadInput,
-  DnasImageUploadInput,
-  FileUploadInput,
-  FormattedJsonDisplay,
-  FormSwitch,
   IconButton,
   ImageSelector,
   ImageUploadInput,
@@ -30,28 +17,38 @@ import {
   TextAreaInput,
   TextInput,
   useActionOptions,
+  ValidatorPicker,
 } from '@dao-dao/stateless'
-import { LoadingDataWithError, FetchedDaoKeys, WidgetEditorProps } from '@dao-dao/types'
-import { transformIpfsUrlToHttpsIfNecessary, processError } from '@dao-dao/utils'
+import { ActionContextType, ActionOptions, DnasKeyByDaoObjectWithDAO, RecordOfDnasKeysByAddr } from '@dao-dao/types'
+import { transformIpfsUrlToHttpsIfNecessary, processError, validateRequired, makeValidateAddress, getChainForChainId } from '@dao-dao/utils'
 
 import { useDnas } from '../hooks'
 import { DnasKeyPicker } from './DnasKeyPicker'
 import { ConsumeDnasActionData, DnasFile, UseDnasKeyData } from '../types'
+import { useQueries, useQuery } from '@tanstack/react-query'
+import { dnasQueries } from '../queries'
+import { useQueryLoadingData } from '../../../../../hooks'
 
-export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, dnasKeyInUse: { daoAddr, dnasKeyHash, dnasKeyOwner }, isCreating }: ConsumeDnasActionData) => {
+
+export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreating }: ConsumeDnasActionData) => {
   const { t } = useTranslation()
   const {
     address,
-    chain: { chainId, bech32Prefix },
-    context: { type: actionType }
+    chain: { chainId, bech32Prefix, },
+    chainContext,
+    context: { type: actionType },
+    queryClient,
   } = useActionOptions()
+  const { useRegisteredDnasKeys } = useDnas()
 
   // Add state to track the current upload step
+  const [addressSet, setAddressSet] = useState(false);
   const [currentStep, setCurrentStep] = useState(0)
   const [showDebugInfo, setShowDebugInfo] = useState(false)
-  const totalSteps = 3
+  const [isLoadingKeys, setIsLoadingKeys] = useState(false)
+  const [dnasKeys, setDnasKeys] = useState<RecordOfDnasKeysByAddr>({})
 
-  const { useRegisteredDnasKeys } = useDnas()
+  const totalSteps = 3
 
   const {
     control,
@@ -59,10 +56,13 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, dnasKey
     reset,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, },
   } = useFormContext<ConsumeDnasActionData>()
 
-  const watchDaoAddress = watch('dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr'
+  const watchDaoAddress = watch((fieldNamePrefix + 'dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr')
+  const watchChainId = watch((fieldNamePrefix + 'dnasKeyInUse.chainId') as 'dnasKeyInUse.chainId')
+  const watchDnasKeyOwner = watch((fieldNamePrefix + 'dnasKeyInUse.dnasKeyOwner') as 'dnasKeyInUse.dnasKeyOwner')
+  const watchDnasKeyHash = watch((fieldNamePrefix + 'dnasKeyInUse.dnasKeyHash') as 'dnasKeyInUse.dnasKeyHash')
 
   const {
     fields: fileFields,
@@ -72,6 +72,40 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, dnasKey
     control,
     name: 'files',
   })
+
+
+  // Initialize DAO address when component loads
+  useEffect(() => {
+    if (actionType === ActionContextType.Dao && address) {
+      console.log("Initializing DAO address:", address)
+      setTimeout(() => {
+        setValue((fieldNamePrefix + 'dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr', address);
+        setValue((fieldNamePrefix + 'dnasKeyInUse.chainId') as 'dnasKeyInUse.chainId', chainId);
+        // Fetch keys for the DAO address on initial load
+        console.log("allDaoDnasKeyProfile:", allDaoDnasKeyProfile)
+      }, 0)
+    }
+  }, [])
+
+  // Fetch DNAs keys when watchDaoAddress changes
+  const allDaoDnasKeyProfile = useQueryLoadingData(
+    watchDaoAddress ? dnasQueries.dnasKeysByDaoAddr({ address: watchDaoAddress }) : undefined,
+    {} as RecordOfDnasKeysByAddr
+  );
+
+  useEffect(() => {
+    if (allDaoDnasKeyProfile && !allDaoDnasKeyProfile.loading && allDaoDnasKeyProfile.data) {
+      console.log("GET DNAS KEYS FROM DAO:", allDaoDnasKeyProfile.data);
+      setDnasKeys(allDaoDnasKeyProfile.data); // Adjust based on actual data structure
+      setIsLoadingKeys(false);
+    } else if (allDaoDnasKeyProfile?.loading) {
+      setIsLoadingKeys(true);
+    } else {
+      setDnasKeys({});
+      setIsLoadingKeys(false);
+    }
+  }, [allDaoDnasKeyProfile]);
+
 
   const steps = [
     {
@@ -105,6 +139,63 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, dnasKey
     }
   }, [isCreating, fileFields.length, appendFile])
 
+  // Update your DNAS key processing to handle the query result structure
+  // const processDnasKeys = useMemo(() => {
+  //   console.log("Processing DNAS keys:", daoOwnedKeys);
+
+  //   if (!daoOwnedKeys) {
+  //     console.log("DNAS keys not loaded yet");
+  //     return [];
+  //   }
+
+  //   const processed: DnasKeyByDaoObjectWithDAO[] = [];
+  //   // Check the structure of daoDnasKeys and adjust this logic accordingly
+  //   // This logic assumes a specific structure, update based on your actual data structure
+  //   if (Array.isArray(daoOwnedKeys)) {
+  //     daoOwnedKeys.forEach(key => {
+  //       processed.push({
+  //         daoAddr: watchDaoAddress,
+  //         keyHash: key.keyHash,
+  //         keyMetadata: key.keyMetadata,
+  //         keyOwner: key.keyOwner
+  //       });
+  //     });
+  //   }
+  //   console.log("Processed DNAS keys:", processed);
+  //   return processed;
+  // }, [daoOwnedKeys, watchDaoAddress, watchChainId]);
+
+  // Implement a function to handle setting the DAO address
+  // const handleSetDaoAddress = () => {
+  //   if (address) {
+  //     console.log("Setting DAO address to:", address);
+  //     setValue(
+  //       (fieldNamePrefix + 'dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr',
+  //       address
+  //     );
+  //     setValue(
+  //       (fieldNamePrefix + 'dnasKeyInUse.chainId') as 'dnasKeyInUse.chainId',
+  //       chainId
+  //     );
+
+  //     // Log the current value after setting
+  //     setTimeout(() => {
+  //       console.log("Current watchDaoAddress after setting:", watchDaoAddress);
+  //     }, 100);
+  //   }
+  // };
+
+
+  // Initialize file fields if needed
+  useEffect(() => {
+    if (isCreating && fileFields.length === 0) {
+      // Pre-initialize the three file slots
+      for (let i = 0; i < totalSteps; i++) {
+        appendFile({ image: steps[i].isImage })
+      }
+    }
+  }, [isCreating, fileFields.length, appendFile])
+
   // save file to form in expected position (1st is image, 2nd is video, 3rd is a json file)
   const handleAddFileToForm = async (file: File, fileUrl: string, index?: number) => {
     appendFile({
@@ -115,7 +206,6 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, dnasKey
     })
 
   }
-
   const handleRemoveFile = async (fileIndex: number) => {
     removeFile(fileIndex)
   }
@@ -133,11 +223,17 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, dnasKey
 
   const handleUploadFiles = async () => {
     try {
+      if (!watchDaoAddress   || !watchDnasKeyOwner) {
+        console.log("watchDaoAddress",watchDaoAddress)
+        // console.log("watchDnasKeyHash",watchDnasKeyHash)
+        console.log("watchDnasKeyOwner",watchDnasKeyOwner)
+        throw new Error('Please select a dnas key to use first.')
+      }
       // form the objects
       const prepMsg: UseDnasKeyData = {
-        daoAddr,
-        dnasKeyHash,
-        dnasKeyOwner,
+        daoAddr: watchDaoAddress,
+        // dnasKeyHash: watchDnasKeyHash,
+        dnasKeyOwner: watchDnasKeyOwner,
         files: fileFields,
       }
 
@@ -149,214 +245,254 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, dnasKey
     }
   }
 
-  // // Check if all files have been uploaded
-  // const allFilesUploaded = fileFields.length === totalSteps &&
-  //   fileFields.every((file) => file.url)
-  // Check if current step file is uploaded
-  // const currentStepFileUploaded = fileFields[currentStep]?.url
 
-
-  //  button to clear the form of all files and restart
-  // component for viewing files existing in form
   return (
     <>
       {/* DNAS Key Owner Selection */}
       <InputLabel name={t('form.dnasKeyOwner')} />
-      <DnasKeyPicker
-        onSelect={(p) => {
-          setValue((fieldNamePrefix + 'dnasKeyInUse.dnasKeyOwner') as 'dnasKeyInUse.dnasKeyOwner', p.keyOwner)
-          setValue((fieldNamePrefix + 'dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr', p.daoAddr)
-        }
-        }
-        readOnly={!isCreating}
-        selectedAddress={dnasKeyOwner}
-        dnasKeyOwners={daoOwnedKeys}
-        chainId={chainId} />
-      <div className="flex flex-col items-start gap-1 mb-6">
-      </div>
+      <>
 
-      {/* Step indicators */}
-      <div className="flex justify-between mb-4 w-full">
-        {steps.map((step, index) => (
-          <div
-            key={index}
-            className={`flex flex-col items-center ${index === currentStep ? 'text-primary' : 'text-text-tertiary'}`}
-            onClick={() => setCurrentStep(index)} // Allow clicking on steps to navigate
-            style={{ cursor: 'pointer' }}
-          >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${index === currentStep ? 'bg-primary text-white' :
-                fileFields[index]?.url ? 'bg-success text-white' : 'bg-bg-secondary'
-                }`}
-            >
-              {fileFields[index]?.url ? <Check /> : index + 1}
-            </div>
-            <span className="text-sm">{steps[index].title}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Current step content */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium mb-2">{steps[currentStep].title}</h3>
-        <p className="text-text-secondary mb-4">{steps[currentStep].description}</p>
-
-        {/* {isCreating && ( */}
-        <div className="flex flex-col items-center">
-          {fileFields[currentStep]?.url ? (
-            <div className="flex flex-row items-center gap-2 mb-4">
-              {fileFields[currentStep].mimetype?.startsWith('image') ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  alt={fileFields[currentStep].name || 'Uploaded image'}
-                  className="min-w-24 min-h-24 max-w-80 h-auto max-h-80 w-auto"
-                  src={transformIpfsUrlToHttpsIfNecessary(
-                    fileFields[currentStep].url
-                  )}
-                />
-              ) : (
-                <ButtonLink
-                  href={transformIpfsUrlToHttpsIfNecessary(
-                    fileFields[currentStep].url
-                  )}
-                  openInNewTab
-                  variant="underline"
-                >
-                  {fileFields[currentStep].name || fileFields[currentStep].url}
-                </ButtonLink>
-              )}
-
-              <IconButton
-                Icon={Close}
-                onClick={() => handleRemoveFile(currentStep)}
-                size="sm"
-                variant="ghost"
-                aria-label={t('button.remove')}
-              />
-            </div>
-          ) : (
-            steps[currentStep].isImage ? (
-              <DnasFileUploadInput
-                Trans={Trans}
-                onChange={(url, file) => handleAddFileToForm(file, url)}
-                onRemove={(index) => handleRemoveFile(index)}
-                onError={(err) => toast.error(processError(err))}
-                onAddFileToForm={handleAddFileToForm}
-              />
-            ) : (
-              <DnasFileUploadInput
-                Trans={Trans}
-                onChange={(url, file) => handleAddFileToForm(file, url)}
-                onRemove={(index) => handleRemoveFile(index)}
-                onError={(err) => toast.error(processError(err))}
-                onAddFileToForm={handleAddFileToForm} />
-            )
-          )}
-        </div>
-        {/* )} */}
-      </div>
-
-      {/* Navigation and action buttons */}
-      <div className="flex justify-between">
+        <AddressInput
+          error={errors?.dnasKeyInUse?.daoAddr}
+          fieldName={(fieldNamePrefix + 'dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr'}
+          register={register}
+          defaultValue={actionType === ActionContextType.Dao ? address : ''}
+          type="contract"
+          validation={[
+            validateRequired,
+            makeValidateAddress(getChainForChainId(watchChainId).bech32Prefix),
+          ]}
+        />
         <Button
-          disabled={currentStep === 0}
-          onClick={handlePrevStep}
-          variant="secondary"
+          onClick={() => {
+            setValue(
+              (fieldNamePrefix + 'dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr',
+              address,
+              // { shouldValidate: true, shouldDirty: true }
+            );
+            console.log("Manually set address:", address);
+            console.log("watchDaoAddress:", watchDaoAddress);
+          }}
         >
-          {t('button.previous')}
+          Use DAO Address: {address.substring(0, 8)}...
         </Button>
+      </>
 
-        {currentStep < totalSteps - 1 ? (
-          <Button
-            // disabled={!coverPhotoAddedToForm}
-            onClick={handleNextStep}
-            variant="primary"
-          >
-            {t('button.next')}
-          </Button>
-        ) : (
-          <Button
-            // disabled={!allFilesUploaded}
-            onClick={handleUploadFiles}
-            variant="primary"
-          >
-            {t('button.uploadFiles')}
-          </Button>
-        )}
-      </div>
-
-      <div className="mt-6 p-4 bg-bg-secondary rounded-md">
-        {/* File upload progress summary */}
-        <div className="mt-6 p-4 bg-bg-secondary rounded-md">
+      {/* DNAS Key Picker */}
+      {console.log({
+        loading: allDaoDnasKeyProfile.loading,
+        dataLength: !allDaoDnasKeyProfile.loading ? Object.values(allDaoDnasKeyProfile.data || {}).length: 0,
+        isLoadingKeys,
+        allDaoDnasKeyProfile,
+      })}
+      {!allDaoDnasKeyProfile.loading && Object.values(allDaoDnasKeyProfile.data || {}).length > 0 && !isLoadingKeys ? (
+        <div className="mb-4 border-2 ">
+          <DnasKeyPicker
+            displayClassName="grow min-w-0"
+            onSelect={(p) => {
+              setValue((fieldNamePrefix + 'dnasKeyInUse.dnasKeyOwner') as 'dnasKeyInUse.dnasKeyOwner', p.keyOwner)
+              setValue((fieldNamePrefix + 'dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr', p.daoAddr)
+              setValue((fieldNamePrefix + 'dnasKeyInUse.dnasKeyHash') as 'dnasKeyInUse.dnasKeyHash', p.keyHash)
+              console.log("Selected DNAS key:", p)
+            }}
+            readOnly={isCreating}
+            selectedAddress={watchDnasKeyOwner}
+            dnasKeyOwners={allDaoDnasKeyProfile.data || {}}
+            chainId={watchChainId || chainId}
+            daoAddr={watchDaoAddress}
+          />
         </div>
+      ) : <InputLabel name={t('form.noDnasKeysRegisteredToDao')} />}
 
-
-        {/* Debug information toggle */}
-        <div className="mt-4 flex justify-end">
-          <Button
-            onClick={() => setShowDebugInfo(!showDebugInfo)}
-            variant="ghost"
-            size="sm"
-          >
-            {showDebugInfo ? t('button.hideDebugInfo') : t('button.showDebugInfo')}
-          </Button>
-        </div>
-
-        {/* Visual debugging section */}
-        {showDebugInfo && (
-          <div className="mt-4 p-4 bg-bg-tertiary rounded-md border border-dashed border-border-primary">
-            <h4 className="text-md font-medium mb-2">{t('title.debugInfo')}</h4>
-            <div className="space-y-4">
-              {fileFields.map((file, index) => (
-                <div key={index} className="p-3 bg-bg-secondary rounded-md">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-medium">File #{index + 1}: {steps[index]?.title}</h5>
-                    <span className={`px-2 py-1 text-xs rounded-full ${file.url ? 'bg-success bg-opacity-20 text-success' : 'bg-error bg-opacity-20 text-error'
-                      }`}>
-                      {file.url ? t('status.uploaded') : t('status.notUploaded')}
-                    </span>
-                    <Button
-                      onClick={() => handleRemoveFile(index)}
-                      variant="ghost"
-                      size="sm"
-                    >
-                      {t('button.removeFile')}
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="font-medium">{t('debug.name')}:</div>
-                    <div className="text-text-secondary">{file.name || t('debug.notSet')}</div>
-
-                    <div className="font-medium">{t('debug.url')}:</div>
-                    <div className="text-text-secondary break-all">
-                      {file.url || t('debug.notSet')}
-                    </div>
-
-                    <div className="font-medium">{t('debug.mimeType')}:</div>
-                    <div className="text-text-secondary">{file.mimetype || t('debug.notSet')}</div>
-
-                    <div className="font-medium">{t('debug.isImage')}:</div>
-                    <div className="text-text-secondary">{file.image ? t('debug.yes') : t('debug.no')}</div>
-                  </div>
-
-                  {file.url && file.mimetype?.startsWith('image') && (
-                    <div className="mt-2">
-                      <p className="text-sm mb-1">{t('debug.preview')}:</p>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        alt={file.name || 'Preview'}
-                        className="max-w-full h-auto max-h-40 rounded"
-                        src={transformIpfsUrlToHttpsIfNecessary(file.url)}
-                      />
-                    </div>
-                  )}
+      {/* <div className="flex flex-col items-start gap-1 mb-6">
+      </div> */}
+      {watchDaoAddress ? (
+        <>
+          <div className="flex justify-between mb-4 w-full">
+            {steps.map((step, index) => (
+              <div
+                key={index}
+                className={`flex flex-col items-center ${index === currentStep ? 'text-primary' : 'text-text-tertiary'}`}
+                onClick={() => setCurrentStep(index)} // Allow clicking on steps to navigate
+                style={{ cursor: 'pointer' }}
+              >
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${index === currentStep ? 'bg-primary text-white' :
+                    fileFields[index]?.url ? 'bg-success text-white' : 'bg-bg-secondary'
+                    }`}
+                >
+                  {fileFields[index]?.url ? <Check /> : index + 1}
                 </div>
-              ))}
-            </div>
+                <span className="text-sm">{steps[index].title}</span>
+              </div>
+            ))}
           </div>
-        )}
-      </div>
+
+          {/* Current step content */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-2">{steps[currentStep].title}</h3>
+            <p className="text-text-secondary mb-4">{steps[currentStep].description}</p>
+
+            {/* {isCreating && ( */}
+            <div className="flex flex-col items-center">
+              {fileFields[currentStep]?.url ? (
+                <div className="flex flex-row items-center gap-2 mb-4">
+                  {fileFields[currentStep].mimetype?.startsWith('image') ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      alt={fileFields[currentStep].name || 'Uploaded image'}
+                      className="min-w-24 min-h-24 max-w-80 h-auto max-h-80 w-auto"
+                      src={transformIpfsUrlToHttpsIfNecessary(
+                        fileFields[currentStep].url
+                      )}
+                    />
+                  ) : (
+                    <ButtonLink
+                      href={transformIpfsUrlToHttpsIfNecessary(
+                        fileFields[currentStep].url
+                      )}
+                      openInNewTab
+                      variant="underline"
+                    >
+                      {fileFields[currentStep].name || fileFields[currentStep].url}
+                    </ButtonLink>
+                  )}
+
+                  <IconButton
+                    Icon={Close}
+                    onClick={() => handleRemoveFile(currentStep)}
+                    size="sm"
+                    variant="ghost"
+                    aria-label={t('button.remove')}
+                  />
+                </div>
+              ) : (
+                steps[currentStep].isImage ? (
+                  <DnasFileUploadInput
+                    Trans={Trans}
+                    onChange={(url, file) => handleAddFileToForm(file, url)}
+                    onRemove={(index) => handleRemoveFile(index)}
+                    onError={(err) => toast.error(processError(err))}
+                    onAddFileToForm={handleAddFileToForm}
+                  />
+                ) : (
+                  <DnasFileUploadInput
+                    Trans={Trans}
+                    onChange={(url, file) => handleAddFileToForm(file, url)}
+                    onRemove={(index) => handleRemoveFile(index)}
+                    onError={(err) => toast.error(processError(err))}
+                    onAddFileToForm={handleAddFileToForm} />
+                )
+              )}
+            </div>
+            {/* )} */}
+          </div>
+          {/* Navigation and action buttons */}
+          <div className="flex justify-between">
+            <Button
+              disabled={currentStep === 0}
+              onClick={handlePrevStep}
+              variant="secondary"
+            >
+              {t('button.previous')}
+            </Button>
+
+            {currentStep < totalSteps - 1 ? (
+              <Button
+                // disabled={!coverPhotoAddedToForm}
+                onClick={handleNextStep}
+                variant="primary"
+              >
+                {t('button.next')}
+              </Button>
+            ) : (
+              <Button
+                // disabled={!allFilesUploaded}
+                onClick={handleUploadFiles}
+                variant="primary"
+              >
+                {t('button.uploadFiles')}
+              </Button>
+            )}
+          </div>
+          {/* Step indicators */}
+
+          <div className="mt-6 p-4 bg-bg-secondary rounded-md">
+            {/* File upload progress summary */}
+            <div className="mt-6 p-4 bg-bg-secondary rounded-md">
+            </div>
+
+
+            {/* Debug information toggle */}
+            <div className="mt-4 flex justify-end">
+              <Button
+                onClick={() => setShowDebugInfo(!showDebugInfo)}
+                variant="ghost"
+                size="sm"
+              >
+                {showDebugInfo ? t('button.hideDebugInfo') : t('button.showDebugInfo')}
+              </Button>
+            </div>
+
+            {/* Visual debugging section */}
+            {showDebugInfo && (
+              <div className="mt-4 p-4 bg-bg-tertiary rounded-md border border-dashed border-border-primary">
+                <h4 className="text-md font-medium mb-2">{t('title.debugInfo')}</h4>
+                <div className="space-y-4">
+                  {fileFields.map((file, index) => (
+                    <div key={index} className="p-3 bg-bg-secondary rounded-md">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-medium">File #{index + 1}: {steps[index]?.title}</h5>
+                        <span className={`px-2 py-1 text-xs rounded-full ${file.url ? 'bg-success bg-opacity-20 text-success' : 'bg-error bg-opacity-20 text-error'
+                          }`}>
+                          {file.url ? t('status.uploaded') : t('status.notUploaded')}
+                        </span>
+                        <Button
+                          onClick={() => handleRemoveFile(index)}
+                          variant="ghost"
+                          size="sm"
+                        >
+                          {t('button.removeFile')}
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="font-medium">{t('debug.name')}:</div>
+                        <div className="text-text-secondary">{file.name || t('debug.notSet')}</div>
+
+                        <div className="font-medium">{t('debug.url')}:</div>
+                        <div className="text-text-secondary break-all">
+                          {file.url || t('debug.notSet')}
+                        </div>
+
+                        <div className="font-medium">{t('debug.mimeType')}:</div>
+                        <div className="text-text-secondary">{file.mimetype || t('debug.notSet')}</div>
+
+                        <div className="font-medium">{t('debug.isImage')}:</div>
+                        <div className="text-text-secondary">{file.image ? t('debug.yes') : t('debug.no')}</div>
+                      </div>
+
+                      {file.url && file.mimetype?.startsWith('image') && (
+                        <div className="mt-2">
+                          <p className="text-sm mb-1">{t('debug.preview')}:</p>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            alt={file.name || 'Preview'}
+                            className="max-w-full h-auto max-h-40 rounded"
+                            src={transformIpfsUrlToHttpsIfNecessary(file.url)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      ) : undefined}
+
+
     </>
   )
 }

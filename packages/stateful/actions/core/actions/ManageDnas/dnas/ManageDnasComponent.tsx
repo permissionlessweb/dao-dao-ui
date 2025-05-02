@@ -82,6 +82,11 @@ export const HandleDnasKeysRenderer: ActionComponent<ManageDnasActionData> = ({ 
     } = useFormContext<ManageDnasActionData>()
 
     const watchNeedNewProfile = watch((fieldNamePrefix + 'newProfile') as 'newProfile')
+    const watchDnas = watch((fieldNamePrefix + 'dnas') as 'dnas')
+    const watchDnasDao = watch((fieldNamePrefix + 'dnas.daoAddr') as 'dnas.daoAddr')
+    const watchApiKeyHash = watch((fieldNamePrefix + 'dnas.keyHash') as 'dnas.keyHash')
+    const watchApiKeyValue = watch((fieldNamePrefix + 'dnas.apiKeyValue') as 'dnas.apiKeyValue')
+
     // check if connected wallet has any dnas keys
 
     // Get the setter function at the component level
@@ -99,17 +104,10 @@ export const HandleDnasKeysRenderer: ActionComponent<ManageDnasActionData> = ({ 
         }, 0);
     };
 
-    // load wallet and dao keys: (what is best  way to do this)
-    //  hook, useQueries  , useCachedLoading , useRecoilValueLoadable  , 
-    const watchDnasDao = watch((fieldNamePrefix + 'dnas.daoAddr') as 'dnas.daoAddr')
-    const watchApiKeyHash = watch((fieldNamePrefix + 'dnas.apiKeyHash') as 'dnas.apiKeyHash')
-    const watchApiKeyValue = watch((fieldNamePrefix + 'dnas.apiKeyValue') as 'dnas.apiKeyValue')
-
-
     // Set initial values when modal becomes visible or profile changes
     useEffect(() => {
-        console.log("profile:", profile)
-        console.log("dnas:", dnas)
+        console.log("profile loaded from useDnas:", profile)
+        console.log("dnas keys loaded in manage components:", dnas)
     }, [profile,]);
 
     return (
@@ -118,23 +116,24 @@ export const HandleDnasKeysRenderer: ActionComponent<ManageDnasActionData> = ({ 
                 <div className="space-y-1">
 
                     {dnas && dnas.length > 0 ? (<>
-                        {Object.values(dnas).map((info, index) => (
+                        {Object.entries(dnas).map(([a, info], index) => (
                             <DnasLine
-                                key={info.chainId + index}
+                                key={info.daoAddr + index}
                                 onClick={handleShowModal}
                                 onUpdate={() => {
                                     setValue((fieldNamePrefix + 'dnas.daoAddr') as 'dnas.daoAddr', info.daoAddr)
                                     setValue((fieldNamePrefix + 'dnas.keyOwner') as 'dnas.keyOwner', info.keyOwner)
-                                    setValue((fieldNamePrefix + 'dnas.apiKeyHash' as 'dnas.apiKeyHash'), info.keyHashValue)
+                                    setValue((fieldNamePrefix + 'dnas.keyHash' as 'dnas.keyHash'), info.keyHash)
                                     setValue((fieldNamePrefix + 'dnas.apiKeyValue') as 'dnas.apiKeyValue', '')
-                                    console.log("watchDnasDao:", watchDnasDao)
+                                    console.log("info:", info)
+                                    console.log("watchDnas:", watchDnas)
                                     setRegisterDnasKeyVisible(true)
                                 }}
                                 onRemove={() => {
                                     //  set values to map when updating and removing to have in form
                                     setValue((fieldNamePrefix + 'dnas.daoAddr') as 'dnas.daoAddr', info.daoAddr)
                                     setValue((fieldNamePrefix + 'dnas.keyOwner') as 'dnas.keyOwner', info.keyOwner)
-                                    setValue((fieldNamePrefix + 'dnas.apiKeyHash') as 'dnas.apiKeyHash', info.keyHashValue)
+                                    setValue((fieldNamePrefix + 'dnas.keyHash') as 'dnas.keyHash', info.keyHash)
                                     setValue((fieldNamePrefix + 'dnas.apiKeyValue') as 'dnas.apiKeyValue', '')
 
                                     !profile.loading && unregisterDnasKey.go({
@@ -155,7 +154,6 @@ export const HandleDnasKeysRenderer: ActionComponent<ManageDnasActionData> = ({ 
                             {t('button.registerNewDnasKey')}
                         </Button>
                     </>) : (<>
-
                         <NoContent
                             Icon={WarningRounded}
                             actionNudge={t('info.registerFirstDnasKey')}

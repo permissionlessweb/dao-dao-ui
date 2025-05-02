@@ -28,26 +28,28 @@ export type PfpkProfile = {
   /**
    * Map chain ID to public key and address.
    */
-  chains: Record<
-    string,
-    {
-      dnas: Record<
-        string,  // dao-addr able to use key 
-        DnasObject
-      >,
-      publicKey: PfpkPublicKey
-      address: string
-
-    }
-  >
+  chains: PfpkChainRecord
 }
+
+export type PfpkChainRecord = Record<
+  string,
+  {
+    dnas: Record<
+      string,  // dao-addr able to use key 
+      DnasObjectWithValues
+    >,
+    publicKey: PfpkPublicKey
+    address: string
+
+  }
+>
 // Extended type with all form-related properties
 export type DnasObjectWithValues = DnasObject & {
   daoAddr: string
   keyOwner: string
   chainId: string
   apiKeyValue?: string
-  apiKeyHash?: string
+  keyHash: string
 }
 
 export type DnasObject = {
@@ -55,12 +57,8 @@ export type DnasObject = {
   uploadLimit: string
 }
 
-export type DnasKeyWithOwnerAndHash = {
-  chainId: string
-  daoAddr: string
-  keyOwner: string
-  keyHash: string
-}
+export type DnasObjectWithHash = DnasObject & { keyHash: string }
+
 
 export type UnregisterKeysFromDaoFunction = (
   data: DnasKeyUnregister,
@@ -229,16 +227,16 @@ export type OtherProfile = {
   profile: UnifiedProfile
 }
 
-export type RecordOfDnasKeysByDao = Record<
+export type RecordOfDnasKeysByAddr = Record<
   string, // dao address key is registered to
   DnasKeyByDaoObject
 >
 
-export type FetchedDaoKeys = {
+export type FetchedDnasKeys = {
   /**
    * A parent record mapped by chain id, containing a child record mapped by dao addr to a list of all keys mapped to a DAO
    */
-  fetchedRecordOfKeysByChain: Record<string, RecordOfDnasKeysByDao>,
+  fetchedRecordOfKeysByChain: Record<string, RecordOfDnasKeysByAddr>,
 }
 
 export type DnasKeyByDaoObject = {
@@ -247,4 +245,5 @@ export type DnasKeyByDaoObject = {
   keyMetadata: string
   uploadLimit?: string
 }
+
 export type DnasKeyByDaoObjectWithDAO = DnasKeyByDaoObject & { daoAddr: string }

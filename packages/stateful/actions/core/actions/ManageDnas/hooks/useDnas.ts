@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 
 import { profileQueries } from '@dao-dao/state'
-import { DnasKeyUnregister, DnasKeyUpdate, DnasKeyUpdateFunction, FetchedDaoKeys, LoadingData, PfpkProfileUpdate, PfpkProfileUpdateFunction, ProfileChain, RecordOfDnasKeysByDao, UnifiedProfile, UnregisterKeysFromDaoFunction } from '@dao-dao/types'
+import { DnasKeyByDaoObject, DnasKeyUnregister, DnasKeyUpdate, DnasKeyUpdateFunction, DnasObjectWithHash, DnasObjectWithValues, FetchedDnasKeys, LoadingData, PfpkProfileUpdate, PfpkProfileUpdateFunction, ProfileChain, RecordOfDnasKeysByAddr, UnifiedProfile, UnregisterKeysFromDaoFunction } from '@dao-dao/types'
 import {
   DNAS_API_BASE,
   MAINNET,
@@ -10,7 +10,6 @@ import {
   getDisplayNameForChainId,
   getPublicKeyTypeForChain,
   isSupportedChain,
-  makeEmptyDnasApiKeys,
   makeEmptyUnifiedProfile,
   makeManuallyResolvedPromise,
   maybeGetChainForChainId,
@@ -18,14 +17,14 @@ import {
   toBech32Hash,
 } from '@dao-dao/utils'
 import { useCfWorkerAuthPostRequest, useQueryLoadingData, useRefreshProfile, useWallet } from '../../../../../hooks'
-import { AddDnasKeysToDaoFunction, AddDnasStatus, ConsumeDnasActionData, ConsumeDnasKeySignatureContent, DnasKeyWithValueWithoutId, ExtendedDnasKeys, UnregisterDnasStatus, UpdateDnasKeyStatus, UseDnasKeysFunction, UsingDnasKeysStatus } from '../types'
+import { AddDnasKeysToDaoFunction, AddDnasStatus, ConsumeDnasActionData, ConsumeDnasKeySignatureContent, DnasKeyWithValueWithoutId, UnregisterDnasStatus, UpdateDnasKeyStatus, UseDnasKeysFunction, UsingDnasKeysStatus } from '../types'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toHex } from '@cosmjs/encoding'
+import { fromBech32, toHex } from '@cosmjs/encoding'
 import { dnasQueries } from '../queries'
 import { useFormContext } from 'react-hook-form'
 
-// First, let's define the type for DNAS keys
+
 export type DnasKeyMap = Map<string, any> | Record<string, any> | null | undefined;
 
 
@@ -67,8 +66,8 @@ export type UseDnasProfileReturn = {
    * loads data from backup sources in case profile information is missing and
    * substitutes a default profile on error.
    */
-  dnas?: ExtendedDnasKeys[]
-  daoDnas?: LoadingData<FetchedDaoKeys>
+  dnas?: DnasObjectWithValues[]
+  // daoDnas?: LoadingData<FetchedDnasKeys>
 
   profile: LoadingData<UnifiedProfile>
   /**
@@ -76,6 +75,7 @@ export type UseDnasProfileReturn = {
    */
   refreshProfile: () => void
   getDnasKeysForChain: (chainId: string) => DnasKeyMap;
+  // getDnasKeysForDao: (daoAddr: string) => RecordOfDnasKeysByAddr;
   /**
    * Chain information for the profile. If not connected and no address was
    * passed, this will be in the loading state. If no profile has been created
@@ -187,23 +187,16 @@ export const useDnas = ({
     }),
     makeEmptyUnifiedProfile(walletChainId, profileAddress)
   )
+
   const refreshProfile = useRefreshProfile(profileAddress, dnasProfile)
   // cloudflare hook object formed for use with worker db
   const dnasApi = useCfWorkerAuthPostRequest(DNAS_API_BASE, '', walletChainId)
+
   const ready = !dnasProfile.loading && !dnasProfile.updating &&
-    // Ensure we have a profile loaded from the server. The nonce is -1 if it
-    // failed to load.
-    // dnasProfile.data.nonce >= 0 &&
     !!currentChainWallet && !currentHexPublicKey.loading &&
     dnasApi.ready
 
   const profileNonce = dnasProfile.loading ? -1 : dnasProfile.data.nonce
-
-  const allDaoDnasKeyProfile = daoAddress ? useQueryLoadingData(
-    dnasQueries.dnasKeysByDaoAddr({ address: daoAddress }),
-    makeEmptyDnasApiKeys()
-  ) : undefined
-
   const profileDnasKeys = !dnasProfile.loading ? getAllDnasKeys(dnasProfile.data) : []
 
   // Implementation of the function to safely retrieve DNAS keys
@@ -216,6 +209,7 @@ export const useDnas = ({
     // Safely retrieve DNAS keys with proper null checks
     return dnasProfile?.data?.chains?.[chainId]?.dnas || {};
   };
+
   const chains: LoadingData<ProfileChain[]> =
     (!address && !isWalletConnected) || dnasProfile.loading
       ? { loading: true }
@@ -265,9 +259,6 @@ export const useDnas = ({
           ),
       }
 
-
-
-
   const [addChainsStatus, setAddChainsStatus] =
     useState<AddDnasStatus>('idle')
   const [usingDnasKeysStatus, setUsingDnasKeysStatus] =
@@ -283,9 +274,7 @@ export const useDnas = ({
   // Listen for nonce to incremenent to clear updating state, since we want the
   // new dnasProfile to be ready on the same render that we stop loading.
   useEffect(() => {
-    if (updatingNonce === undefined || dnasProfile.loading) {
-      return
-    }
+    if (updatingNonce === undefined || dnasProfile.loading) { return }
 
     // If nonce incremented, clear updating state and call onUpdate handler if
     // exists.
@@ -306,12 +295,7 @@ export const useDnas = ({
     setUsingDnasKeysStatus('dnas')
 
     let error: unknown
-
-    // Get access to form values from the parent component
-    const { watch } = useFormContext<ConsumeDnasActionData>()
-    const formFiles = watch('files')
-
-
+    const formFiles = props.files
     try {
       const mainWallet = currentChainWallet.mainWallet
 
@@ -342,11 +326,10 @@ export const useDnas = ({
       }
 
       const hexPublicKey = toHex(pubkeyData)
-
       const data: ConsumeDnasKeySignatureContent = {
         dao: props.daoAddr,
         keyOwner: props.dnasKeyOwner,
-        keyHash: props.dnasKeyHash,
+        // keyHash: props.dnasKeyHash,
       }
 
       // sign key hash and owner to auth use 
@@ -360,36 +343,35 @@ export const useDnas = ({
         offlineSignerAmino,
       })
 
-      // Format the files array for the API request
-      // We're filtering out any partial entries and ensuring we only send valid files
-      const formattedFiles = formFiles
-        .filter(file => file.name && file.url && file.mimetype)
-        .map(file => ({
-          name: file,
-          url: file.url,
-          mimetype: file.mimetype
-        }))
+      // Format the files array for the FormData
+      const formData = new FormData();
+      formData.append('sign', JSON.stringify(body));
+      formFiles
+        .filter(file => file.file && file.name && file.mimetype) // Ensure file object exists
+        .forEach((file, index) => {
+          formData.append(`files[${index}]`, file.file as Blob, file.name); // Use the File object
+        });
 
       // add files and signed auth body to request
       const useHeadstashBody = {
-        files: formattedFiles,
+        files: formData,
         sign: body
       }
 
       try {
-        const response = await dnasApi.postRequest(
+        const response = await dnasApi.postDnasRequest(
           '/use-dnas',
           useHeadstashBody,
           'DAO DAO DNAS | USE DNAS Key'
-        )
-        setUsingDnasKeysStatus('idle')
-        console.log("response:", response)
+        );
+        setUsingDnasKeysStatus('idle');
+        console.log("response:", response);
       } catch (apiError: any) {
-        console.error('API Error:', apiError)
+        console.error('API Error:', apiError);
         if (apiError.message.includes('<!DOCTYPE')) {
-          throw new Error('Received HTML error page from API instead of JSON response. The API might be down or returning an error.')
+          throw new Error('Received HTML error page from API instead of JSON response. The API might be down or returning an error.');
         }
-        throw apiError
+        throw apiError;
       }
     } catch (err) {
       setUsingDnasKeysStatus('idle')
@@ -422,8 +404,6 @@ export const useDnas = ({
     let error: unknown
     try {
       const mainWallet = currentChainWallet.mainWallet
-
-
 
       // This will hold our properly formatted request bodies
       const dnasApiKeys: DnasKeyWithValueWithoutId[] = []
@@ -466,13 +446,13 @@ export const useDnas = ({
       const dnasApiKeysFormatted = await Promise.all(props.map(async (dnas) => {
         // Create the object matching the expected structure for RegisterDnasKeyRequest
         return {
-          dao: dnas.daoAddr,
+          dao: toHex(fromBech32(dnas.daoAddr).data),
           dnas: {
             type: "jackalPin",
             keyMetadata: dnas.keyMetadata,
             uploadLimit: dnas.uploadLimit,
             apiKeyValue: dnas.apiKeyValue,
-            daoAddr: dnas.daoAddr,
+            daoAddr: toHex(fromBech32(dnas.daoAddr).data),
             chainId: walletChainId,
             keyOwner: address,
           }
@@ -613,7 +593,7 @@ export const useDnas = ({
       setUnregisterDnasKeysStatus('unregistering')
       // Add error handling for the API request
       try {
-        const response = await dnasApi.postRequest(
+        await dnasApi.postRequest(
           '/unregister-dnas',
           dnaskKeysToUnregister,
           'DAO DAO Profile | Unregister DNAS Key'
@@ -742,6 +722,7 @@ export const useDnas = ({
     // connected wallet. If an address is passed, set connected to false.
     connected: address ? false : isWalletConnected,
     connecting: address ? false : isWalletConnecting,
+    // getDnasKeysForDao,
     refreshProfile,
     getDnasKeysForChain,
     updateDnasKey: {
@@ -762,7 +743,6 @@ export const useDnas = ({
     chains,
     // uniquePublicKeys,
     dnas: profileDnasKeys,
-    daoDnas: allDaoDnasKeyProfile,
     profile: dnasProfile,
     addDnasToDao: {
       ready,
@@ -778,31 +758,41 @@ export const useDnas = ({
   }
 }
 
-// Function to convert nested profile.data.chains structure into a flat list of DNAS objects
-const getAllDnasKeys = (profileData: any): ExtendedDnasKeys[] => {
-  if (!profileData || !profileData.chains) {
-    console.log("no profile data for any chains, return a default value to distinguish this")
+// returns just the dnas keys for a given profile
+const getAllDnasKeys = (profileData: UnifiedProfile): DnasObjectWithValues[] => {
+  if (!profileData) {
+    console.log("No profile data provided, returning an empty array.");
     return [];
   }
+  // console.log("profileData:", profileData);
 
-  // Use flatMap to process each chain and flatten the results into a single array
-  return Object.entries(profileData.chains).flatMap(([chainId, chainData]: [string, any]) => {
+  // Track all dnas entries we find
+  const ddnas: DnasObjectWithValues[] = [];
+
+  // Process each chain in the profile data
+  Object.entries(profileData.chains || {}).forEach(([chainId, chainData]) => {
     // Skip chains that don't have DNAS data
-    if (!chainData.dnas || Object.keys(chainData.dnas).length === 0) {
-      return [];
+    if (!chainData.dnas || Object.values(chainData.dnas).length === 0) {
+      return;
     }
+
+    console.log("chainData:", chainData);
+
     // Process each DNAS entry in this chain
-    return Object.entries(chainData.dnas).map(([daoAddr, dnaData]: [string, any]) => {
-      // Create a flattened object with all properties
-      return {
+    Object.entries(chainData.dnas).forEach(([daoAddr, dnaData]) => {
+      // Log the actual structure of dnaData to debug
+      ddnas.push({
         daoAddr,
+        keyOwner: dnaData.keyOwner,
         chainId,
-        keyOwner: chainData.address,
-        // Include all properties from dnaData
-        ...dnaData,
-        // Add any additional fields needed
-        type: 'jackalPin'
-      } as ExtendedDnasKeys;
+        keyHash: dnaData.keyHash, // Try both possible property names
+        keyMetadata: dnaData.keyMetadata,
+        uploadLimit: dnaData.uploadLimit,
+        type: 'jackalPin',
+      } as DnasObjectWithValues);
     });
   });
+
+  // console.log("getAllDnasKeys() response:", ddnas);
+  return ddnas;
 };

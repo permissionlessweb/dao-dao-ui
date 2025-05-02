@@ -7,8 +7,9 @@ import {
 
 import {
   ChainId,
-  FetchedDaoKeys,
+  FetchedDnasKeys,
   PfpkProfile,
+  RecordOfDnasKeysByAddr,
   ResolvedProfile,
   UnifiedProfile,
 } from '@dao-dao/types'
@@ -20,7 +21,6 @@ import {
   getChainForChainId,
   getCosmWasmClientForChainId,
   imageUrlFromStargazeIndexerNft,
-  makeEmptyDnasApiKeys,
   makeEmptyPfpkProfile,
   // makeEmptydnasProfile,
   makeEmptyUnifiedProfile,
@@ -110,15 +110,17 @@ export const fetchAllDnasApiKeyInfoByDao = async ({
   bech32Hash,
 }: {
   bech32Hash: string
-}): Promise<FetchedDaoKeys> => {
+}): Promise<RecordOfDnasKeysByAddr> => {
   if (!bech32Hash) {
-    return makeEmptyDnasApiKeys()
+    return {}
   }
 
   try {
     const response = await fetch(DNAS_API_BASE + `/daoKeys/bech32/${bech32Hash}`)
     if (response.ok) {
-      return await response.json()
+      const res = await response.json()
+      console.log(res)
+      return await res
     } else {
       console.error(await response.json().catch(() => response.statusText))
     }
@@ -126,7 +128,7 @@ export const fetchAllDnasApiKeyInfoByDao = async ({
     console.error(err)
   }
 
-  return makeEmptyDnasApiKeys()
+  return {}
 }
 
 
@@ -148,8 +150,9 @@ export const fetchdnasProfileInfo = async ({
     console.log(base)
     const response = await fetch(base)
     if (response.ok) {
-      console.log("got response from dnas api  - Fetch DNAS profile:", response)
-      const res = await response.json()
+      const json = await response.json()
+      console.log("got response from dnas api  - Fetch DNAS profile:", json)
+      const res = json
       return res
 
     } else {
@@ -231,24 +234,18 @@ export const dnasQueries = {
       }),
 
   dnasKeysByDaoAddr: (
-    /**
-     * Redirects address queries to bech32 hash queries.
-     *
-     * If undefined, query will be disabled.
-     */
-    options?: { address: string } | { bech32Hash: string }
-  ): UseQueryOptions<
-    FetchedDaoKeys,
-    Error,
-    FetchedDaoKeys,
-    [
-      {
-        category: 'dnas'
-        name: 'dnasKeysByDao'
-        options: { bech32Hash: string } | undefined
-      },
-    ]
-  > =>
+    options?: { address: string } | { bech32Hash: string }): UseQueryOptions<
+      RecordOfDnasKeysByAddr,
+      Error,
+      RecordOfDnasKeysByAddr,
+      [
+        {
+          category: 'dnas'
+          name: 'dnasKeysByDao'
+          options: { bech32Hash: string } | undefined
+        },
+      ]
+    > =>
     // Redirect address queries to bech32 hash queries.
     options && 'address' in options
       ? dnasQueries.dnasKeysByDaoAddr({

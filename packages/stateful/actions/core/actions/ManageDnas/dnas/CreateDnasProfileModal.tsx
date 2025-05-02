@@ -19,13 +19,14 @@ import {
   Tooltip,
   useActionsContext,
   useDao,
+  useDaoIfAvailable,
 } from '@dao-dao/stateless'
 import { processError } from '@dao-dao/utils'
 
 import { useManageProfile, useRefreshProfile, useWallet } from '../../../../../hooks'
 import { useForm, useFormContext } from 'react-hook-form'
 import { EntityDisplay } from '../../../../../components/EntityDisplay'
-import { ActionContextType, ActionOptions, DnasKeyWithOwnerAndHash, DnasObjectWithValues, Entity } from '@dao-dao/types'
+import { ActionContextType, ActionOptions, DnasObjectWithValues, Entity } from '@dao-dao/types'
 import { DnasLine } from './DnasLine'
 import { ManageDnasActionData } from './ManageDnasComponent'
 import { DnasKeyWithValueWithoutId } from '../types'
@@ -38,7 +39,6 @@ export const CreateDnasProfilesModal = () => {
     string | undefined
   >()
   const { address: walletAddress, chain: walletChain } = useWallet()
-  const usedao = useDao()
 
   const {
     profile,
@@ -46,23 +46,10 @@ export const CreateDnasProfilesModal = () => {
   } = useDnas();
 
   // Use proper type with the correct structure
-  const { control, watch, register, setValue, handleSubmit } = useForm<ManageDnasActionData>({
-    defaultValues: {
-      updating: false,
-      newProfile: true,
-      dnas: {
-        daoAddr: usedao.coreAddress,
-        keyOwner: walletAddress && walletAddress,
-        chainId: walletChain.chainId,
-        apiKeyValue: '',
-        keyMetadata: '',
-        uploadLimit: '1024'
-      },
-    }
-  });
+  const { control, watch, register, setValue, handleSubmit } = useForm<ManageDnasActionData>();
 
   // Watch form fields with proper naming structure
-  const watchDnasKeyValue = watch('dnas.apiKeyValue');
+  const watchDnasKeyValue = watch(('dnas.apiKeyValue'));
   const watchDnasKeyOwner = watch('dnas.keyOwner');
   const watchDnasDao = watch('dnas.daoAddr');
   const watchDnasKeyMetadata = watch('dnas.keyMetadata');
@@ -70,10 +57,7 @@ export const CreateDnasProfilesModal = () => {
   const watchDnasChainId = watch('dnas.chainId');
   const watchUpdating = watch('updating');
   const walletChainId = walletChain.chainId;
-  2
   const dnas = watch('dnas')
-
-
 
 
   // Form submission handler
@@ -109,6 +93,7 @@ export const CreateDnasProfilesModal = () => {
 
   // Debugging values
   useEffect(() => {
+    console.log("modal values 3:", useDao)
     console.log("Form values:", {
       updating: watchUpdating,
       chainId: watchDnasChainId,
@@ -148,11 +133,11 @@ export const CreateDnasProfilesModal = () => {
 
     // Convert DNAS record to array with key information preserved
     return Object.entries(chainData.dnas).map(([daoAddr, dnaData]): DnasObjectWithValues => ({
+      ...dnaData,
       daoAddr,
-      keyOwner: profile.data.chains[selectedProfileChainId].address,
       chainId: selectedProfileChainId,
       apiKeyValue: daoAddr === watchDnasKeyValue ? btoa(watchDnasKeyValue || '') : '',
-      ...dnaData
+      keyOwner: profile.data.chains[selectedProfileChainId].address,
     }));
   }, [profile, selectedProfileChainId, isNewProfile, watchDnasKeyValue, watchDnasDao,
     watchDnasKeyMetadata, watchDnasKeyOwner, watchUploadLimit, walletChainId, watchDnasChainId]);
