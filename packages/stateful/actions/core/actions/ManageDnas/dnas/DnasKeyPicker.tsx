@@ -74,9 +74,9 @@ export const DnasKeyPicker = ({
   )
 
   const items = Object.entries(dnasKeyOwners).map(([id, dnas]) => {
-    const [splitChainId, ownerAddr] = id.split("_")
+    const [splitChainId, daoPubkeyHex] = id.split("_")
     const bech32Prefix = getChainForChainId(splitChainId).bech32Prefix
-    const ownerBechAddr = toBech32(bech32Prefix, fromHex(ownerAddr))
+    const ownerBechAddr = dnas.keyOwner // toBech32(bech32Prefix, fromHex(ownerAddr))
     return {
       dnas,
       key: ownerBechAddr,

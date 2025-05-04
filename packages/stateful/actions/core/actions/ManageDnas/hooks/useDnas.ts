@@ -352,7 +352,7 @@ export const useDnas = ({
           formData.append(`files[${index}]`, file.file as Blob, file.name); // Use the File object
         });
 
- 
+
 
       try {
         const response = await dnasApi.postDnasRequest(
@@ -442,13 +442,13 @@ export const useDnas = ({
       const dnasApiKeysFormatted = await Promise.all(props.map(async (dnas) => {
         // Create the object matching the expected structure for RegisterDnasKeyRequest
         return {
-          dao: toHex(fromBech32(dnas.daoAddr).data),
+          dao: dnas.daoAddr,// toHex(fromBech32(dnas.daoAddr).data),
           dnas: {
             type: "jackalPin",
             keyMetadata: dnas.keyMetadata,
             uploadLimit: dnas.uploadLimit,
             apiKeyValue: dnas.apiKeyValue,
-            daoAddr: toHex(fromBech32(dnas.daoAddr).data),
+            daoAddr: dnas.daoAddr, //toHex(fromBech32(dnas.daoAddr).data),
             chainId: walletChainId,
             keyOwner: address,
           }
