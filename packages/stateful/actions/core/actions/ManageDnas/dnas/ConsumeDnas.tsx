@@ -77,12 +77,12 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
   // Initialize DAO address when component loads
   useEffect(() => {
     if (actionType === ActionContextType.Dao && address) {
-      console.log("Initializing DAO address:", address)
+      // console.log("Initializing DAO address:", address)
       setTimeout(() => {
         setValue((fieldNamePrefix + 'dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr', address);
         setValue((fieldNamePrefix + 'dnasKeyInUse.chainId') as 'dnasKeyInUse.chainId', chainId);
         // Fetch keys for the DAO address on initial load
-        console.log("allDaoDnasKeyProfile:", allDaoDnasKeyProfile)
+        // console.log("allDaoDnasKeyProfile:", allDaoDnasKeyProfile)
       }, 0)
     }
   }, [])
@@ -127,7 +127,7 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
 
   // Log file fields for debugging
   useEffect(() => {
-    console.log("files:", fileFields)
+    // console.log("files:", fileFields)
   }, [fileFields])
 
   useMemo(() => {
@@ -224,9 +224,9 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
   const handleUploadFiles = async () => {
     try {
       if (!watchDaoAddress   || !watchDnasKeyOwner) {
-        console.log("watchDaoAddress",watchDaoAddress)
+        // console.log("watchDaoAddress",watchDaoAddress)
         // console.log("watchDnasKeyHash",watchDnasKeyHash)
-        console.log("watchDnasKeyOwner",watchDnasKeyOwner)
+        // console.log("watchDnasKeyOwner",watchDnasKeyOwner)
         throw new Error('Please select a dnas key to use first.')
       }
       // form the objects
@@ -270,8 +270,8 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
               address,
               // { shouldValidate: true, shouldDirty: true }
             );
-            console.log("Manually set address:", address);
-            console.log("watchDaoAddress:", watchDaoAddress);
+            // console.log("Manually set address:", address);
+            // console.log("watchDaoAddress:", watchDaoAddress);
           }}
         >
           Use DAO Address: {address.substring(0, 8)}...
@@ -279,12 +279,12 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
       </>
 
       {/* DNAS Key Picker */}
-      {console.log({
+      {/* {console.log({
         loading: allDaoDnasKeyProfile.loading,
         dataLength: !allDaoDnasKeyProfile.loading ? Object.values(allDaoDnasKeyProfile.data || {}).length: 0,
         isLoadingKeys,
         allDaoDnasKeyProfile,
-      })}
+      })} */}
       {!allDaoDnasKeyProfile.loading && Object.values(allDaoDnasKeyProfile.data || {}).length > 0 && !isLoadingKeys ? (
         <div className="mb-4 border-2 ">
           <DnasKeyPicker
@@ -293,7 +293,7 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
               setValue((fieldNamePrefix + 'dnasKeyInUse.dnasKeyOwner') as 'dnasKeyInUse.dnasKeyOwner', p.keyOwner)
               setValue((fieldNamePrefix + 'dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr', p.daoAddr)
               setValue((fieldNamePrefix + 'dnasKeyInUse.dnasKeyHash') as 'dnasKeyInUse.dnasKeyHash', p.keyHash)
-              console.log("Selected DNAS key:", p)
+              // console.log("Selected DNAS key:", p)
             }}
             readOnly={isCreating}
             selectedAddress={watchDnasKeyOwner}

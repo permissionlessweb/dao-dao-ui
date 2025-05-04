@@ -352,16 +352,12 @@ export const useDnas = ({
           formData.append(`files[${index}]`, file.file as Blob, file.name); // Use the File object
         });
 
-      // add files and signed auth body to request
-      const useHeadstashBody = {
-        files: formData,
-        sign: body
-      }
+ 
 
       try {
         const response = await dnasApi.postDnasRequest(
           '/use-dnas',
-          useHeadstashBody,
+          formData,
           'DAO DAO DNAS | USE DNAS Key'
         );
         setUsingDnasKeysStatus('idle');
@@ -393,7 +389,7 @@ export const useDnas = ({
     // Type-check.
     if (!ready || currentHexPublicKey.loading) {
       console.log("ready:", ready)
-      console.log("  dnasApi.ready:", dnasApi.ready)
+      console.log("dnasApi.ready:", dnasApi.ready)
       console.log("currentHexPublicKey:", currentHexPublicKey)
       console.log("dnasProfile:", dnasProfile)
       throw new Error(t('error.loadingData'))

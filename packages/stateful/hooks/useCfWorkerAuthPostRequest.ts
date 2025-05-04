@@ -219,7 +219,7 @@ export const useCfWorkerAuthPostRequest = (
   const postDnasRequest = useCallback(
     async <R = any>(
       endpoint: string,
-      data?: Record<string, unknown>,
+      data?: FormData,
       signatureType = defaultSignatureType,
       /**
        * Override the current chain.
