@@ -1,7 +1,6 @@
 import { toHex } from '@cosmjs/encoding'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-
 import { getChainForChainId, signOffChainAuth } from '@dao-dao/utils'
 
 import { useWallet } from './useWallet'
@@ -219,7 +218,7 @@ export const useCfWorkerAuthPostRequest = (
   const postDnasRequest = useCallback(
     async <R = any>(
       endpoint: string,
-      data?: FormData,
+      data: FormData,
       signatureType = defaultSignatureType,
       /**
        * Override the current chain.
@@ -266,8 +265,7 @@ export const useCfWorkerAuthPostRequest = (
       // Send request.
       const response = await fetch(apiBase + endpoint, {
         method,
-        headers: {},
-        body: data instanceof FormData ? data : JSON.stringify(data),
+        body: data as any
       })
 
       // If response not OK, throw error.
