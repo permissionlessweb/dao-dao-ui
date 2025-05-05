@@ -20,11 +20,11 @@ import {
   ValidatorPicker,
 } from '@dao-dao/stateless'
 import { ActionContextType, ActionOptions, DnasKeyByDaoObjectWithDAO, RecordOfDnasKeysByAddr } from '@dao-dao/types'
-import { transformIpfsUrlToHttpsIfNecessary, processError, validateRequired, makeValidateAddress, getChainForChainId } from '@dao-dao/utils'
+import { transformIpfsUrlToHttpsIfNecessary, processError, validateRequired, makeValidateAddress, getChainForChainId, isValidBech32Address } from '@dao-dao/utils'
 
 import { useDnas } from '../hooks'
 import { DnasKeyPicker } from './DnasKeyPicker'
-import { ConsumeDnasActionData, DnasFile, UseDnasKeyData } from '../types'
+import { ConsumeDnasActionData, UploadedFile, UseDnasKeyData } from '../types'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { dnasQueries } from '../queries'
 import { useQueryLoadingData } from '../../../../../hooks'
@@ -46,7 +46,7 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
   const [currentStep, setCurrentStep] = useState(0)
   const [showDebugInfo, setShowDebugInfo] = useState(false)
   const [isLoadingKeys, setIsLoadingKeys] = useState(false)
-  const [dnasKeys, setDnasKeys] = useState<RecordOfDnasKeysByAddr>({})
+  const [uploadedFiles, setUploadedFilesResponse] = useState<UploadedFile[]>([])
 
   const totalSteps = 3
 
@@ -74,6 +74,12 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
   })
 
 
+  // Fetch DNAs keys when watchDaoAddress changes
+  const allDaoDnasKeyProfile = useQueryLoadingData(
+    watchDaoAddress ? dnasQueries.dnasKeysByDaoAddr({ address: watchDaoAddress }) : undefined,
+    {} as RecordOfDnasKeysByAddr
+  );
+
   // Initialize DAO address when component loads
   useEffect(() => {
     if (actionType === ActionContextType.Dao && address) {
@@ -87,24 +93,20 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
     }
   }, [])
 
-  // Fetch DNAs keys when watchDaoAddress changes
-  const allDaoDnasKeyProfile = useQueryLoadingData(
-    watchDaoAddress ? dnasQueries.dnasKeysByDaoAddr({ address: watchDaoAddress }) : undefined,
-    {} as RecordOfDnasKeysByAddr
-  );
+  // useEffect(() => {
+  //   if (allDaoDnasKeyProfile && !allDaoDnasKeyProfile.loading && allDaoDnasKeyProfile.data) {
+  //     console.log("GET DNAS KEYS FROM DAO:", allDaoDnasKeyProfile.data);
+  //     setDnasKeys(allDaoDnasKeyProfile.data); // Adjust based on actual data structure
+  //     setIsLoadingKeys(false);
+  //   } else if (allDaoDnasKeyProfile?.loading) {
+  //     setIsLoadingKeys(true);
+  //   } else {
+  //     setDnasKeys({});
+  //     setIsLoadingKeys(false);
+  //   }
+  // }, [allDaoDnasKeyProfile]);
 
-  useEffect(() => {
-    if (allDaoDnasKeyProfile && !allDaoDnasKeyProfile.loading && allDaoDnasKeyProfile.data) {
-      console.log("GET DNAS KEYS FROM DAO:", allDaoDnasKeyProfile.data);
-      setDnasKeys(allDaoDnasKeyProfile.data); // Adjust based on actual data structure
-      setIsLoadingKeys(false);
-    } else if (allDaoDnasKeyProfile?.loading) {
-      setIsLoadingKeys(true);
-    } else {
-      setDnasKeys({});
-      setIsLoadingKeys(false);
-    }
-  }, [allDaoDnasKeyProfile]);
+
 
 
   const steps = [
@@ -114,7 +116,7 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
       isImage: true
     },
     {
-      title: t('form.contentFile'),
+      title: t('form.contentVideo'),
       description: t('form.uploadContentFileDesc'),
       isImage: false
     },
@@ -124,46 +126,6 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
       isImage: false
     }
   ]
-
-  // Log file fields for debugging
-  useEffect(() => {
-    // console.log("files:", fileFields)
-  }, [fileFields])
-
-  useMemo(() => {
-    if (isCreating && fileFields.length === 0) {
-      // Pre-initialize the three file slots
-      for (let i = 0; i < totalSteps; i++) {
-        appendFile({ image: steps[i].isImage })
-      }
-    }
-  }, [isCreating, fileFields.length, appendFile])
-
-  // Update your DNAS key processing to handle the query result structure
-  // const processDnasKeys = useMemo(() => {
-  //   console.log("Processing DNAS keys:", daoOwnedKeys);
-
-  //   if (!daoOwnedKeys) {
-  //     console.log("DNAS keys not loaded yet");
-  //     return [];
-  //   }
-
-  //   const processed: DnasKeyByDaoObjectWithDAO[] = [];
-  //   // Check the structure of daoDnasKeys and adjust this logic accordingly
-  //   // This logic assumes a specific structure, update based on your actual data structure
-  //   if (Array.isArray(daoOwnedKeys)) {
-  //     daoOwnedKeys.forEach(key => {
-  //       processed.push({
-  //         daoAddr: watchDaoAddress,
-  //         keyHash: key.keyHash,
-  //         keyMetadata: key.keyMetadata,
-  //         keyOwner: key.keyOwner
-  //       });
-  //     });
-  //   }
-  //   console.log("Processed DNAS keys:", processed);
-  //   return processed;
-  // }, [daoOwnedKeys, watchDaoAddress, watchChainId]);
 
   // Implement a function to handle setting the DAO address
   // const handleSetDaoAddress = () => {
@@ -186,26 +148,16 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
   // };
 
 
-  // Initialize file fields if needed
-  useEffect(() => {
-    if (isCreating && fileFields.length === 0) {
-      // Pre-initialize the three file slots
-      for (let i = 0; i < totalSteps; i++) {
-        appendFile({ image: steps[i].isImage })
-      }
-    }
-  }, [isCreating, fileFields.length, appendFile])
-
   // save file to form in expected position (1st is image, 2nd is video, 3rd is a json file)
   const handleAddFileToForm = async (file: File, fileUrl: string, index?: number) => {
     appendFile({
       name: file.name,
       url: fileUrl,
       mimetype: file.type,
-      image: false
+      file,
     })
-
   }
+
   const handleRemoveFile = async (fileIndex: number) => {
     removeFile(fileIndex)
   }
@@ -223,28 +175,26 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
 
   const handleUploadFiles = async () => {
     try {
-      if (!watchDaoAddress   || !watchDnasKeyOwner) {
-        // console.log("watchDaoAddress",watchDaoAddress)
-        // console.log("watchDnasKeyHash",watchDnasKeyHash)
-        // console.log("watchDnasKeyOwner",watchDnasKeyOwner)
+      if (!watchDaoAddress || !watchDnasKeyOwner) {
         throw new Error('Please select a dnas key to use first.')
       }
       // form the objects
       const prepMsg: UseDnasKeyData = {
         daoAddr: watchDaoAddress,
-        // dnasKeyHash: watchDnasKeyHash,
         dnasKeyOwner: watchDnasKeyOwner,
         files: fileFields,
       }
 
+      console.log("prepMsg.files:", prepMsg.files)
+
       // Call the upload function from the useDnas hook
-      await useRegisteredDnasKeys.go(prepMsg)
+      let response = await useRegisteredDnasKeys.go(prepMsg)
+      // add response to state to display cids
       toast.success(t('success.filesUploaded'))
     } catch (err) {
       toast.error(processError(err))
     }
   }
-
 
   return (
     <>
@@ -258,24 +208,29 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
           register={register}
           defaultValue={actionType === ActionContextType.Dao ? address : ''}
           type="contract"
+          // onChange={() => {}}
           validation={[
             validateRequired,
             makeValidateAddress(getChainForChainId(watchChainId).bech32Prefix),
           ]}
         />
-        <Button
+        {/* <Button
           onClick={() => {
             setValue(
               (fieldNamePrefix + 'dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr',
               address,
               // { shouldValidate: true, shouldDirty: true }
             );
-            // console.log("Manually set address:", address);
-            // console.log("watchDaoAddress:", watchDaoAddress);
+            // clear the keys from allDaoDnasPicker
+            setValue((fieldNamePrefix + 'dnasKeyInUse.dnasKeyOwner') as 'dnasKeyInUse.dnasKeyOwner', '')
+            setValue((fieldNamePrefix + 'dnasKeyInUse.dnasKeyHash') as 'dnasKeyInUse.dnasKeyHash', '')
+            // clear the files from the form
+            setValue((fieldNamePrefix + 'files') as 'files', [])
           }}
         >
-          Use DAO Address: {address.substring(0, 8)}...
-        </Button>
+          {watchDaoAddress ? t('button.changeDAOinUse') : t('button.useDAO')}
+
+        </Button> */}
       </>
 
       {/* DNAS Key Picker */}
@@ -286,7 +241,7 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
         allDaoDnasKeyProfile,
       })} */}
       {!allDaoDnasKeyProfile.loading && Object.values(allDaoDnasKeyProfile.data || {}).length > 0 && !isLoadingKeys ? (
-        <div className="mb-4 border-2 ">
+        <div className="mb-4 flex">
           <DnasKeyPicker
             displayClassName="grow min-w-0"
             onSelect={(p) => {
@@ -306,7 +261,7 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
 
       {/* <div className="flex flex-col items-start gap-1 mb-6">
       </div> */}
-      {watchDaoAddress ? (
+      {isValidBech32Address(watchDaoAddress) && watchDnasKeyOwner != '' ? (
         <>
           <div className="flex justify-between mb-4 w-full">
             {steps.map((step, index) => (
@@ -434,6 +389,57 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
               </Button>
             </div>
 
+            {/* Display results of uploaded files */}
+            {uploadedFiles.length > 0 && (
+              <div className="mt-4 p-4 bg-bg-tertiary rounded-md border border-dashed border-border-primary">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-md font-medium">{t('title.uploadedFiles')}</h4>
+                  <button
+                    onClick={() => {
+                      const jsonString = JSON.stringify(uploadedFiles, null, 2);
+                      navigator.clipboard.writeText(jsonString).then(() => {
+                        // Optional: Add a toast notification or visual feedback
+                        console.log('Copied to clipboard');
+                        alert('JSON copied to clipboard!');
+                      }).catch(err => {
+                        console.error('Failed to copy:', err);
+                      });
+                    }}
+                    className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  >
+                    Copy JSON
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {uploadedFiles.map((file, index) => (
+
+                    <div key={index} className="p-3 bg-bg-secondary rounded-md">
+
+                      <h5 className="font-medium">File #{index + 1}: {steps[index]?.title}</h5>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="font-medium">{t('debug.name')}:</div>
+                        <div className="text-text-secondary">{file.name}</div>
+
+                        <div className="font-medium">{t('debug.type')}:</div>
+                        <div className="text-text-secondary break-all">
+                          {file.type}
+                        </div>
+
+                        <div className="font-medium">{t('debug.cid')}:</div>
+                        <div className="text-text-secondary">{file.cid}</div>
+
+                        <div className="font-medium">{t('debug.cid')}:</div>
+                        <div className="text-text-secondary">{file.id}</div>
+
+
+                        {/* <div className="text-text-secondary">{file.image ? t('debug.yes') : t('debug.no')}</div> */}
+                      </div>
+                    </div>
+
+                  ))}
+                </div>
+              </div>
+            )}
             {/* Visual debugging section */}
             {showDebugInfo && (
               <div className="mt-4 p-4 bg-bg-tertiary rounded-md border border-dashed border-border-primary">
@@ -469,7 +475,7 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
                         <div className="text-text-secondary">{file.mimetype || t('debug.notSet')}</div>
 
                         <div className="font-medium">{t('debug.isImage')}:</div>
-                        <div className="text-text-secondary">{file.image ? t('debug.yes') : t('debug.no')}</div>
+                        {/* <div className="text-text-secondary">{file.image ? t('debug.yes') : t('debug.no')}</div> */}
                       </div>
 
                       {file.url && file.mimetype?.startsWith('image') && (

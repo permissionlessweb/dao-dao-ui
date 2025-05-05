@@ -219,7 +219,6 @@ export const useCfWorkerAuthPostRequest = (
     async <R = any>(
       endpoint: string,
       data: FormData,
-      signatureType = defaultSignatureType,
       /**
        * Override the current chain.
        */

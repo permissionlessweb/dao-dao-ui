@@ -63,7 +63,7 @@ export const DnasLine = ({
         {/* link to dao key is registered to / prompt to make use of key*/}
         <EntityDisplay address={daoAddr} noUnderline />
         {/* button to remove/update api key registered  */}
-        <Button
+        {/* <Button
           className="self-start"
           onClick={(e) => {
             e.stopPropagation();
@@ -73,7 +73,7 @@ export const DnasLine = ({
           variant="secondary"
         >
           {t('button.updateApiKey')}
-        </Button>
+        </Button> */}
         <Button
           className="self-start"
           onClick={(e) => {

@@ -249,7 +249,7 @@ export const dnasQueries = {
     // Redirect address queries to bech32 hash queries.
     options && 'address' in options
       ? dnasQueries.dnasKeysByDaoAddr({
-        bech32Hash: toBech32Hash(options.address),
+        bech32Hash: options.address,
       })
       : queryOptions({
         queryKey: [

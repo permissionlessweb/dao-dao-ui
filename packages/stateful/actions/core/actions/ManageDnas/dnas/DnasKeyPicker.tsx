@@ -60,7 +60,7 @@ export const DnasKeyPicker = ({
               variant="primary"
               {...props}
             >
-              {t('button.selectValidator')}
+              {t('button.selectDnasKey')}
             </Button>
           ) : (
             <InputThemedText className="min-w-0 grow">
@@ -76,10 +76,10 @@ export const DnasKeyPicker = ({
   const items = Object.entries(dnasKeyOwners).map(([id, dnas]) => {
     const [splitChainId, daoPubkeyHex] = id.split("_")
     const bech32Prefix = getChainForChainId(splitChainId).bech32Prefix
-    const ownerBechAddr = dnas.keyOwner // toBech32(bech32Prefix, fromHex(ownerAddr))
+    const ownerBechAddr = toBech32(bech32Prefix, fromHex(dnas.keyOwner))
     return {
       dnas,
-      key: ownerBechAddr,
+      key: dnas.keyOwner,
       label: dnas.keyHash,
       description: (
         <div className="flex flex-col gap-1">

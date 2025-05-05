@@ -49,7 +49,7 @@ export const CreateDnasProfilesModal = () => {
   const { control, watch, register, setValue, handleSubmit } = useForm<ManageDnasActionData>();
 
   // Watch form fields with proper naming structure
-  const watchDnasKeyValue = watch(('dnas.apiKeyValue'));
+  const watchDnasKeyValue = watch('dnas.apiKeyValue');
   const watchDnasKeyOwner = watch('dnas.keyOwner');
   const watchDnasDao = watch('dnas.daoAddr');
   const watchDnasKeyMetadata = watch('dnas.keyMetadata');
@@ -93,7 +93,7 @@ export const CreateDnasProfilesModal = () => {
 
   // Debugging values
   useEffect(() => {
-    console.log("modal values 3:", useDao)
+    console.log("modal values :", useDao)
     console.log("Form values:", {
       updating: watchUpdating,
       chainId: watchDnasChainId,

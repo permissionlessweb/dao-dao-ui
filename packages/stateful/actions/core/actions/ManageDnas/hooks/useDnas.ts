@@ -1,6 +1,4 @@
 import { useQueryClient } from '@tanstack/react-query'
-
-import { profileQueries } from '@dao-dao/state'
 import { DnasKeyByDaoObject, DnasKeyUnregister, DnasKeyUpdate, DnasKeyUpdateFunction, DnasObjectWithHash, DnasObjectWithValues, FetchedDnasKeys, LoadingData, PfpkProfileUpdate, PfpkProfileUpdateFunction, ProfileChain, RecordOfDnasKeysByAddr, UnifiedProfile, UnregisterKeysFromDaoFunction } from '@dao-dao/types'
 import {
   DNAS_API_BASE,
@@ -17,7 +15,7 @@ import {
   toBech32Hash,
 } from '@dao-dao/utils'
 import { useCfWorkerAuthPostRequest, useQueryLoadingData, useRefreshProfile, useWallet } from '../../../../../hooks'
-import { AddDnasKeysToDaoFunction, AddDnasStatus, ConsumeDnasActionData, ConsumeDnasKeySignatureContent, DnasKeyWithValueWithoutId, UnregisterDnasStatus, UpdateDnasKeyStatus, UseDnasKeysFunction, UsingDnasKeysStatus } from '../types'
+import { AddDnasKeysToDaoFunction, AddDnasStatus, ConsumeDnasActionData, ConsumeDnasKeySignatureContent, DnasKeyWithValueWithoutId, UnregisterDnasStatus, UpdateDnasKeyStatus, UploadResultsProps, UseDnasKeysFunction, UsingDnasKeysStatus } from '../types'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fromBech32, toHex } from '@cosmjs/encoding'
@@ -26,7 +24,6 @@ import { useFormContext } from 'react-hook-form'
 
 
 export type DnasKeyMap = Map<string, any> | Record<string, any> | null | undefined;
-
 
 export type UseDnasOptions = {
   /**
@@ -329,7 +326,6 @@ export const useDnas = ({
       const data: ConsumeDnasKeySignatureContent = {
         dao: props.daoAddr,
         keyOwner: props.dnasKeyOwner,
-        // keyHash: props.dnasKeyHash,
       }
 
       // sign key hash and owner to auth use 
@@ -346,22 +342,19 @@ export const useDnas = ({
       // Format the files array for the FormData
       const formData = new FormData();
       formData.append('sign', JSON.stringify(body));
-      formFiles
-        .filter(file => file.file && file.name && file.mimetype) // Ensure file object exists
-        .forEach((file, index) => {
-          formData.append(`files[${index}]`, file.file as Blob, file.name); // Use the File object
-        });
-
-
+      formFiles.forEach((file, index) => {
+        formData.append(`files`, file.file!);
+      });
 
       try {
-        const response = await dnasApi.postDnasRequest(
+        const response: UploadResultsProps = await dnasApi.postDnasRequest(
           '/use-dnas',
           formData,
           'DAO DAO DNAS | USE DNAS Key'
         );
         setUsingDnasKeysStatus('idle');
         console.log("response:", response);
+        return response
       } catch (apiError: any) {
         console.error('API Error:', apiError);
         if (apiError.message.includes('<!DOCTYPE')) {

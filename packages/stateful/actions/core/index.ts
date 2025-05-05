@@ -24,18 +24,18 @@ export const getCoreActionCategoryMakers = (): ActionCategoryMaker[] => {
   // Set order explicitly instead of relying on import order.
   _coreActionCategoryMakers ??= [
     categories.makeManagePermissionlessActionCategory,
-    // categories.makeCommonlyUsedCategory,
-    // categories.makeTreasuryActionCategory,
-    // categories.makeValenceActionCategory,
-    // categories.makeRewardsActionCategory,
-    // categories.makeDaoGovernanceActionCategory,
-    // categories.makeSubDaosActionCategory,
-    // categories.makeAppearanceActionCategory,
-    // categories.makeManageNftsActionCategory,
-    // categories.makeSmartContractingActionCategory,
-    // categories.makeAuthorizationsActionCategory,
-    // categories.makeChainGovernanceActionCategory,
-    // categories.makeAdvancedActionCategory,
+    categories.makeCommonlyUsedCategory,
+    categories.makeTreasuryActionCategory,
+    categories.makeValenceActionCategory,
+    categories.makeRewardsActionCategory,
+    categories.makeDaoGovernanceActionCategory,
+    categories.makeSubDaosActionCategory,
+    categories.makeAppearanceActionCategory,
+    categories.makeManageNftsActionCategory,
+    categories.makeSmartContractingActionCategory,
+    categories.makeAuthorizationsActionCategory,
+    categories.makeChainGovernanceActionCategory,
+    categories.makeAdvancedActionCategory,
   ]
   return _coreActionCategoryMakers
 }

@@ -4,7 +4,7 @@ import { ButtonLinkProps, SuspenseLoaderProps } from "@dao-dao/types/components"
 import { ReactNode } from 'react'
 
 import { LoadingData } from '@dao-dao/types/misc'
-import { DnasKeyByDaoObject, DnasKeyByDaoObjectWithDAO, FetchedDnasKeys, PfpkProfileUpdateFunction, RecordOfDnasKeysByAddr, UnifiedProfile } from '@dao-dao/types/profile'
+import { DnasKeyByDaoObjectWithDAO, PfpkProfileUpdateFunction, RecordOfDnasKeysByAddr, UnifiedProfile } from '@dao-dao/types/profile'
 import { Entity } from '@dao-dao/types/components'
 import { SubmitHandler } from "react-hook-form"
 
@@ -26,7 +26,7 @@ export type UseDnasKeysFunction = (
      */
     setDnasStatus?: (chainId: string, daoAddr: string, status: AddDnasStatus) => void
   }
-) => Promise<void>
+) => Promise<UploadResultsProps>
 
 
 export type AddDnasKeysToDaoFunction = (
@@ -46,18 +46,9 @@ export type UseDnasKeyData = {
   daoAddr: string,
   dnasKeyOwner: string,
   // dnasKeyHash: string,
-  files: Partial<
-    DnasFile & {
-      image: boolean
-    }
-  >[]
+  files: Partial<DnasFile>[]
 }
 export type ConsumeDnasActionData = {
-  // useRegisteredDnasKeys: {
-  //   ready: boolean
-  //   status: AddDnasStatus
-  //   go: UseDnasKeysFunction
-  // }
   fieldNamePrefix: string
   isCreating: boolean
   // list of all keys avialable for this dao
@@ -70,11 +61,7 @@ export type ConsumeDnasActionData = {
     dnasKeyHash: string
   }
   // files to upload via dnas API
-  files: Partial<
-    DnasFile & {
-      image: boolean
-    }
-  >[]
+  files: DnasFile[]
   // form for smart contract data
   snailsForm: {
     title: string,
@@ -162,9 +149,20 @@ export type DnasPickerProps = {
 // dao member addr (what type) 
 export type DnasFile = {
   name: string
-  url: string
+  url?: string
   mimetype: string
-  file: File; 
+  file: File;
+}
+
+export interface UploadedFile {
+  id: string;
+  name: string;
+  type: string;
+  cid: string;
+}
+
+export interface UploadResultsProps {
+  files: UploadedFile[];
 }
 
 export type DnasPublicKey = {

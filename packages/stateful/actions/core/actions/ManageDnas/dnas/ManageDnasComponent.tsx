@@ -161,36 +161,11 @@ export const HandleDnasKeysRenderer: ActionComponent<ManageDnasActionData> = ({ 
                             buttonLabel={t('button.create')}
                             onClick={handleShowModal}
                         /></>)
-                    }-
+                    }
                     {/* <ActiveShitStrapLineHeader /> */}
                 </div>
             </div >
         </>
     )
 }
-
-// Add this to your component
-const ModalDebugger = () => {
-    // Get both the value and the setter for debugging
-    const [isVisible, setIsVisible] = useRecoilState(registerDnasKeyVisibleAtom);
-
-    return (
-        <div className="fixed bottom-4 right-4 bg-bg-secondary p-3 rounded-md shadow-lg z-50 border border-border-primary">
-            <div className="mb-2">Modal Visible: {isVisible ? 'Yes' : 'No'}</div>
-            <div className="flex gap-2">
-                <button
-                    className="px-3 py-1 bg-primary text-white rounded-md"
-                    onClick={() => setIsVisible(true)}
-                >
-                    Force Show
-                </button>
-                <button
-                    className="px-3 py-1 bg-error text-white rounded-md"
-                    onClick={() => setIsVisible(false)}
-                >
-                    Force Hide
-                </button>
-            </div>
-        </div>
-    );
-};
+ 
