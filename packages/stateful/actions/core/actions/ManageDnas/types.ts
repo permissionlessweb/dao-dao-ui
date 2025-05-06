@@ -4,7 +4,7 @@ import { ButtonLinkProps, SuspenseLoaderProps } from "@dao-dao/types/components"
 import { ReactNode } from 'react'
 
 import { LoadingData } from '@dao-dao/types/misc'
-import { DnasKeyByDaoObjectWithDAO, PfpkProfileUpdateFunction, RecordOfDnasKeysByAddr, UnifiedProfile } from '@dao-dao/types/profile'
+import { DnasKeyByDaoObjectWithDAO, DnasObjectWithValues, PfpkProfileUpdateFunction, RecordOfDnasKeysByAddr, UnifiedProfile } from '@dao-dao/types/profile'
 import { Entity } from '@dao-dao/types/components'
 import { SubmitHandler } from "react-hook-form"
 
@@ -180,6 +180,11 @@ export type DnasAccountProps = {
   ButtonLink: ComponentType<ButtonLinkProps>
 } & Pick<DnasProfileHeaderProps, 'profile' | 'entity'>
 
+export type PerformMergeProps = {
+  dnas: DnasObjectWithValues[]
+  updatingExistingDnasKey: boolean
+  onClose: () => void
+}
 
 
 export type DnasProfileAddDnasKeyProps = {

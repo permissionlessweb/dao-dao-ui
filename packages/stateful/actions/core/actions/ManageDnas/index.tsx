@@ -5,8 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useForm, useFormContext } from 'react-hook-form'
 import { useTokenBalances } from '../../../hooks'
 import { SuspenseLoader } from '../../../../components'
-import { useWidget } from '../../../../widgets'
-import { HugeDecimal } from '@dao-dao/math'
+
 import {
   ActionBase,
   AddressInput,
@@ -40,24 +39,12 @@ import {
   WalletProfileHeaderProps,
   WidgetId,
 } from '@dao-dao/types'
-import {
-  chainIsIndexed,
-  convertSecondsToDurationWithUnits,
-  decodeJsonFromBase64,
-  encodeJsonToBase64,
-  getChainAddressForActionOptions,
-  getDisplayNameForChainId,
-  getNativeTokenForChainId,
-  makeCombineQueryResultsIntoLoadingDataWithError,
-  makeExecuteSmartContractMessage,
-  maybeMakePolytoneExecuteMessages,
-  objectMatchesStructure,
-} from '@dao-dao/utils'
+ 
 import { useEntity } from '../../../../hooks'
 import { useSetRecoilState } from 'recoil'
 import { AddDnasStatus, ConsumeDnasActionData, DnasProfileHeaderProps, UseDnasKeyData } from './types'
 import { useDnas, UseDnasProfileReturn } from './hooks'
-import { ConsumeDnasKeysRenderer, CreateDnasProfilesModal, ManageDnasActionData, HandleDnasKeysRenderer } from './dnas'
+import { ConsumeDnasKeysRenderer, ManageDnasActionData, HandleDnasKeysRenderer } from './dnas'
 import { registerDnasKeyVisibleAtom } from '@dao-dao/state/recoil'
 import { DnasProfileHeader } from './dnas/DnasProfileHeader'
 

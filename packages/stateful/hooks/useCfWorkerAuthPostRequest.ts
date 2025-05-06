@@ -219,6 +219,7 @@ export const useCfWorkerAuthPostRequest = (
     async <R = any>(
       endpoint: string,
       data: FormData,
+      signatureType = defaultSignatureType,
       /**
        * Override the current chain.
        */
@@ -228,35 +229,6 @@ export const useCfWorkerAuthPostRequest = (
        */
       method = 'POST'
     ): Promise<R> => {
-      const hexPublicKey = await getHexPublicKey(overrideChainId)
-
-      const thisChainWallet =
-        overrideChainId && overrideChainId !== chain.chainId
-          ? chainWallet?.mainWallet.getChainWallet(
-            getChainForChainId(overrideChainId).chainName
-          )
-          : chainWallet
-
-      if (!thisChainWallet?.address) {
-        throw new Error(t('error.logInToContinue'))
-      }
-
-      const offlineSignerAmino =
-        (await thisChainWallet.client.getOfflineSignerAmino?.bind(
-          thisChainWallet.client
-        )?.(thisChainWallet.chainId)) ||
-        // Fallback to normal signer function in case amino signer getter is
-        // undefined. This may still return an amino signer, so let's check.
-        (await thisChainWallet.client.getOfflineSigner?.bind(
-          thisChainWallet.client
-        )?.(thisChainWallet.chainId))
-      if (!offlineSignerAmino || !('signAmino' in offlineSignerAmino)) {
-        throw new Error(
-          t('error.unsupportedAminoWallet', {
-            name: thisChainWallet.walletPrettyName,
-          })
-        )
-      }
 
       // removed second signOffchain auth for using dnas keys
       const bodyDebug = JSON.stringify(data)

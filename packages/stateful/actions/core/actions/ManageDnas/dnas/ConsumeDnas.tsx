@@ -87,8 +87,7 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
       setTimeout(() => {
         setValue((fieldNamePrefix + 'dnasKeyInUse.daoAddr') as 'dnasKeyInUse.daoAddr', address);
         setValue((fieldNamePrefix + 'dnasKeyInUse.chainId') as 'dnasKeyInUse.chainId', chainId);
-        // Fetch keys for the DAO address on initial load
-        // console.log("allDaoDnasKeyProfile:", allDaoDnasKeyProfile)
+        setValue((fieldNamePrefix + 'dnasKeyInUse.dnasKeyOwner') as 'dnasKeyInUse.dnasKeyOwner', '');
       }, 0)
     }
   }, [])
@@ -297,15 +296,15 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
                     <img
                       alt={fileFields[currentStep].name || 'Uploaded image'}
                       className="min-w-24 min-h-24 max-w-80 h-auto max-h-80 w-auto"
-                      src={transformIpfsUrlToHttpsIfNecessary(
-                        fileFields[currentStep].url
-                      )}
+                      src={fileFields[currentStep].url ? transformIpfsUrlToHttpsIfNecessary(
+                        fileFields[currentStep].url!
+                      ) : undefined}
                     />
                   ) : (
                     <ButtonLink
-                      href={transformIpfsUrlToHttpsIfNecessary(
-                        fileFields[currentStep].url
-                      )}
+                      href={fileFields[currentStep].url ? transformIpfsUrlToHttpsIfNecessary(
+                        fileFields[currentStep].url!
+                      ) : undefined}
                       openInNewTab
                       variant="underline"
                     >
@@ -449,10 +448,7 @@ export const ConsumeDnasKeysRenderer = ({ fieldNamePrefix, daoOwnedKeys, isCreat
                     <div key={index} className="p-3 bg-bg-secondary rounded-md">
                       <div className="flex items-center justify-between mb-2">
                         <h5 className="font-medium">File #{index + 1}: {steps[index]?.title}</h5>
-                        <span className={`px-2 py-1 text-xs rounded-full ${file.url ? 'bg-success bg-opacity-20 text-success' : 'bg-error bg-opacity-20 text-error'
-                          }`}>
-                          {file.url ? t('status.uploaded') : t('status.notUploaded')}
-                        </span>
+                       
                         <Button
                           onClick={() => handleRemoveFile(index)}
                           variant="ghost"

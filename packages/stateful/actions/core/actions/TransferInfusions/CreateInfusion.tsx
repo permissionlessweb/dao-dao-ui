@@ -459,7 +459,7 @@ export const CreateInfusion: ComponentType<
                             {/* AnyOfBlend: similar modal as selecting eligible collections */}
                             {watchMode === InfusionBundleType.AllOf ? (<></>) : null}
                             {watchMode === InfusionBundleType.AnyOf ? (<>
-                                <SelectInput
+                                {/* <SelectInput
                                     containerClassName={clsx('shrink-0')}
                                     disabled={!isCreating}
                                     error={errors?.type}
@@ -485,7 +485,7 @@ export const CreateInfusion: ComponentType<
                                             {name}
                                         </option>
                                     ))}
-                                </SelectInput>
+                                </SelectInput> */}
 
                             </>) : null}
                             {watchMode === InfusionBundleType.AnyOfBlend ? (<></>) : null}

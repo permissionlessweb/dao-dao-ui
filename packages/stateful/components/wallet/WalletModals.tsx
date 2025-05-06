@@ -1,12 +1,9 @@
-import { CreateDnasProfilesModal } from '../../actions/core/actions/ManageDnas/dnas'
 import { PfpkNftSelectionModal } from '../PfpkNftSelectionModal'
 import { MergeProfilesModal } from '../profile'
 import { Web3AuthPromptModal } from './Web3AuthPromptModal'
 
 export const WalletModals = () => (
   <>
-    {/* This may need the Web3AuthPromptModal to confirm, so this must be before that. */}
-    <CreateDnasProfilesModal />
     
     {/* This may need the Web3AuthPromptModal to confirm, so this must be before that. */}
     <MergeProfilesModal />
