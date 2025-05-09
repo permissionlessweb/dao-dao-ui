@@ -6,27 +6,16 @@ import {
 } from '@tanstack/react-query'
 
 import {
-  ChainId,
-  FetchedDnasKeys,
   PfpkProfile,
   RecordOfDnasKeysByAddr,
-  ResolvedProfile,
   UnifiedProfile,
 } from '@dao-dao/types'
 import {
   DNAS_API_BASE,
-  MAINNET,
-  PFPK_API_BASE,
-  STARGAZE_NAMES_CONTRACT,
-  getChainForChainId,
-  getCosmWasmClientForChainId,
-  imageUrlFromStargazeIndexerNft,
   makeEmptyPfpkProfile,
   // makeEmptydnasProfile,
   makeEmptyUnifiedProfile,
-  processError,
   toBech32Hash,
-  transformBech32Address,
 } from '@dao-dao/utils'
 
 /**
@@ -47,7 +36,7 @@ export const fetchDnasProfileInfo = async (
     return profile
   }
 
-  console.log("hitting dnasProfile query...")
+  console.log('hitting dnasProfile query...')
   const dnasProfile = await queryClient.fetchQuery(
     dnasQueries.dnasProfile({
       address,
@@ -116,7 +105,9 @@ export const fetchAllDnasApiKeyInfoByDao = async ({
   }
 
   try {
-    const response = await fetch(DNAS_API_BASE + `/daoKeys/bech32/${bech32Hash}`)
+    const response = await fetch(
+      DNAS_API_BASE + `/daoKeys/bech32/${bech32Hash}`
+    )
     if (response.ok) {
       const res = await response.json()
       console.log(res)
@@ -131,7 +122,6 @@ export const fetchAllDnasApiKeyInfoByDao = async ({
   return {}
 }
 
-
 /**
  * Fetch PFPK profile information for any wallet.
  */
@@ -145,19 +135,20 @@ export const fetchdnasProfileInfo = async ({
   }
 
   try {
-    console.log("hitting dnas api:")
-    const base = DNAS_API_BASE + `/bech32/${bech32Hash}`;
+    console.log('hitting dnas api:')
+    const base = DNAS_API_BASE + `/bech32/${bech32Hash}`
     console.log(base)
     const response = await fetch(base)
     if (response.ok) {
       const json = await response.json()
-      console.log("got response from dnas api  - Fetch DNAS profile:", json)
+      console.log('got response from dnas api  - Fetch DNAS profile:', json)
       const res = json
       return res
-
     } else {
       // Don't try to parse HTML error as JSON
-      console.error(`Error fetching profile: ${response.status} ${response.statusText}`)
+      console.error(
+        `Error fetching profile: ${response.status} ${response.statusText}`
+      )
     }
   } catch (err) {
     console.log(err)
@@ -166,8 +157,6 @@ export const fetchdnasProfileInfo = async ({
 
   return makeEmptyPfpkProfile()
 }
-
-
 
 export const dnasQueries = {
   /**
@@ -220,46 +209,48 @@ export const dnasQueries = {
     // Redirect address queries to bech32 hash queries.
     options && 'address' in options
       ? dnasQueries.dnasProfile({
-        bech32Hash: toBech32Hash(options.address),
-      })
+          bech32Hash: toBech32Hash(options.address),
+        })
       : queryOptions({
-        queryKey: [
-          {
-            category: 'dnas',
-            name: 'profile',
-            options,
-          },
-        ],
-        queryFn: options ? () => fetchdnasProfileInfo(options) : skipToken,
-      }),
+          queryKey: [
+            {
+              category: 'dnas',
+              name: 'profile',
+              options,
+            },
+          ],
+          queryFn: options ? () => fetchdnasProfileInfo(options) : skipToken,
+        }),
 
   dnasKeysByDaoAddr: (
-    options?: { address: string } | { bech32Hash: string }): UseQueryOptions<
-      RecordOfDnasKeysByAddr,
-      Error,
-      RecordOfDnasKeysByAddr,
-      [
-        {
-          category: 'dnas'
-          name: 'dnasKeysByDao'
-          options: { bech32Hash: string } | undefined
-        },
-      ]
-    > =>
+    options?: { address: string } | { bech32Hash: string }
+  ): UseQueryOptions<
+    RecordOfDnasKeysByAddr,
+    Error,
+    RecordOfDnasKeysByAddr,
+    [
+      {
+        category: 'dnas'
+        name: 'dnasKeysByDao'
+        options: { bech32Hash: string } | undefined
+      },
+    ]
+  > =>
     // Redirect address queries to bech32 hash queries.
     options && 'address' in options
       ? dnasQueries.dnasKeysByDaoAddr({
-        bech32Hash: options.address,
-      })
+          bech32Hash: options.address,
+        })
       : queryOptions({
-        queryKey: [
-          {
-            category: 'dnas',
-            name: 'dnasKeysByDao',
-            options,
-          },
-        ],
-        queryFn: options ? () => fetchAllDnasApiKeyInfoByDao(options) : skipToken,
-      }),
-
+          queryKey: [
+            {
+              category: 'dnas',
+              name: 'dnasKeysByDao',
+              options,
+            },
+          ],
+          queryFn: options
+            ? () => fetchAllDnasApiKeyInfoByDao(options)
+            : skipToken,
+        }),
 }

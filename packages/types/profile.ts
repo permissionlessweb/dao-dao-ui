@@ -35,12 +35,11 @@ export type PfpkChainRecord = Record<
   string,
   {
     dnas: Record<
-      string,  // dao-addr able to use key 
+      string, // dao-addr able to use key
       DnasObjectWithValues
-    >,
+    >
     publicKey: PfpkPublicKey
     address: string
-
   }
 >
 // Extended type with all form-related properties
@@ -59,7 +58,6 @@ export type DnasObject = {
 
 export type DnasObjectWithHash = DnasObject & { keyHash: string }
 
-
 export type UnregisterKeysFromDaoFunction = (
   data: DnasKeyUnregister,
   /**
@@ -69,16 +67,18 @@ export type UnregisterKeysFromDaoFunction = (
     /**
      * Status updates handler
      */
-    unregisteDnasStatus?: (chainId: string, daoAddr: string, status: UnregisterDnasStatus) => void
+    unregisteDnasStatus?: (
+      chainId: string,
+      daoAddr: string,
+      status: UnregisterDnasStatus
+    ) => void
   }
 ) => Promise<void>
-
 
 export type DnasKeyUnregister = {
   nonce: number
   daoAddrs: string[]
 }
-
 
 export type PfpkProfileUpdate = {
   nonce: number
@@ -88,15 +88,21 @@ export type PfpkProfileUpdate = {
     tokenId: string
     collectionAddress: string
   } | null
-  dnas?: Record<string, { keyMetadata?: string, signatureLifespan?: string, uploadLimit?: string, keyValue?: string }> | null
+  dnas?: Record<
+    string,
+    {
+      keyMetadata?: string
+      signatureLifespan?: string
+      uploadLimit?: string
+      keyValue?: string
+    }
+  > | null
 }
 export type DnasKeyUpdate = Omit<PfpkProfileUpdate, 'nft'>
 /**
  * Function used to update a profile. Throws an error on failure.
  */
-export type DnasKeyUpdateFunction = (
-  updates: DnasKeyUpdate[]
-) => Promise<void>
+export type DnasKeyUpdateFunction = (updates: DnasKeyUpdate[]) => Promise<void>
 /**
  * Function used to update a profile. Throws an error on failure.
  */
@@ -144,11 +150,11 @@ export type UnifiedProfile = PfpkProfile & {
 
 export type KeplrWalletProfile = {
   profile:
-  | {}
-  | {
-    imageUrl: string
-    version: number
-  }
+    | {}
+    | {
+        imageUrl: string
+        version: number
+      }
 }
 
 export type ResolvedProfile = {
@@ -236,7 +242,7 @@ export type FetchedDnasKeys = {
   /**
    * A parent record mapped by chain id, containing a child record mapped by dao addr to a list of all keys mapped to a DAO
    */
-  fetchedRecordOfKeysByChain: Record<string, RecordOfDnasKeysByAddr>,
+  fetchedRecordOfKeysByChain: Record<string, RecordOfDnasKeysByAddr>
 }
 
 export type DnasKeyByDaoObject = {

@@ -1,13 +1,19 @@
-import { ComponentType } from "react"
-import { LoadingDataWithError } from "@dao-dao/types/misc"
-import { ButtonLinkProps, SuspenseLoaderProps } from "@dao-dao/types/components"
-import { ReactNode } from 'react'
+import { ComponentType, ReactNode } from 'react'
+import { SubmitHandler } from 'react-hook-form'
 
-import { LoadingData } from '@dao-dao/types/misc'
-import { DnasKeyByDaoObjectWithDAO, DnasObjectWithValues, PfpkProfileUpdateFunction, RecordOfDnasKeysByAddr, UnifiedProfile } from '@dao-dao/types/profile'
-import { Entity } from '@dao-dao/types/components'
-import { SubmitHandler } from "react-hook-form"
-
+import {
+  ButtonLinkProps,
+  Entity,
+  SuspenseLoaderProps,
+} from '@dao-dao/types/components'
+import { LoadingData, LoadingDataWithError } from '@dao-dao/types/misc'
+import {
+  DnasKeyByDaoObjectWithDAO,
+  DnasObjectWithValues,
+  PfpkProfileUpdateFunction,
+  RecordOfDnasKeysByAddr,
+  UnifiedProfile,
+} from '@dao-dao/types/profile'
 
 export type AddDnasStatus = 'idle' | 'dnas' | 'adding'
 export type UnregisterDnasStatus = 'idle' | 'dnas' | 'unregistering'
@@ -24,10 +30,13 @@ export type UseDnasKeysFunction = (
     /**
      * Status updates handler
      */
-    setDnasStatus?: (chainId: string, daoAddr: string, status: AddDnasStatus) => void
+    setDnasStatus?: (
+      chainId: string,
+      daoAddr: string,
+      status: AddDnasStatus
+    ) => void
   }
 ) => Promise<UploadResultsProps>
-
 
 export type AddDnasKeysToDaoFunction = (
   data: DnasKeyWithValueWithoutId[],
@@ -38,13 +47,17 @@ export type AddDnasKeysToDaoFunction = (
     /**
      * Status updates handler
      */
-    setDnasStatus?: (chainId: string, daoAddr: string, status: AddDnasStatus) => void
+    setDnasStatus?: (
+      chainId: string,
+      daoAddr: string,
+      status: AddDnasStatus
+    ) => void
   }
 ) => Promise<void>
 
 export type UseDnasKeyData = {
-  daoAddr: string,
-  dnasKeyOwner: string,
+  daoAddr: string
+  dnasKeyOwner: string
   // dnasKeyHash: string,
   files: Partial<DnasFile>[]
 }
@@ -64,14 +77,14 @@ export type ConsumeDnasActionData = {
   files: DnasFile[]
   // form for smart contract data
   snailsForm: {
-    title: string,
-    description: string,
-    category: string,
-    creator: string,
-    topic: string[],
-    network: string,
-    music: string,
-    uri: string,  // 
+    title: string
+    description: string
+    category: string
+    creator: string
+    topic: string[]
+    network: string
+    music: string
+    uri: string //
   }
 }
 
@@ -119,26 +132,29 @@ export type DnasProfileHeaderProps = {
 }
 
 export type DnasKeyWithValueWithoutId = {
-  daoAddr: string;
-  chainId: string;
-  keyOwner: string;
-  type: string;
-  keyMetadata: string;
-  uploadLimit: string;
-  apiKeyValue: string;
+  daoAddr: string
+  chainId: string
+  keyOwner: string
+  type: string
+  keyMetadata: string
+  uploadLimit: string
+  apiKeyValue: string
 }
 
-export type DnasKeysWithoutIdsAndValue = Omit<DnasKeyWithValueWithoutId, 'apiKeyValue'> & { keyHash: string };
+export type DnasKeysWithoutIdsAndValue = Omit<
+  DnasKeyWithValueWithoutId,
+  'apiKeyValue'
+> & { keyHash: string }
 
 export type ConsumeDnasKeySignatureContent = {
   dao: string
-  keyOwner: string,
+  keyOwner: string
   // keyHash: string,
 }
 
 export type DnasPickerProps = {
   dnasKeyOwners: RecordOfDnasKeysByAddr
-  daoAddr: string,
+  daoAddr: string
   chainId: string
   selectedAddress?: string
   readOnly?: boolean
@@ -146,30 +162,29 @@ export type DnasPickerProps = {
   displayClassName?: string
 }
 
-// dao member addr (what type) 
+// dao member addr (what type)
 export type DnasFile = {
   name: string
   url?: string
   mimetype: string
-  file: File;
+  file: File
 }
 
 export interface UploadedFile {
-  id: string;
-  name: string;
-  type: string;
-  cid: string;
+  id: string
+  name: string
+  type: string
+  cid: string
 }
 
 export interface UploadResultsProps {
-  files: UploadedFile[];
+  files: UploadedFile[]
 }
 
 export type DnasPublicKey = {
   type: string
   hex: string
 }
-
 
 export type DnasAccountProps = {
   address: string
@@ -185,7 +200,6 @@ export type PerformMergeProps = {
   updatingExistingDnasKey: boolean
   onClose: () => void
 }
-
 
 export type DnasProfileAddDnasKeyProps = {
   /**

@@ -1,23 +1,10 @@
 import clsx from 'clsx'
+import { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { HugeDecimal } from '@dao-dao/math'
-import {
-  Button,
-  ChainProvider,
-  Dropdown,
-  TokenAmountDisplay,
-  Tooltip,
-  useCachedLoading,
-} from '@dao-dao/stateless'
-import { GenericToken, ShitStrapPaymentLineProps, StatefulEntityDisplayProps, TypedOption, Uint128 } from '@dao-dao/types'
-
+import { Button, ChainProvider } from '@dao-dao/stateless'
+import { StatefulEntityDisplayProps } from '@dao-dao/types'
 import { getChainForChainId } from '@dao-dao/utils'
-
-import { ComponentType, useEffect, useState } from 'react'
-import { PossibleShitWithGenericToken } from '@dao-dao/types/ShitStrap'
-import { QueryClient } from '@tanstack/react-query'
-
 
 export type DnasLineProps = {
   chainId: string
@@ -42,14 +29,17 @@ export const DnasLine = ({
   const { bech32Prefix } = getChainForChainId(chainId)
 
   // Add this to check if functions are defined
-  console.log('DnasLine Props:', { onClick: !!onClick, onUpdate: !!onUpdate, onRemove: !!onRemove });
+  console.log('DnasLine Props:', {
+    onClick: !!onClick,
+    onUpdate: !!onUpdate,
+    onRemove: !!onRemove,
+  })
 
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log('DnasLine clicked');
-    if (onClick) onClick();
-  };
-
+    e.stopPropagation()
+    console.log('DnasLine clicked')
+    if (onClick) onClick()
+  }
 
   return (
     <ChainProvider chainId={chainId}>
@@ -77,9 +67,9 @@ export const DnasLine = ({
         <Button
           className="self-start"
           onClick={(e) => {
-            e.stopPropagation();
-            console.log('Remove button clicked');
-            onRemove();
+            e.stopPropagation()
+            console.log('Remove button clicked')
+            onRemove()
           }}
           variant="secondary"
         >
@@ -89,5 +79,3 @@ export const DnasLine = ({
     </ChainProvider>
   )
 }
-
-

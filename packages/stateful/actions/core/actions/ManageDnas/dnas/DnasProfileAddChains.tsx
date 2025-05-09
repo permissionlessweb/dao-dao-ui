@@ -3,12 +3,17 @@ import clsx from 'clsx'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 
-import { Button } from '@dao-dao/stateless/components/buttons'
-import { ChainLabel } from '@dao-dao/stateless/components/chain'
-import { IconButton } from '@dao-dao/stateless/components/icon_buttons'
-import { Loader } from '@dao-dao/stateless/components/logo'
-import { ChainPickerPopup } from '@dao-dao/stateless/components/popup'
-import { DnasProfileAddDnasKeyProps, ProfileAddDnasKeysForm } from '@dao-dao/stateful/actions/core/actions/ManageDnas/types'
+import {
+  DnasProfileAddDnasKeyProps,
+  ProfileAddDnasKeysForm,
+} from '@dao-dao/stateful/actions/core/actions/ManageDnas/types'
+import {
+  Button,
+  ChainLabel,
+  ChainPickerPopup,
+  IconButton,
+  Loader,
+} from '@dao-dao/stateless'
 
 export const DnasProfileAddChains = ({
   prompt,
@@ -26,7 +31,8 @@ export const DnasProfileAddChains = ({
 }: DnasProfileAddDnasKeyProps) => {
   const { t } = useTranslation()
 
-  const { control, watch, handleSubmit } = useFormContext<ProfileAddDnasKeysForm>()
+  const { control, watch, handleSubmit } =
+    useFormContext<ProfileAddDnasKeysForm>()
 
   const chainsBeingAdded = watch('chains')
 
@@ -125,48 +131,48 @@ export const DnasProfileAddChains = ({
         trigger={
           chainsBeingAdded.length === 0
             ? {
-              type: 'button',
-              tooltip: promptTooltip,
-              props: {
-                className: 'self-end',
-                contentContainerClassName: clsx(
-                  textPrompt && '!secondary-text',
-                  promptClassName
-                ),
-                children: (
-                  <>
-                    {!!promptTooltip && (
-                      // Show info icon to indicate tooltip is available.
-                      <InfoOutlined
-                        className={clsx(
-                          '!h-4 !w-4',
-                          textPrompt && '!text-icon-secondary'
-                        )}
-                      />
-                    )}
+                type: 'button',
+                tooltip: promptTooltip,
+                props: {
+                  className: 'self-end',
+                  contentContainerClassName: clsx(
+                    textPrompt && '!secondary-text',
+                    promptClassName
+                  ),
+                  children: (
+                    <>
+                      {!!promptTooltip && (
+                        // Show info icon to indicate tooltip is available.
+                        <InfoOutlined
+                          className={clsx(
+                            '!h-4 !w-4',
+                            textPrompt && '!text-icon-secondary'
+                          )}
+                        />
+                      )}
 
-                    {prompt}
-                  </>
-                ),
-                variant: textPrompt ? 'none' : 'brand',
-                size: 'lg',
-                disabled,
-              },
-            }
+                      {prompt}
+                    </>
+                  ),
+                  variant: textPrompt ? 'none' : 'brand',
+                  size: 'lg',
+                  disabled,
+                },
+              }
             : {
-              type: 'icon_button',
-              props: {
-                // Round to match checkbox.
-                className: clsx('self-end !rounded', {
-                  '-mt-1': size === 'sm',
-                  '-mt-3': size === 'default',
-                }),
-                Icon: Add,
-                variant: 'primary',
-                size: 'xs',
-                disabled: status !== 'idle',
-              },
-            }
+                type: 'icon_button',
+                props: {
+                  // Round to match checkbox.
+                  className: clsx('self-end !rounded', {
+                    '-mt-1': size === 'sm',
+                    '-mt-3': size === 'default',
+                  }),
+                  Icon: Add,
+                  variant: 'primary',
+                  size: 'xs',
+                  disabled: status !== 'idle',
+                },
+              }
         }
       />
 

@@ -6,6 +6,6 @@ export const registerDnasKeyVisibleAtom = atom<boolean>({
 })
 
 export const consumeDnasKeyVisibleAtom = atom<boolean>({
-    key: 'consumeDnasKeyVisible',
-    default: false,
-  })
+  key: 'consumeDnasKeyVisible',
+  default: false,
+})

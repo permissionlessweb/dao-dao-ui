@@ -1,56 +1,43 @@
-import { useQueries, useQueryClient } from '@tanstack/react-query'
-import { ComponentType, useEffect } from 'react'
-
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { useForm, useFormContext } from 'react-hook-form'
-import { useTokenBalances } from '../../../hooks'
-import { SuspenseLoader } from '../../../../components'
+import { useSetRecoilState } from 'recoil'
 
+import { registerDnasKeyVisibleAtom } from '@dao-dao/state/recoil'
 import {
   ActionBase,
-  AddressInput,
   Loader,
   LockWithKeyEmoji,
-  MoneyWingsEmoji,
   SegmentedControls,
   useActionOptions,
-  WalletProfileHeader,
 } from '@dao-dao/stateless'
 import {
   ActionComponent,
-  ActionComponentProps,
   ActionContextType,
   ActionEncodeContext,
   ActionKey,
-  ActionMaker,
   ActionMatch,
   ActionOptions,
-  ButtonLinkProps,
-  DurationWithUnits,
   EntityType,
-  GenericToken,
-  LoadingDataWithError,
   ProcessedMessage,
   SegmentedControlsProps,
-  SuspenseLoaderProps,
-  TokenType,
   TypedOption,
   UnifiedCosmosMsg,
-  WalletProfileHeaderProps,
-  WidgetId,
 } from '@dao-dao/types'
- 
+
+import { SuspenseLoader } from '../../../../components'
 import { useEntity } from '../../../../hooks'
-import { useSetRecoilState } from 'recoil'
-import { AddDnasStatus, ConsumeDnasActionData, DnasProfileHeaderProps, UseDnasKeyData } from './types'
-import { useDnas, UseDnasProfileReturn } from './hooks'
-import { ConsumeDnasKeysRenderer, ManageDnasActionData, HandleDnasKeysRenderer } from './dnas'
-import { registerDnasKeyVisibleAtom } from '@dao-dao/state/recoil'
-import { DnasProfileHeader } from './dnas/DnasProfileHeader'
+import {
+  ConsumeDnasKeysRenderer,
+  HandleDnasKeysRenderer,
+  ManageDnasActionData,
+} from './dnas'
+import { useDnas } from './hooks'
+import { ConsumeDnasActionData } from './types'
 
 enum DnasActionMode {
   Consume = 'consume',
-  Handle = 'handle'
+  Handle = 'handle',
 }
 
 // data coming from action tabs content
@@ -65,43 +52,58 @@ const Component: ActionComponent<undefined, ManageDnasData> = (props) => {
   const { t } = useTranslation()
   const options = useActionOptions()
 
-  const { setValue, watch } = useForm<{ mode: ManageDnasData['mode'], handle: ManageDnasData['handle'], consume: ManageDnasData['consume'] }>();
+  const { setValue, watch } = useForm<{
+    mode: ManageDnasData['mode']
+    handle: ManageDnasData['handle']
+    consume: ManageDnasData['consume']
+  }>()
 
   const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
   const handle = watch((props.fieldNamePrefix + 'handle') as 'handle')
   const consume = watch((props.fieldNamePrefix + 'consume') as 'consume')
   // trigger modal popup for registering dnas key
-  const setManageDnasProfileVisible = useSetRecoilState(registerDnasKeyVisibleAtom)
+  const setManageDnasProfileVisible = useSetRecoilState(
+    registerDnasKeyVisibleAtom
+  )
 
   const { entity } = useEntity(options.address)
   const isDao = !entity.loading && entity.data.type == EntityType.Dao
   // check for current entity keys registered. set these as form values until changed manually or entity is changed
-  const { profile, refreshProfile, connected, connecting, useRegisteredDnasKeys } = useDnas({
+  const {
+    profile,
+    refreshProfile,
+    connected,
+    connecting,
+    useRegisteredDnasKeys,
+  } = useDnas({
     chainId: options.chain.chainId,
-    daoAddress: options.context.type == ActionContextType.Dao ? options.address : undefined
+    daoAddress:
+      options.context.type == ActionContextType.Dao
+        ? options.address
+        : undefined,
   })
 
   const tabs: SegmentedControlsProps<ManageDnasData['mode']>['tabs'] = [
     // Only allow beginning a vest if widget is setup.
     ...(props.data.mode
       ? ([
-        {
-          label: t('title.handleDnasKeys'),
-          value: DnasActionMode.Handle,
-        },
-        {
-          label: t('title.consumeDnasKeys'),
-          value: DnasActionMode.Consume,
-        }
-      ] as TypedOption<ManageDnasData['mode']>[])
+          {
+            label: t('title.handleDnasKeys'),
+            value: DnasActionMode.Handle,
+          },
+          {
+            label: t('title.consumeDnasKeys'),
+            value: DnasActionMode.Consume,
+          },
+        ] as TypedOption<ManageDnasData['mode']>[])
       : []),
   ]
   const selectedTab = tabs.find((tab) => tab.value === mode)
   // Set initial values when modal becomes visible or profile changes
   useEffect(() => {
     refreshProfile()
-    console.log("profile:", profile)
-  }, [mode]);
+    console.log('profile:', profile)
+  }, [mode])
 
   return (
     <SuspenseLoader fallback={<Loader />}>
@@ -113,30 +115,32 @@ const Component: ActionComponent<undefined, ManageDnasData> = (props) => {
           }
           selected={mode}
           tabs={tabs}
-        // disabled={!dnasExists}
+          // disabled={!dnasExists}
         />
-      ) : (<p className="title-text mb-2">{selectedTab?.label}</p>)}
+      ) : (
+        <p className="title-text mb-2">{selectedTab?.label}</p>
+      )}
 
-      {mode === DnasActionMode.Handle ? <HandleDnasKeysRenderer {...props} options={{ ...props.data.handle }} /> : null}
-      {mode === DnasActionMode.Consume ? <ConsumeDnasKeysRenderer {...{ ...props.data.consume }} /> : null}
+      {mode === DnasActionMode.Handle ? (
+        <HandleDnasKeysRenderer {...props} options={{ ...props.data.handle }} />
+      ) : null}
+      {mode === DnasActionMode.Consume ? (
+        <ConsumeDnasKeysRenderer {...{ ...props.data.consume }} />
+      ) : null}
     </SuspenseLoader>
   )
 }
 
 // Only check if widget exists in DAOs.
-const DaoComponent: ActionComponent<undefined, ManageDnasData> = (
-  props
-) => {
+const DaoComponent: ActionComponent<undefined, ManageDnasData> = (props) => {
   return <Component {...props} />
 }
 
-const WalletComponent: ActionComponent<undefined, ManageDnasData> = (
-  props
-) => <Component {...props} />
-
+const WalletComponent: ActionComponent<undefined, ManageDnasData> = (props) => (
+  <Component {...props} />
+)
 
 export class ManageDnasAction extends ActionBase<ManageDnasData> {
-
   public readonly key = ActionKey.ManageDnas
   public readonly Component = Component
 
@@ -145,7 +149,6 @@ export class ManageDnasAction extends ActionBase<ManageDnasData> {
       Icon: LockWithKeyEmoji,
       label: options.t('title.manageDnas'),
       description: options.t('info.manageDnasDescription'),
-
     })
 
     this.Component =
@@ -163,7 +166,7 @@ export class ManageDnasAction extends ActionBase<ManageDnasData> {
           daoAddr: '',
           dnasKeyOwner: '',
           dnasKeyHash: '',
-          chainId: ''
+          chainId: '',
         },
         files: [],
         isCreating: false,
@@ -175,9 +178,8 @@ export class ManageDnasAction extends ActionBase<ManageDnasData> {
           topic: [],
           network: '',
           music: '',
-          uri: ''
+          uri: '',
         },
-
       },
       handle: {
         fieldNamePrefix: 'dnas.handle',
@@ -196,23 +198,28 @@ export class ManageDnasAction extends ActionBase<ManageDnasData> {
     }
 
     // Fire async init immediately since we may hide this action.
-    this.init().catch(() => { })
+    this.init().catch(() => {})
   }
 
   async setup() {
-    // immideately check if connected pubkey hex has registered profile with dnas api 
-
+    // immideately check if connected pubkey hex has registered profile with dnas api
   }
 
-
-  encode(data: ManageDnasData, context: ActionEncodeContext): UnifiedCosmosMsg | UnifiedCosmosMsg[] | Promise<UnifiedCosmosMsg | UnifiedCosmosMsg[]> {
+  encode(
+    data: ManageDnasData,
+    context: ActionEncodeContext
+  ):
+    | UnifiedCosmosMsg
+    | UnifiedCosmosMsg[]
+    | Promise<UnifiedCosmosMsg | UnifiedCosmosMsg[]> {
     throw new Error('Method not implemented.')
   }
   match(messages: ProcessedMessage[]): ActionMatch | Promise<ActionMatch> {
     throw new Error('Method not implemented.')
   }
-  decode(messages: ProcessedMessage[]): Partial<ManageDnasData> | Promise<Partial<ManageDnasData>> {
+  decode(
+    messages: ProcessedMessage[]
+  ): Partial<ManageDnasData> | Promise<Partial<ManageDnasData>> {
     throw new Error('Method not implemented.')
   }
-
 }

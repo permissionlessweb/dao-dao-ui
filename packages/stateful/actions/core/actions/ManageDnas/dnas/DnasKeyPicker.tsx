@@ -1,19 +1,18 @@
-
+import { fromHex, toBech32 } from '@cosmjs/encoding'
 import clsx from 'clsx'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  PopupTriggerCustomComponent,
 
-} from '@dao-dao/types'
-
-import { Button } from '@dao-dao/stateless/components/buttons'
-import { CopyToClipboard } from '@dao-dao/stateless/components/CopyToClipboard'
-import { InputThemedText } from '@dao-dao/stateless/components/inputs'
-import { FilterableItemPopup } from '@dao-dao/stateless/components/popup'
 import { DnasPickerProps } from '@dao-dao/stateful/actions/core/actions/ManageDnas/types'
+import {
+  Button,
+  CopyToClipboard,
+  FilterableItemPopup,
+  InputThemedText,
+} from '@dao-dao/stateless'
+import { PopupTriggerCustomComponent } from '@dao-dao/types'
 import { getChainForChainId } from '@dao-dao/utils'
-import { fromHex, toBech32 } from '@cosmjs/encoding'
+
 export const DnasKeyPicker = ({
   dnasKeyOwners = {}, // Add default value
   chainId,
@@ -31,11 +30,11 @@ export const DnasKeyPicker = ({
     selectedAddress,
     readOnly,
     daoAddr,
-  });
+  })
 
   const TriggerRenderer: PopupTriggerCustomComponent = useCallback(
     ({ open, ...props }) => {
-      console.log('TriggerRenderer:', { selectedAddress, readOnly, open });
+      console.log('TriggerRenderer:', { selectedAddress, readOnly, open })
       return (
         <div className={clsx('flex', displayClassName)}>
           {selectedAddress ? (
@@ -74,7 +73,7 @@ export const DnasKeyPicker = ({
   )
 
   const items = Object.entries(dnasKeyOwners).map(([id, dnas]) => {
-    const [splitChainId, daoPubkeyHex] = id.split("_")
+    const [splitChainId, daoPubkeyHex] = id.split('_')
     const bech32Prefix = getChainForChainId(splitChainId).bech32Prefix
     const ownerBechAddr = toBech32(bech32Prefix, fromHex(dnas.keyOwner))
     return {
@@ -92,7 +91,6 @@ export const DnasKeyPicker = ({
               <span className="font-semibold">{t('title.uploadLimit')}:</span>
               <span className="font-semibold">{dnas.uploadLimit}</span>
             </p>
-
           )}
 
           {/* <p className="text-xs italic text-text-interactive-error">
@@ -102,8 +100,8 @@ export const DnasKeyPicker = ({
       ),
       selected: dnas.keyOwner === selectedAddress,
     }
-  });
-  console.log('FilterableItemPopup items:', items);
+  })
+  console.log('FilterableItemPopup items:', items)
 
   return (
     <FilterableItemPopup
@@ -115,10 +113,9 @@ export const DnasKeyPicker = ({
           ...dnas,
           daoAddr,
           keyHash: dnas.keyHash,
-          uploadLimit: !dnas.uploadLimit ? '1024' : dnas.uploadLimit
+          uploadLimit: !dnas.uploadLimit ? '1024' : dnas.uploadLimit,
         })
       }}
-
       searchPlaceholder={t('info.searchDnasKeyOwnerPlaceholder')}
       trigger={{
         type: 'custom',

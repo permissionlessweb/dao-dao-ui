@@ -35,7 +35,7 @@ export const FileUploadInput = ({
         const fallback = `Failed to upload file. Status: ${response.status} ${response.statusText}`
         throw new Error(
           (await response.json().catch(() => ({ error: fallback })))?.error ||
-          fallback
+            fallback
         )
       }
       0

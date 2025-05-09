@@ -1,4 +1,3 @@
-import imageCompression from 'browser-image-compression'
 import { useRef, useState } from 'react'
 
 import { ImageDropInput, ImageDropInputProps } from './ImageDropInput'
@@ -8,7 +7,7 @@ export type DnasImageUploadInputProps = Omit<
   'onSelect' | 'loading'
 > & {
   onChange: (url: string, file: File) => void | Promise<void>
-  onSelect: (file: File, fileurl: string,) => void | Promise<void>
+  onSelect: (file: File, fileurl: string) => void | Promise<void>
   onError?: (error: unknown) => void
 }
 
@@ -19,7 +18,7 @@ export const DnasImageUploadInput = ({
   ...props
 }: DnasImageUploadInputProps) => {
   const [uploading, setUploading] = useState(false)
-  const clearImageRef = useRef<() => void>(() => { })
+  const clearImageRef = useRef<() => void>(() => {})
 
   // const uploadFile = async (file: File) => {
   //   setUploading(true)

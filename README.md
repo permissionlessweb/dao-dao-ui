@@ -1,20 +1,22 @@
 ## DAO DAO UI
 
 ## HEADSTASH TODO
+
 <!-- - initial implementation  -->
 <!-- - create hook that communicates with custom api, rendering information regarding specific headstash instance -->
 <!-- - create stateless component displaying headstash information  -->
 <!-- - craete form to sign & broadcast claim for account -->
 
 ## DDNAS TODO
-- make use of existing logic to form and use form with file blobs (NextApiRequest?)
-- never save used values to form for reuse, in order to prevent keeping  api  key values in local memory.
-- check for all dnas key info registered by wallet
-- handle successful & error upload making use of dnas api key
-- handle custom mint msgs (snails contract) in form for new collection
-- ensure key is selected to use before displaying first file (cover image) upload form.
-- when registering a key, if dao address in form already has key registered, display modal communicating we are updating existing key
 
+- handle custom mint msgs (snails contract) in form for new collection
+
+<!-- - make use of existing logic to form and use form with file blobs (NextApiRequest?) -->
+<!-- - never save used values to form for reuse, in order to prevent keeping api key values in local memory. -->
+<!-- - check for all dnas key info registered by wallet -->
+<!-- - handle successful & error upload making use of dnas api key -->
+<!-- - ensure key is selected to use before displaying first file (cover image) upload form. -->
+<!-- - when registering a key, if dao address in form already has key registered, display modal communicating we are updating existing key -->
 <!-- - check if default profile, meaning need to first register a profile in manage section (still can use consume) -->
 <!-- - check if default public key has a profile registered  (  via `useDnas()`) -->
 <!-- - display modal to select keys, and upon key select, display mbutton to swap/change key use -->
@@ -33,42 +35,33 @@
 <!-- - default to modal to register key -->
 <!-- - base64 key prior to upload -->
 
-  
+# goals
 
-# goals 
-1. upload dnas key thorugh ui 
-2. display upload keys in ui  
+1. upload dnas key thorugh ui
+2. display upload keys in ui
 3. update dnas keys in ui
 
 
-## takeaways
-- prioritize proper env variable assurance 
-
- 
 ## INFUSIONS TODO
+
 - create: select infusion bundle type and its parameters
 - indexer formulae
-- check if entity has ibc version of expected token if none exist on shitstraps chain
 <!-- - infusion action: include approval msg for each nft in bundle that does not have infusion minter approved. -->
 
 ## SHITSTRAP TODO
+
 - indexer formulae
+- check if entity has ibc version of expected token if none exist on shitstraps chain
 - ibc deposit modal (check if balance of token on another chain,find best route)
 - improved conversion ratio view
 - filters:
-  - by chain 
+  - by chain
   - by shitstrap recipient
 - validate minimum shit rates and cutoffs with each other
-- shitstrap-lines: complete fund shitstrap if does not have shit balance  
+- shitstrap-lines: complete fund shitstrap if does not have shit balance
   - create proposal if dao or otherwise immediately fund from connected wallet otherwise
   - Display if funded or not
--  if wallet connected has balance
-  
-
-## Questions
-- why use recoil for modal prompt in some instances 
-- what is best use case scenario for each query type used for actions
-- what exactly is the Trans object used for
+- if wallet connected has balance
 
 
 This project creates a web UI for the [DAO DAO smart
@@ -181,7 +174,8 @@ These commands will build the images for the specified platforms. Just replace `
 
 **Important:** Please note that building images for cross-platform architectures can take a significant amount of time, as the build process needs to compile and package the image for the target platform. Be patient and let the build process complete. You can grab a cup of coffee or take a short break while you wait!
 
-### Verifiable Build 
+### Verifiable Build
+
 ```sh
 --label "git.branch=$(git rev-parse --abbrev-ref HEAD)" .
 docker inspect --format='{{.Config.Labels}}' $SDA_IMAGE # $DAPP_IMAGE
@@ -189,7 +183,6 @@ branch=$(docker inspect --format='{{.Config.Labels.git.branch}}'  $SDA_IMAGE) # 
 git checkout $branch
 git commit -m "Built image with digest $digest"
 ```
-
 
 ## Contributing
 
