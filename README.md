@@ -2,14 +2,12 @@
 
 ## HEADSTASH TODO
 
-<!-- - initial implementation  -->
-<!-- - create hook that communicates with custom api, rendering information regarding specific headstash instance -->
-<!-- - create stateless component displaying headstash information  -->
-<!-- - craete form to sign & broadcast claim for account -->
 
 ## DDNAS TODO
-
+- using dnas: improve file upload response ux
 - handle custom mint msgs (snails contract) in form for new collection
+- scrt-dnas: implmement new client side logic to support TEE stored private keys
+
 
 <!-- - make use of existing logic to form and use form with file blobs (NextApiRequest?) -->
 <!-- - never save used values to form for reuse, in order to prevent keeping api key values in local memory. -->
@@ -34,22 +32,38 @@
 <!-- - display list where button to edit metadata and update value is -->
 <!-- - default to modal to register key -->
 <!-- - base64 key prior to upload -->
+<!-- - initial implementation  -->
+<!-- - create hook that communicates with custom api, rendering information regarding specific headstash instance -->
+<!-- - create stateless component displaying headstash information  -->
+<!-- - craete form to sign & broadcast claim for account -->
+<!-- - scrt-dnas: implement iframe logic passing into uploaded filed metadata -->
+<!-- ```ts
+/// snails custom iframe for social app
+window.addEventListener('message', (event) => {
+  // Verify the origin for security
+  if (event.origin !== 'https://your-dao-dao-ui-domain.com') return;
+
+  if (event.data.type === 'SDA_FILE_UPLOAD') {
+    const { cid, metadata } = event.data.data;
+    console.log('Received file upload:', { cid, metadata });
+    // Process the data (e.g., store in parent app state or database)
+  }
+});
+``` -->
 
 # goals
-
 1. upload dnas key thorugh ui
 2. display upload keys in ui
 3. update dnas keys in ui
 
 
 ## INFUSIONS TODO
-
 - create: select infusion bundle type and its parameters
 - indexer formulae
+
 <!-- - infusion action: include approval msg for each nft in bundle that does not have infusion minter approved. -->
 
 ## SHITSTRAP TODO
-
 - indexer formulae
 - check if entity has ibc version of expected token if none exist on shitstraps chain
 - ibc deposit modal (check if balance of token on another chain,find best route)
@@ -61,7 +75,12 @@
 - shitstrap-lines: complete fund shitstrap if does not have shit balance
   - create proposal if dao or otherwise immediately fund from connected wallet otherwise
   - Display if funded or not
-- if wallet connected has balance
+
+___
+___
+___
+___
+___
 
 
 This project creates a web UI for the [DAO DAO smart
