@@ -1,37 +1,35 @@
-import { ArrowOutwardRounded, AudiotrackRounded, ImageNotSupported } from '@mui/icons-material'
+import { ArrowOutwardRounded } from '@mui/icons-material'
 import clsx from 'clsx'
 import NextImage from 'next/image'
-import { ComponentType, forwardRef, useEffect, useMemo, useState } from 'react'
+import { ComponentType, forwardRef, useEffect, useState } from 'react'
+import { useFieldArray, useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import ReactPlayer from 'react-player'
 
-import { EligibleCollectionCardProps, LazyNftCardInfo, LoadingDataWithError, NftCardInfo, StatefulEntityDisplayProps } from '@dao-dao/types'
+import { HugeDecimal } from '@dao-dao/math'
+import { NftSelectionModal } from '@dao-dao/stateful'
+import { InfuseNftsData } from '@dao-dao/stateful/actions/core/actions/TransferInfusions/InfuseNfts'
 import {
-  NFT_VIDEO_EXTENSIONS,
+  EligibleCollectionCardProps,
+  LazyNftCardInfo,
+  LoadingDataWithError,
+  NftCardInfo,
+  StatefulEntityDisplayProps,
+} from '@dao-dao/types'
+import { InfusionWithDetails } from '@dao-dao/types/contracts/CwInfuser'
+import {
   getImageUrlForChainId,
   getNftKey,
-  getNftName,
-  objectMatchesStructure,
   toAccessibleImageUrl,
 } from '@dao-dao/utils'
 
-import { AudioPlayer } from './AudioPlayer'
-import { CopyToClipboard } from './CopyToClipboard'
-import { LinkWrapper } from './LinkWrapper'
-import { Infusion, InfusionWithDetails } from '@dao-dao/types/contracts/CwInfuser'
 import { Button } from './buttons'
-import { TokenAmountDisplay } from './token'
-import { HugeDecimal } from '@dao-dao/math'
-import { EligibleCollectionCard } from './infusions'
-import { HorizontalScroller } from './HorizontalScroller'
-import { NftSelectionModal } from '@dao-dao/stateful'
-import { useFieldArray, useFormContext } from 'react-hook-form'
-
-import { HorizontalNftCard, HorizontalNftCardLoader } from './HorizontalNftCard'
 import { ErrorPage } from './error'
-import { InfuseNftsData } from '@dao-dao/stateful/actions/core/actions/TransferInfusions/InfuseNfts'
+import { HorizontalNftCard, HorizontalNftCardLoader } from './HorizontalNftCard'
+import { HorizontalScroller } from './HorizontalScroller'
+import { EligibleCollectionCard } from './infusions'
+import { LinkWrapper } from './LinkWrapper'
+import { TokenAmountDisplay } from './token'
 import { TooltipLikeDisplay } from './tooltip'
-
 
 export interface HorizontalInfusionCardProps extends InfusionWithDetails {
   currentEntity: string | undefined
@@ -41,29 +39,74 @@ export interface HorizontalInfusionCardProps extends InfusionWithDetails {
   fieldNamePrefix: string
   className?: string
   chainId: string
-  isProposalAction: boolean,
+  isProposalAction: boolean
+  isCreating: boolean
 }
 
 export const HorizontalInfusionCard = forwardRef<
   HTMLDivElement,
   HorizontalInfusionCardProps
->(function HorizontalInfusionCard(
-  infusion,
-  ref
-) {
+>(function HorizontalInfusionCard(infusion, ref) {
   const { t } = useTranslation()
-  const { control, watch, setValue, setError, register, clearErrors, } =
-    useFormContext<InfuseNftsData>()
+  const {
+    control,
+    watch,
+    setValue,
+    getValues,
+    setError,
+    register,
+    clearErrors,
+  } = useFormContext<InfuseNftsData>()
 
   const [showModal, setShowModal] = useState<boolean>(false)
-  const [imageLoading, setImageLoading] = useState(!!infusion.infused_collection.image)
+  const [imageLoading, setImageLoading] = useState(
+    !!infusion.infused_collection.image
+  )
   const [imageLoadErrored, setImageLoadErrored] = useState(false)
   const [loadedImageSrc, setLoadedImgSrc] = useState<string>()
 
+  const fieldNamePrefix = infusion.fieldNamePrefix
+  const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
+  const watchInfusionMinter = watch(
+    (fieldNamePrefix + 'infusionMinter') as 'infusionMinter'
+  )
+  const watchInfusionId = watch(
+    (fieldNamePrefix + 'infusionId') as 'infusionId'
+  )
+  const watchCollection = watch(
+    (fieldNamePrefix + 'collection') as 'collection'
+  )
+  const watchTokenId = watch((fieldNamePrefix + 'tokenId') as 'tokenId')
+  const watchPaymentInfusionExists = watch(
+    (fieldNamePrefix + 'paymentSubstituteExists') as 'paymentSubstituteExists'
+  )
+  const watchInfuionBundles = watch(
+    (fieldNamePrefix + 'infusionBundles') as 'infusionBundles'
+  )
+
+  // bundles
+  const {
+    fields: infusionBundleFields,
+    append: appendEligibleAsset,
+    remove: removeEligibleAsset,
+    update: updateEligibleAsset,
+  } = useFieldArray({
+    control,
+    name: (fieldNamePrefix + 'infusionBundles') as 'infusionBundles',
+  })
+  // funds
+  const {
+    fields: coins,
+    append: appendCoin,
+    remove: removeCoin,
+  } = useFieldArray({
+    control,
+    name: (fieldNamePrefix + 'funds') as 'funds',
+  })
+
   useEffect(() => {
+    // If showing a video, don't load image.
     if (
-      // If showing a video, don't load image.
-      // video ||
       !infusion.infused_collection.image ||
       loadedImageSrc === toAccessibleImageUrl(infusion.infused_collection.image)
     ) {
@@ -84,40 +127,12 @@ export const HorizontalInfusionCard = forwardRef<
       setImageLoadErrored(true)
     }
     img.src = toAccessibleImageUrl(infusion.infused_collection.image)
-  }, [infusion.infused_collection.image, loadedImageSrc,])
+  }, [infusion.infused_collection.image, loadedImageSrc])
 
-
-  const watchChainId = watch((infusion.fieldNamePrefix + 'chainId') as 'chainId')
-  const watchInfusionMinter = watch((infusion.fieldNamePrefix + 'infusionMinter') as 'infusionMinter')
-  const watchInfusionId = watch((infusion.fieldNamePrefix + 'infusionId') as 'infusionId')
-  const watchCollection = watch((infusion.fieldNamePrefix + 'collection') as 'collection')
-  const watchTokenId = watch((infusion.fieldNamePrefix + 'tokenId') as 'tokenId')
-  const watchPaymentInfusionExists = watch((infusion.fieldNamePrefix + 'paymentSubstituteExists') as 'paymentSubstituteExists')
-  const watchInfuionBundles = watch(
-    (infusion.fieldNamePrefix + 'infusionBundles') as 'infusionBundles'
-  )
-
-  // bundles
-  const {
-    fields: infusionBundleFields,
-    append: appendEligibleAsset,
-    remove: removeEligibleAsset,
-    update: updateEligibleAsset,
-  } = useFieldArray({
-    control,
-    name: (infusion.fieldNamePrefix + 'infusionBundles') as 'infusionBundles',
-  })
-  // funds 
-  const {
-    fields: coins,
-    append: appendCoin,
-    remove: removeCoin,
-  } = useFieldArray({
-    control,
-    name: infusion.fieldNamePrefix + 'funds' as 'funds',
-  })
-
-  const updateInfusionBundles = (nft: LazyNftCardInfo, remove: boolean = false) => {
+  const updateInfusionBundles = (
+    nft: LazyNftCardInfo,
+    remove: boolean = false
+  ) => {
     const required = infusion.eligibleCollections.find(
       (accNftColl) => accNftColl.addr === nft.collectionAddress
     )?.min_req
@@ -135,17 +150,20 @@ export const HorizontalInfusionCard = forwardRef<
         // Find and remove the specific NFT from the bundle
         const updatedNfts = infusionBundleFields[bundleIndex].nfts.filter(
           (bnft) =>
-            !(bnft.addr === nft.collectionAddress && bnft.token_id === parseInt(nft.tokenId))
+            !(
+              bnft.addr === nft.collectionAddress &&
+              bnft.token_id === parseInt(nft.tokenId)
+            )
         )
 
         if (updatedNfts.length === 0) {
           // Remove entire bundle if empty
           removeEligibleAsset(bundleIndex)
-          console.log("after-removed:", watchInfuionBundles)
+          // console.log("after-removed:", watchInfuionBundles)
         } else {
           // Update bundle with remaining NFTs
           updateEligibleAsset(bundleIndex, { nfts: updatedNfts })
-          console.log("after-removed-updated:", watchInfuionBundles)
+          // console.log("after-removed-updated:", watchInfuionBundles)
         }
       }
     } else {
@@ -159,7 +177,10 @@ export const HorizontalInfusionCard = forwardRef<
           (bnft) => bnft.addr === nft.collectionAddress
         ).length
 
-        if (sameCollectionCount > 0 && (required ? sameCollectionCount < required : true)) {
+        if (
+          sameCollectionCount > 0 &&
+          (required ? sameCollectionCount < required : true)
+        ) {
           targetBundleIndex = index
           canAddToExisting = true
         }
@@ -169,44 +190,46 @@ export const HorizontalInfusionCard = forwardRef<
         // Add to existing bundle
         const updatedNfts = [
           ...infusionBundleFields[targetBundleIndex].nfts,
-          { addr: nft.collectionAddress, token_id: parseInt(nft.tokenId) }
+          { addr: nft.collectionAddress, token_id: parseInt(nft.tokenId) },
         ]
         updateEligibleAsset(targetBundleIndex, { nfts: updatedNfts })
-        console.log("after-updated-added:", watchInfuionBundles)
-        console.log("after-updated-added:", infusion)
+        // console.log("after-updated-added:", watchInfuionBundles)
+        // console.log("after-updated-added:", infusion)
       } else {
         // Create new bundle
         appendEligibleAsset({
-          nfts: [{ addr: nft.collectionAddress, token_id: parseInt(nft.tokenId) }]
+          nfts: [
+            { addr: nft.collectionAddress, token_id: parseInt(nft.tokenId) },
+          ],
         })
-        console.log("after-updated-appended:", watchInfuionBundles)
+        // console.log("after-updated-appended:", watchInfuionBundles)
       }
     }
   }
 
-  const selectedKey = getNftKey(watchChainId, watchCollection, watchTokenId)
+  const selectedKeys = infusionBundleFields.flatMap((nft) => {
+    return nft.nfts.map((n) => {
+      return getNftKey(watchChainId, n.addr, n.token_id.toString())
+    })
+  })
 
-
-  useEffect(() => {
-    console.log("infusion.entityEligibleNFTs", infusion.entityEligibleNFTs)
-    console.log("infusion.collections", infusion.eligibleCollections)
-    console.log("infusion.infused_collection", infusion.infused_collection)
-
-  }, [showModal, setShowModal])
-
-  // when infusion ID or infusion contract is changed, reset selected nfts & funds 
+  // when infusion ID or infusion contract is changed, reset selected nfts & funds
   useEffect(() => {
     infusionBundleFields.forEach((_, index) => {
-      removeEligibleAsset(index);
-    });
+      removeEligibleAsset(index)
+    })
     coins.forEach((_, index) => {
-      removeCoin(index);
-    });
+      removeCoin(index)
+    })
 
-    setValue((infusion.fieldNamePrefix + 'collection') as 'collection', '')
-    setValue((infusion.fieldNamePrefix + 'tokenId') as 'tokenId', '')
-  }, [watchInfusionId, watchInfusionMinter]);
+    setValue((fieldNamePrefix + 'collection') as 'collection', '')
+    setValue((fieldNamePrefix + 'tokenId') as 'tokenId', '')
+  }, [watchInfusionId, watchInfusionMinter])
 
+  useEffect(() => {
+    console.log('infusion.selectedNfts:', infusion.selectedNfts)
+    console.log('watchInfuionBundles:', watchInfuionBundles)
+  }, [watchInfuionBundles])
 
   const chainImage = getImageUrlForChainId(infusion.chainId)
   const chainImageNode = chainImage && (
@@ -228,41 +251,34 @@ export const HorizontalInfusionCard = forwardRef<
     if (mintFeeSet) {
       return
     }
-    if (infusion.infusionParamsGeneric.mintFeeGeneric && infusion.owner != infusion.currentEntity) {
+    if (
+      infusion.infusionParamsGeneric.mintFeeGeneric &&
+      infusion.owner !== infusion.currentEntity
+    ) {
       appendCoin({
-        denom: infusion.infusionParamsGeneric.mintFeeGeneric.token.denomOrAddress,
+        denom:
+          infusion.infusionParamsGeneric.mintFeeGeneric.token.denomOrAddress,
         amount: infusion.infusionParamsGeneric.mintFeeGeneric.balance,
-        decimals: 0
+        decimals: 0,
       })
     }
     setMintFee(true)
   }, [infusion.infusionParamsGeneric.mintFeeGeneric])
 
-  const eligibleCollectionCardProps: EligibleCollectionCardProps[] = infusion.eligibleCollections.map((eligible, index) => {
-
-    return {
-      fieldNamePrefix: infusion.fieldNamePrefix,
-      nftInfo: eligible.collectionInfo,
-      contractInfo: eligible.contractInfo,
-      index,
-      address: eligible.addr,
-      requiredParams: eligible,
-      paymentSub: eligible.payment_substitute ? eligible.payment_substitute : undefined
-    }
-  })
-
-  // // Load image in background so we can listen for loading complete.
-
-  // const audio =
-  //   metadata &&
-  //     objectMatchesStructure(metadata, {
-  //       properties: {
-  //         audio: {},
-  //       },
-  //     })
-  //     ? metadata.properties.audio
-  //     : null
-
+  const eligibleCollectionCardProps: EligibleCollectionCardProps[] =
+    infusion.eligibleCollections.map((eligible, index) => {
+      return {
+        fieldNamePrefix: fieldNamePrefix,
+        nftInfo: eligible.collectionInfo,
+        contractInfo: eligible.contractInfo,
+        index,
+        address: eligible.addr,
+        requiredParams: eligible,
+        paymentSub: eligible.payment_substitute
+          ? eligible.payment_substitute
+          : undefined,
+      }
+    })
 
   return (
     <div
@@ -273,48 +289,48 @@ export const HorizontalInfusionCard = forwardRef<
       )}
       ref={ref}
     >
-
       <div className="flex min-w-0 grow flex-col">
         <p className="title-text border-b border-border-secondary py-4 px-6" />
 
         <div className="flex grow flex-row items-center justify-between gap-8 py-4 px-6 overflow-x-auto">
           {/* Collection */}
           <div className="flex flex-col items-stretch justify-between gap-1">
-          <div className="justify-center aspect-square sm:h-72 sm:w-72 rounded-lg overflow-hidden">
-          {/* <div className="absolute top-0 right-0 bottom-0 left-0"> */}
-          {
-          // video ? (
-          //   <ReactPlayer
-          //     controls
-          //     height="100%"
-          //     onReady={() => setImageLoading(false)}
-          //     url={video}
-          //     width="100%"
-          //   />
-          // ) : 
-          showingImageUrl ? (
-            <div
-              className={clsx(
-                'relative aspect-square bg-cover bg-center transition-opacity',
-                loadedImageSrc ? 'opacity-100' : 'opacity-0'
-              )}
-              style={{
-                backgroundImage: loadedImageSrc && `url(${loadedImageSrc})`,
-              }}
-            ></div>
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              {/* {audio ? (
+            <div className="justify-center aspect-square sm:h-72 sm:w-72 rounded-lg overflow-hidden">
+              {/* <div className="absolute top-0 right-0 bottom-0 left-0"> */}
+              {
+                // video ? (
+                //   <ReactPlayer
+                //     controls
+                //     height="100%"
+                //     onReady={() => setImageLoading(false)}
+                //     url={video}
+                //     width="100%"
+                //   />
+                // ) :
+                showingImageUrl ? (
+                  <div
+                    className={clsx(
+                      'relative aspect-square bg-cover bg-center transition-opacity',
+                      loadedImageSrc ? 'opacity-100' : 'opacity-0'
+                    )}
+                    style={{
+                      backgroundImage:
+                        loadedImageSrc && `url(${loadedImageSrc})`,
+                    }}
+                  ></div>
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    {/* {audio ? (
                 <AudiotrackRounded className="!h-14 !w-14 text-icon-tertiary" />
               ) : (
                 <ImageNotSupported className="!h-14 !w-14 text-icon-tertiary" />
               )} */}
-            </div>
-          )
-          }
-        {/* </div> */}
+                  </div>
+                )
+              }
+              {/* </div> */}
 
-        {/* {audio && !video && (
+              {/* {audio && !video && (
           <AudioPlayer
             className="absolute bottom-0 left-0 right-0 bg-transparent"
             iconClassName="text-icon-primary"
@@ -326,44 +342,63 @@ export const HorizontalInfusionCard = forwardRef<
             }}
           />
         )} */}
-      </div>
-            <p className="secondary-text text-xs">{t('title.infusedCollectionTitle')}</p>
+            </div>
+            <p className="secondary-text text-xs">
+              {t('title.infusedCollectionTitle')}
+            </p>
 
             <p className="primary-text truncate font-normal">
               <LinkWrapper
                 href={`https://www.stargaze.zone/m/${infusion.infused_collection.addr!}/tokens`}
-                // Don't click on anything else, such as the checkbox.
                 onClick={(e) => e.stopPropagation()}
                 openInNewTab
               >
-                <p className="truncate font-mono title-text transition-opacity hover:opacity-80 active:opacity-70">{infusion.infused_collection.name}</p>
+                <p className="title-text truncate font-mono transition-opacity hover:opacity-80 active:opacity-70">
+                  {infusion.infused_collection.name}
+                </p>
 
                 <TooltipLikeDisplay
                   className="primary-text group-hover/nft:opacity-100 absolute bottom-4 left-4 opacity-0 shadow-dp4 transition-opacity hover:!opacity-90"
                   icon={<ArrowOutwardRounded className="!h-5 !w-5" />}
                   label={t('button.openInDestination', {
-                    destination: "Stargaze",
+                    destination: 'Stargaze',
                   })}
                 />
               </LinkWrapper>
             </p>
-            <p className="primary-text text-xs">{infusion.infused_collection.description}</p>
+            <p className="primary-text text-xs">
+              {infusion.infused_collection.description}
+            </p>
 
-            <p className="secondary-text text-xs">{t('title.infusedCollectionTotalSupply')}</p>
+            <p className="secondary-text text-xs">
+              {t('title.infusedCollectionTotalSupply')}
+            </p>
             <div className="flex flex-row gap-2">
-              <p className="primary-text text-lg truncate font-semibold">{infusion.infused_collection.num_tokens}</p>
+              <p className="primary-text text-lg truncate font-semibold">
+                {infusion.infused_collection.num_tokens}
+              </p>
             </div>
             <div className="flex gap-4">
-              <div className="flex flex-col align-items-center">
-                <p className="secondary-text text-xs text-center">{t('title.infusedCollectionMintFee')}</p>
+              <div className="align-items-center flex flex-col">
+                <p className="secondary-text text-xs text-center">
+                  {t('title.infusedCollectionMintFee')}
+                </p>
                 <p className="primary-text truncate font-normal">
                   {infusion.infusionParamsGeneric.mintFeeGeneric ? (
                     <TokenAmountDisplay
-                      amount={HugeDecimal.from(infusion.infusionParamsGeneric.mintFeeGeneric?.balance)}
+                      amount={HugeDecimal.from(
+                        infusion.infusionParamsGeneric.mintFeeGeneric?.balance
+                      )}
                       decimals={6}
-                      iconUrl={infusion.infusionParamsGeneric.mintFeeGeneric?.token.imageUrl}
+                      iconUrl={
+                        infusion.infusionParamsGeneric.mintFeeGeneric?.token
+                          .imageUrl
+                      }
                       showFullAmount
-                      symbol={infusion.infusionParamsGeneric.mintFeeGeneric?.token.symbol}
+                      symbol={
+                        infusion.infusionParamsGeneric.mintFeeGeneric?.token
+                          .symbol
+                      }
                     />
                   ) : (
                     <>{t('title.noInfusionFee')}</>
@@ -371,10 +406,14 @@ export const HorizontalInfusionCard = forwardRef<
                 </p>
               </div>
 
-              <div className="flex flex-col align-items-center">
-                <p className="secondary-text text-xs text-center">{t('title.infusionPaymentRecipient')}</p>
+              <div className="align-items-center flex flex-col">
+                <p className="secondary-text text-xs text-center">
+                  {t('title.infusionPaymentRecipient')}
+                </p>
                 {infusion.payment_recipient ? (
-                  <infusion.EntityDisplay address={infusion.payment_recipient!} />
+                  <infusion.EntityDisplay
+                    address={infusion.payment_recipient!}
+                  />
                 ) : (
                   <p className="body-text italic">
                     {t('info.failedToDecodeAddressUnrecognizedMessage')}
@@ -385,7 +424,9 @@ export const HorizontalInfusionCard = forwardRef<
 
             {/* Map  of eligible collections, */}
             <p className="title-text border-b border-border-secondary py-4 px-6" />
-            <p className="primary-text text-xs">{t('title.eligibleCollections')}</p>
+            <p className="primary-text text-xs">
+              {t('title.eligibleCollections')}
+            </p>
             <HorizontalScroller
               Component={EligibleCollectionCard}
               containerClassName="  "
@@ -393,7 +434,13 @@ export const HorizontalInfusionCard = forwardRef<
               items={{ loading: false, data: eligibleCollectionCardProps }}
               shadowClassName=" "
             />
-            {infusion.selectedNfts && !infusion.isProposalAction &&
+
+            <p className="title-text border-b border-border-secondary py-4 px-6" />
+            <p className="primary-text text-xs">
+              {t('title.selectedNftsToInfuse')}
+            </p>
+            {/* Display all of the selected  NFTS */}
+            {infusion.selectedNfts &&
               (infusion.selectedNfts.loading ? (
                 <HorizontalNftCardLoader />
               ) : infusion.selectedNfts.errored ? (
@@ -406,63 +453,62 @@ export const HorizontalInfusionCard = forwardRef<
                 </div>
               ))}
           </div>
-          {/* Source chain */}
-          {/* {chainImageNode ? (
-            externalLink ? (
-              <LinkWrapper
-              className="shrink-0"
-              href={externalLink?.href}
-              openInNewTab
-              >
-              {chainImageNode}
-              </LinkWrapper>
-              ) : (
-                chainImageNode
-                )
-                ) : null} */}
-          <Button className={clsx('self-start')}
-            onClick={() => setShowModal(true)}  //  setShowModal(true)
+
+          <Button
+            className={clsx('self-start')}
+            onClick={() => setShowModal(true)}
             variant={'primary'}
           >
             {t('button.selectNfts')}
           </Button>
-
         </div>
         {/* add funds selector if payment subsitute enabled */}
         {/* Preview json action option */}
         {/* Prompt transaction or proposal based on entity type*/}
 
-        <NftSelectionModal
-          action={{
-            loading: false,
-            label: t('button.save'),
-            onClick: () => {
-              setShowModal(false)
-            },
-          }}
-          header={{
-            title: t('title.selectNftsToInfuse'),
-          }}
-          nfts={infusion.entityEligibleNFTs}
-          onClose={() => setShowModal(false)}
-          onNftClick={(nft) => {
-            if (nft.key === selectedKey) {
-              setValue((infusion.fieldNamePrefix + 'tokenId') as 'tokenId', '')
-              setValue((infusion.fieldNamePrefix + 'collection') as 'collection', '')
-              updateInfusionBundles(nft, true)
-            } else {
-              setValue((infusion.fieldNamePrefix + 'chainId') as 'chainId', nft.chainId)
-              setValue((infusion.fieldNamePrefix + 'tokenId') as 'tokenId', nft.tokenId)
-              setValue(
-                (infusion.fieldNamePrefix + 'collection') as 'collection',
-                nft.collectionAddress
+        {infusion.isCreating && (
+          <NftSelectionModal
+            action={{
+              loading: false,
+              label: t('button.save'),
+              onClick: () => {
+                setShowModal(false)
+              },
+            }}
+            header={{ title: t('title.selectNftsToInfuse') }}
+            nfts={infusion.entityEligibleNFTs}
+            onClose={() => setShowModal(false)}
+            onNftClick={(nft) => {
+              const selected = getValues(
+                (fieldNamePrefix + 'infusionBundles') as 'infusionBundles'
               )
-              updateInfusionBundles(nft, false)
-            }
-          }}
-          selectedKeys={selectedKey ? [selectedKey] : []}
-          visible={showModal}
-        />
+
+              const isSelected = selected.some((bundle) => {
+                let found = bundle.nfts.find((bnft) => {
+                  let addrEquals = bnft.addr === nft.collectionAddress
+                  let tokenIdEq = bnft.token_id === parseInt(nft.tokenId)
+                  // console.log("addrEquals:", addrEquals)
+                  // console.log("tokenIdEq:", tokenIdEq)
+                  return addrEquals && tokenIdEq
+                })
+                if (found) {
+                  return true
+                } else {
+                }
+              })
+              // console.log("isSelected:", isSelected)
+              if (isSelected) {
+                updateInfusionBundles(nft, true)
+              } else {
+                updateInfusionBundles(nft, false)
+              }
+
+              // console.log("After click selected nfts:", infusion.selectedNfts)
+            }}
+            selectedKeys={selectedKeys}
+            visible={showModal}
+          />
+        )}
       </div>
       <p className="title-text border-b border-border-secondary py-10 px-6" />
     </div>

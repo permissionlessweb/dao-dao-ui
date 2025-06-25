@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useActionOptions } from '@dao-dao/stateless'
 import { ActionComponent } from '@dao-dao/types/actions'
 
-import { ShitstrapPaymentWidgetData } from '../../../../widgets/widgets/Shitstrap/types'
 import { ShitStrapEditor } from '../../../../widgets/widgets/Shitstrap/ShitstrapEditor'
+import { ShitstrapPaymentWidgetData } from '../../../../widgets/widgets/Shitstrap/types'
 
 export const ConfigureShitstrapPaymentsComponent: ActionComponent<
   undefined,

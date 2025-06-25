@@ -189,6 +189,8 @@ const InnerAppsRenderer = ({
     const listener = ({ data }: MessageEvent) => {
       if (data === 'isDaoDao') {
         iframe.contentWindow?.postMessage('amDaoDao')
+      } else if (data === 'SDA_FILE_UPLOAD') {
+        iframe.contentWindow?.postMessage('SDA_FILE_UPLOAD')
       }
     }
 

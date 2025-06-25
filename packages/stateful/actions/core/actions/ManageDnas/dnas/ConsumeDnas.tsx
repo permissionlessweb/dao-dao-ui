@@ -172,14 +172,8 @@ export const ConsumeDnasKeysRenderer = ({
     fileUrl: string,
     index?: number
   ) => {
-    appendFile({
-      name: file.name,
-      url: fileUrl,
-      mimetype: file.type,
-      file,
-    })
+    appendFile({ name: file.name, url: fileUrl, mimetype: file.type, file })
   }
-
   const handleRemoveFile = async (fileIndex: number) => {
     removeFile(fileIndex)
   }
@@ -188,7 +182,6 @@ export const ConsumeDnasKeysRenderer = ({
       setCurrentStep(currentStep + 1)
     }
   }
-
   const handlePrevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
@@ -211,7 +204,12 @@ export const ConsumeDnasKeysRenderer = ({
 
       // Call the upload function from the useDnas hook
       let response = await useRegisteredDnasKeys.go(prepMsg)
-      // add response to state to display cids
+
+      // Store response to display upload results
+      if (response && response.files) {
+        setUploadedFilesResponse(response.files)
+      }
+
       toast.success(t('success.filesUploaded'))
     } catch (err) {
       toast.error(processError(err))
@@ -446,52 +444,112 @@ export const ConsumeDnasKeysRenderer = ({
 
             {/* Display results of uploaded files */}
             {uploadedFiles.length > 0 && (
-              <div className="bg-bg-tertiary mt-4 p-4 rounded-md border border-dashed border-border-primary">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-md font-medium">
-                    {t('title.uploadedFiles')}
-                  </h4>
-                  <button
-                    className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              <div className="bg-success/10 border-success mt-6 p-6 rounded-lg border-2">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-success w-6 h-6 rounded-full flex items-center justify-center">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-success text-lg font-semibold">
+                      {t('title.uploadSuccess')}
+                    </h3>
+                  </div>
+                  <Button
                     onClick={() => {
-                      const jsonString = JSON.stringify(uploadedFiles, null, 2)
+                      const results = {
+                        timestamp: new Date().toISOString(),
+                        daoAddress: watchDaoAddress,
+                        dnasKeyOwner: watchDnasKeyOwner,
+                        files: uploadedFiles,
+                      }
+                      const jsonString = JSON.stringify(results, null, 2)
                       navigator.clipboard
                         .writeText(jsonString)
                         .then(() => {
-                          // Optional: Add a toast notification or visual feedback
-                          console.log('Copied to clipboard')
-                          alert('JSON copied to clipboard!')
+                          toast.success(t('info.copiedToClipboard'))
                         })
                         .catch((err) => {
+                          toast.error(t('error.copyFailed'))
                           console.error('Failed to copy:', err)
                         })
                     }}
+                    size="sm"
+                    variant="secondary"
                   >
-                    Copy JSON
-                  </button>
+                    {t('button.copyResults')}
+                  </Button>
                 </div>
+
+                <div className="bg-background-base p-4 rounded-md mb-4">
+                  <p className="text-sm text-text-secondary mb-2">
+                    {t('info.uploadedAt')}: {new Date().toLocaleString()}
+                  </p>
+                  <p className="text-sm text-text-secondary">
+                    {t('info.totalFiles')}: {uploadedFiles.length}
+                  </p>
+                </div>
+
                 <div className="space-y-4">
                   {uploadedFiles.map((file, index) => (
-                    <div key={index} className="bg-bg-secondary p-3 rounded-md">
-                      <h5 className="font-medium">
-                        File #{index + 1}: {steps[index]?.title}
-                      </h5>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="font-medium">{t('debug.name')}:</div>
-                        <div className="text-text-secondary">{file.name}</div>
+                    <div
+                      key={index}
+                      className="bg-background-base p-4 rounded-md border border-border-secondary"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <h5 className="font-semibold text-base">
+                          {steps[index]?.title || `File #${index + 1}`}
+                        </h5>
+                        <div className="bg-success/20 text-success text-xs px-2 py-1 rounded">
+                          {t('status.uploaded')}
+                        </div>
+                      </div>
 
-                        <div className="font-medium">{t('debug.type')}:</div>
-                        <div className="text-text-secondary break-all">
-                          {file.type}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="font-medium text-text-primary">
+                            {t('debug.name')}:
+                          </span>
+                          <div className="text-text-secondary break-all mt-1 font-mono text-xs bg-background-secondary p-2 rounded">
+                            {file.name}
+                          </div>
                         </div>
 
-                        <div className="font-medium">{t('debug.cid')}:</div>
-                        <div className="text-text-secondary">{file.cid}</div>
+                        <div>
+                          <span className="font-medium text-text-primary">
+                            {t('debug.type')}:
+                          </span>
+                          <div className="text-text-secondary mt-1 font-mono text-xs bg-background-secondary p-2 rounded">
+                            {file.type}
+                          </div>
+                        </div>
 
-                        <div className="font-medium">{t('debug.cid')}:</div>
-                        <div className="text-text-secondary">{file.id}</div>
+                        <div className="md:col-span-2">
+                          <span className="font-medium text-text-primary">
+                            {t('debug.cid')}:
+                          </span>
+                          <div className="text-text-secondary break-all mt-1 font-mono text-xs bg-background-secondary p-2 rounded flex justify-between items-center">
+                            <span>{file.cid}</span>
+                            <Button
+                              onClick={() => {
+                                navigator.clipboard.writeText(file.cid)
+                                toast.success(t('info.cidCopied'))
+                              }}
+                              size="sm"
+                              variant="ghost"
+                            >
+                              {t('button.copy')}
+                            </Button>
+                          </div>
+                        </div>
 
-                        {/* <div className="text-text-secondary">{file.image ? t('debug.yes') : t('debug.no')}</div> */}
+                        <div className="md:col-span-2">
+                          <span className="font-medium text-text-primary">
+                            {t('debug.id')}:
+                          </span>
+                          <div className="text-text-secondary break-all mt-1 font-mono text-xs bg-background-secondary p-2 rounded">
+                            {file.id}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}

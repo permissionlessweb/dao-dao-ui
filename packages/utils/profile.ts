@@ -11,11 +11,10 @@ export const makeEmptyPfpkProfile = (): PfpkProfile => ({
   chains: {},
 })
 
-
 export const makeEmptyUnifiedProfile = (
   chainId: string,
   address: string,
-  dnas?: boolean,
+  dnas?: boolean
 ): UnifiedProfile => ({
   ...makeEmptyPfpkProfile(),
   source: {
@@ -26,5 +25,3 @@ export const makeEmptyUnifiedProfile = (
   imageUrl: getFallbackImage(address),
   backupImageUrl: getFallbackImage(address),
 })
-
- 

@@ -1,14 +1,14 @@
+import { QueryClient } from '@tanstack/react-query'
 import { ComponentType } from 'react'
 
-import { PossibleShit, ShitstrapInfo, ShitstrapInfoGeneric } from '../contracts/ShitStrap'
+import { PossibleShit, ShitstrapInfoGeneric } from '../contracts/ShitStrap'
 import { DOmit, LoadingData, LoadingDataWithError } from '../misc'
-import { GenericToken, GenericTokenSource } from '../token'
+import { GenericToken } from '../token'
 import { StatefulEntityDisplayProps } from './EntityDisplay'
 import { TokenInputOption, TokenInputProps } from './TokenInput'
-import { QueryClient } from '@tanstack/react-query'
 
 export type StatefulShitStrapPaymentCardProps = {
-  queryClient: QueryClient,
+  queryClient: QueryClient
   shitstrapInfo: ShitstrapInfoGeneric
   usingPersonalShit: boolean
   shitting?: boolean
@@ -17,7 +17,7 @@ export type StatefulShitStrapPaymentCardProps = {
 export type ShitStrapPaymentLineProps = {
   shitstrapInfo: ShitstrapInfoGeneric
   eligibleShit: LoadingDataWithError<GenericToken[]>
-  queryClient: QueryClient,
+  queryClient: QueryClient
   onClick: () => void
   transparentBackground?: boolean
   EntityDisplay: ComponentType<StatefulEntityDisplayProps>

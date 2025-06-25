@@ -242,50 +242,50 @@ export const useDnas = ({
     (!address && !isWalletConnected) || dnasProfile.loading
       ? { loading: true }
       : {
-        loading: false,
-        data: Object.entries({
-          ...dnasProfile.data.chains,
-          // Add wallet-connected account if not already in the profile. This
-          // should only be the case if no profile exists yet and an empty
-          // profile with no chains is being returned.
-          ...(!dnasProfile.data.chains[walletChainId] &&
+          loading: false,
+          data: Object.entries({
+            ...dnasProfile.data.chains,
+            // Add wallet-connected account if not already in the profile. This
+            // should only be the case if no profile exists yet and an empty
+            // profile with no chains is being returned.
+            ...(!dnasProfile.data.chains[walletChainId] &&
             !currentHexPublicKey.loading &&
             profileAddress
-            ? {
-              [walletChainId]: {
-                publicKey: {
-                  type: getPublicKeyTypeForChain(walletChainId),
-                  hex: currentHexPublicKey.data,
-                },
-                address: profileAddress,
-              },
-            }
-            : {}),
-        })
-          .flatMap(([chainId, { address, publicKey }]): ProfileChain | [] => {
-            const chain = maybeGetChainForChainId(chainId)
-            const supported = chain ? isSupportedChain(chainId) : false
-
-            return chain &&
-              // Only include chains that are on the right network type.
-              (chain.chainRegistry?.network_type === 'mainnet') === MAINNET &&
-              // Filter by onlySupported filter.
-              (!onlySupported || supported)
               ? {
-                chainId,
-                chain,
-                supported,
-                address,
-                publicKey,
-              }
-              : []
+                  [walletChainId]: {
+                    publicKey: {
+                      type: getPublicKeyTypeForChain(walletChainId),
+                      hex: currentHexPublicKey.data,
+                    },
+                    address: profileAddress,
+                  },
+                }
+              : {}),
           })
-          .sort((a, b) =>
-            getDisplayNameForChainId(a.chainId).localeCompare(
-              getDisplayNameForChainId(b.chainId)
-            )
-          ),
-      }
+            .flatMap(([chainId, { address, publicKey }]): ProfileChain | [] => {
+              const chain = maybeGetChainForChainId(chainId)
+              const supported = chain ? isSupportedChain(chainId) : false
+
+              return chain &&
+                // Only include chains that are on the right network type.
+                (chain.chainRegistry?.network_type === 'mainnet') === MAINNET &&
+                // Filter by onlySupported filter.
+                (!onlySupported || supported)
+                ? {
+                    chainId,
+                    chain,
+                    supported,
+                    address,
+                    publicKey,
+                  }
+                : []
+            })
+            .sort((a, b) =>
+              getDisplayNameForChainId(a.chainId).localeCompare(
+                getDisplayNameForChainId(b.chainId)
+              )
+            ),
+        }
 
   const [addChainsStatus, setAddChainsStatus] = useState<AddDnasStatus>('idle')
   const [usingDnasKeysStatus, setUsingDnasKeysStatus] =
@@ -390,7 +390,7 @@ export const useDnas = ({
             data: JSON.stringify(response),
           },
           '*' // Replace '*' with the parent app's origin for security
-        );
+        )
 
         return response
       } catch (apiError: any) {

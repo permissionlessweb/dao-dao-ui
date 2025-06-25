@@ -27,11 +27,11 @@ import {
   OwnershipForString,
   TokensResponse,
 } from '@dao-dao/types/contracts/Cw721Base'
+import { CollectionInfoResponse } from '@dao-dao/types/contracts/Sg721Base'
 import { getCosmWasmClientForChainId } from '@dao-dao/utils'
 
-import { Cw721BaseQueryClient } from '../../../contracts/Cw721Base'
-import { CollectionInfoResponse } from '@dao-dao/types/contracts/Sg721Base'
 import { Sg721BaseQueryClient } from '../../../contracts'
+import { Cw721BaseQueryClient } from '../../../contracts/Cw721Base'
 
 export const cw721BaseQueryKeys = {
   contract: [
@@ -550,7 +550,7 @@ export interface Cw721BaseReactQuery<TResponse, TData = TResponse> {
   }
 }
 export interface Cw721BaseOwnershipQuery<TData>
-  extends Cw721BaseReactQuery<OwnershipForString, TData> { }
+  extends Cw721BaseReactQuery<OwnershipForString, TData> {}
 export interface Cw721BaseExtensionQuery<TData>
   extends Cw721BaseReactQuery<Null, TData> {
   args: {
@@ -558,7 +558,7 @@ export interface Cw721BaseExtensionQuery<TData>
   }
 }
 export interface Cw721BaseMinterQuery<TData>
-  extends Cw721BaseReactQuery<MinterResponse, TData> { }
+  extends Cw721BaseReactQuery<MinterResponse, TData> {}
 export interface Cw721BaseAllTokensQuery<TData>
   extends Cw721BaseReactQuery<TokensResponse, TData> {
   args: {
@@ -588,11 +588,11 @@ export interface Cw721BaseNftInfoQuery<TData>
   }
 }
 export interface Cw721BaseContractInfoQuery<TData>
-  extends Cw721BaseReactQuery<ContractInfoResponse, TData> { }
+  extends Cw721BaseReactQuery<ContractInfoResponse, TData> {}
 export interface Cw721BaseCollectionInfoQuery<TData>
-  extends Cw721BaseReactQuery<CollectionInfoResponse, TData> { }
+  extends Cw721BaseReactQuery<CollectionInfoResponse, TData> {}
 export interface Cw721BaseNumTokensQuery<TData>
-  extends Cw721BaseReactQuery<NumTokensResponse, TData> { }
+  extends Cw721BaseReactQuery<NumTokensResponse, TData> {}
 export interface Cw721BaseAllOperatorsQuery<TData>
   extends Cw721BaseReactQuery<OperatorsResponse, TData> {
   args: {

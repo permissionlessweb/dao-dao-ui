@@ -1,64 +1,31 @@
-// load all registered dnas for this profile
-// handle forms for registering or removing dnas for this profile
-// handle successful responses
-
-// load dnas available for dao
-// handle form for selecting key owner + files
-// handle returning sucessful upload metadata
-// handle form for adding new content to the custom open edition
-import { Add, Close, WarningRounded } from '@mui/icons-material'
+import { Add, WarningRounded } from '@mui/icons-material'
 import { useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-    constSelector,
-    useRecoilState,
-    useRecoilValue,
-    useRecoilValueLoadable,
-    useSetRecoilState,
-    waitForAny,
-} from 'recoil'
 
-import { CommonNftSelectors, DaoDaoCoreSelectors, registerDnasKeyVisibleAtom } from '@dao-dao/state/recoil'
 import {
-    AddressInput,
-    Button,
-    ButtonLink,
-    CodeMirrorInput,
-    FileUploadInput,
-    FormattedJsonDisplay,
-    IconButton,
-    ImageUploadInput,
-    InputErrorMessage,
-    InputLabel,
-    NoContent,
-    NumericInput,
-    TextAreaInput,
-    TextInput,
-    Tooltip,
-    useActionOptions,
+  Button,
+  InputLabel,
+  NoContent,
+  NumericInput,
+  TextInput,
+  Tooltip,
+  useActionOptions,
 } from '@dao-dao/stateless'
-import { ActionComponent, ActionContextType, DnasObjectWithValues, WidgetEditorProps } from '@dao-dao/types'
-import { ContractInfoResponse } from '@dao-dao/types/contracts/Cw721Base'
 import {
-    getChainIdsForAddress,
-    isValidBech32Address,
-    makeValidateAddress,
-    processError,
-    transformIpfsUrlToHttpsIfNecessary,
-    validateCosmosMsgForChain,
-    validateJSON,
-    validateRequired,
-} from '@dao-dao/utils'
+  ActionComponent,
+  ActionContextType,
+  DnasObjectWithValues,
+} from '@dao-dao/types'
+import { processError } from '@dao-dao/utils'
 
-import { DnasLine } from './DnasLine'
-
-import { EntityDisplay } from '../../../../../components/EntityDisplay'
-import { useDnas } from '../hooks'
-import { useEntity, useWallet } from '../../../../../hooks'
-import { DnasKeyWithValueWithoutId, PerformMergeProps } from '../types'
 import { ConnectWallet } from '../../../../../components'
+import { EntityDisplay } from '../../../../../components/EntityDisplay'
+import { useWallet } from '../../../../../hooks'
+import { useDnas } from '../hooks'
+import { DnasKeyWithValueWithoutId, PerformMergeProps } from '../types'
+import { DnasLine } from './DnasLine'
 
 export type ManageDnasActionData = {
   // managing
@@ -232,32 +199,10 @@ export const HandleDnasKeysRenderer: ActionComponent<ManageDnasActionData> = ({
                     {Object.entries(dnas).map(([a, info], index) => (
                       <DnasLine
                         key={info.daoAddr + index}
+                        EntityDisplay={EntityDisplay}
+                        chainId={info.chainId}
+                        daoAddr={info.daoAddr}
                         onClick={handleShowModal}
-                        onUpdate={() => {
-                          setValue(
-                            (fieldNamePrefix +
-                              'dnas.daoAddr') as 'dnas.daoAddr',
-                            info.daoAddr
-                          )
-                          setValue(
-                            (fieldNamePrefix +
-                              'dnas.keyOwner') as 'dnas.keyOwner',
-                            info.keyOwner
-                          )
-                          setValue(
-                            (fieldNamePrefix +
-                              'dnas.keyHash') as 'dnas.keyHash',
-                            info.keyHash
-                          )
-                          setValue(
-                            (fieldNamePrefix +
-                              'dnas.apiKeyValue') as 'dnas.apiKeyValue',
-                            ''
-                          )
-                          console.log('info:', info)
-                          console.log('watchDnas:', watchDnas)
-                          setRegisterDnasKeyVisible(true)
-                        }}
                         onRemove={() => {
                           //  set values to map when updating and removing to have in form
                           setValue(
@@ -287,9 +232,31 @@ export const HandleDnasKeysRenderer: ActionComponent<ManageDnasActionData> = ({
                               nonce: profile.data.nonce,
                             })
                         }}
-                        chainId={info.chainId}
-                        daoAddr={info.daoAddr}
-                        EntityDisplay={EntityDisplay}
+                        onUpdate={() => {
+                          setValue(
+                            (fieldNamePrefix +
+                              'dnas.daoAddr') as 'dnas.daoAddr',
+                            info.daoAddr
+                          )
+                          setValue(
+                            (fieldNamePrefix +
+                              'dnas.keyOwner') as 'dnas.keyOwner',
+                            info.keyOwner
+                          )
+                          setValue(
+                            (fieldNamePrefix +
+                              'dnas.keyHash') as 'dnas.keyHash',
+                            info.keyHash
+                          )
+                          setValue(
+                            (fieldNamePrefix +
+                              'dnas.apiKeyValue') as 'dnas.apiKeyValue',
+                            ''
+                          )
+                          console.log('info:', info)
+                          console.log('watchDnas:', watchDnas)
+                          setRegisterDnasKeyVisible(true)
+                        }}
                       />
                     ))}
                     <Button
@@ -316,23 +283,20 @@ export const HandleDnasKeysRenderer: ActionComponent<ManageDnasActionData> = ({
             </div>
           ) : (
             <>
-              <>
-                {/* Make dao address field visible */}
-                <Tooltip title={t('info.daoAddress')}>
-                  <InputLabel name={t('form.daoAddress')} />
-                </Tooltip>
-                <TextInput
-                  fieldName={
-                    (fieldNamePrefix + 'dnas.daoAddr') as 'dnas.daoAddr'
-                  }
-                  register={register}
-                  defaultValue={watchDnasDao}
-                  autoComplete="off"
-                  required
-                />
+              {/* Make dao address field visible */}
+              <Tooltip title={t('info.daoAddress')}>
+                <InputLabel name={t('form.daoAddress')} />
+              </Tooltip>
+              <TextInput
+                autoComplete="off"
+                defaultValue={watchDnasDao}
+                fieldName={(fieldNamePrefix + 'dnas.daoAddr') as 'dnas.daoAddr'}
+                register={register}
+                required
+              />
 
-                {/* if no keys for this profile, display forms for registering one */}
-                {/* <Tooltip title={t('info.dnasKeyUseLimit')}>
+              {/* if no keys for this profile, display forms for registering one */}
+              {/* <Tooltip title={t('info.dnasKeyUseLimit')}>
                         <InputLabel name={t('form.dnasKeyMetadata')} />
                     </Tooltip>
                     <CodeMirrorInput
@@ -341,43 +305,42 @@ export const HandleDnasKeysRenderer: ActionComponent<ManageDnasActionData> = ({
                         validation={[]}
                     /> */}
 
-                <Tooltip title={t('info.dnasKeyUseLimit')}>
-                  <InputLabel name={t('form.dnasKeyUseLimit')} />
-                </Tooltip>
-                <NumericInput
-                  fieldName={'dnas.uploadLimit'}
-                  max={1048576}
-                  min={1}
-                  numericValue
-                  register={register}
-                  sizing="sm"
-                  step={1}
-                  validation={[]}
-                />
+              <Tooltip title={t('info.dnasKeyUseLimit')}>
+                <InputLabel name={t('form.dnasKeyUseLimit')} />
+              </Tooltip>
+              <NumericInput
+                fieldName={'dnas.uploadLimit'}
+                max={1048576}
+                min={1}
+                numericValue
+                register={register}
+                sizing="sm"
+                step={1}
+                validation={[]}
+              />
 
-                <Tooltip title={t('info.dnasKeyValue')}>
-                  <>
-                    <InputLabel name={t('form.dnasKeyValue')} />
-                    <TextInput
-                      fieldName="dnas.apiKeyValue"
-                      register={register}
-                      required
-                      // type="password"
-                      autoComplete="off"
-                    />
-                  </>
-                </Tooltip>
+              <Tooltip title={t('info.dnasKeyValue')}>
+                <>
+                  <InputLabel name={t('form.dnasKeyValue')} />
+                  <TextInput
+                    autoComplete="off"
+                    fieldName="dnas.apiKeyValue"
+                    register={register}
+                    // type="password"
+                    required
+                  />
+                </>
+              </Tooltip>
 
-                <PerformDnasKeyRegister
-                  key={watchDnasChainId}
-                        dnas={[newDnasForm as DnasObjectWithValues]}
-                        onClose={() => {
-                            setRegisterDnasKeyVisible(false);
-                            refreshProfile();
-                        }
-                        }
-                        updatingExistingDnasKey={watchUpdating}
-              </>
+              <PerformDnasKeyRegister
+                key={watchDnasChainId}
+                dnas={[newDnasForm as DnasObjectWithValues]}
+                onClose={() => {
+                  setRegisterDnasKeyVisible(false)
+                  refreshProfile()
+                }}
+                updatingExistingDnasKey={watchUpdating}
+              />
             </>
           )}
         </>

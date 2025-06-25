@@ -1,4 +1,3 @@
-
 import { HugeDecimal } from '@dao-dao/math'
 import { LoadingDataWithError } from '@dao-dao/types'
 import { ShitstrapInfoGeneric } from '@dao-dao/types/contracts/ShitStrap'
@@ -34,7 +33,6 @@ export type ShitstrapPaymentWidgetData = {
   // optional default factory on home chain as dao or connected wallet to fallback to
   factory?: string
 }
-
 
 export type ShitstrapFundModalProps = {
   /**

@@ -152,7 +152,7 @@ export const shitStrapFactoryQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
   listShitstrapContractsReverse: <TData = ArrayOfShitstrapContract>(
     queryClient: QueryClient,
@@ -194,7 +194,7 @@ export const shitStrapFactoryQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
   listShitstrapContractsByInstantiator: <TData = ArrayOfShitstrapContract>(
     queryClient: QueryClient,
@@ -241,10 +241,10 @@ export const shitStrapFactoryQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
   listShitstrapContractsByInstantiatorReverse: <
-    TData = ArrayOfShitstrapContract
+    TData = ArrayOfShitstrapContract,
   >(
     queryClient: QueryClient,
     {
@@ -288,7 +288,7 @@ export const shitStrapFactoryQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
   listShitstrapContractsByToken: <TData = ArrayOfShitstrapContract>(
     queryClient: QueryClient,
@@ -331,7 +331,7 @@ export const shitStrapFactoryQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
   listShitstrapContractsByTokenReverse: <TData = ArrayOfShitstrapContract>(
     queryClient: QueryClient,
@@ -374,7 +374,7 @@ export const shitStrapFactoryQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
   ownership: <TData = OwnershipForAddr>(
     queryClient: QueryClient,
@@ -404,7 +404,7 @@ export const shitStrapFactoryQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
   codeId: <TData = Uint64>(
     queryClient: QueryClient,
@@ -434,7 +434,7 @@ export const shitStrapFactoryQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
 }
 export interface ShitStrapFactoryReactQuery<TResponse, TData = TResponse> {
@@ -452,7 +452,7 @@ export interface ShitStrapFactoryCodeIdQuery<TData>
 export interface ShitStrapFactoryOwnershipQuery<TData>
   extends ShitStrapFactoryReactQuery<OwnershipForAddr, TData> {}
 export interface ShitStrapFactoryListShitstrapContractsByTokenReverseQuery<
-  TData
+  TData,
 > extends ShitStrapFactoryReactQuery<ArrayOfShitstrapContract, TData> {
   args: {
     limit?: number
@@ -469,7 +469,7 @@ export interface ShitStrapFactoryListShitstrapContractsByTokenQuery<TData>
   }
 }
 export interface ShitStrapFactoryListShitstrapContractsByInstantiatorReverseQuery<
-  TData
+  TData,
 > extends ShitStrapFactoryReactQuery<ArrayOfShitstrapContract, TData> {
   args: {
     instantiator: string
@@ -478,7 +478,7 @@ export interface ShitStrapFactoryListShitstrapContractsByInstantiatorReverseQuer
   }
 }
 export interface ShitStrapFactoryListShitstrapContractsByInstantiatorQuery<
-  TData
+  TData,
 > extends ShitStrapFactoryReactQuery<ArrayOfShitstrapContract, TData> {
   args: {
     instantiator: string

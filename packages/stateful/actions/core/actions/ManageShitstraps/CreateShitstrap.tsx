@@ -95,193 +95,205 @@ export const CreateShitstrap: ComponentType<
   addAction,
   ...props
 }) => {
-    // If widget not set up, don't render anything because begin shitstrap cannot be
-    // used.
-    if (!widgetData) {
-      return null
+  // If widget not set up, don't render anything because begin shitstrap cannot be
+  // used.
+  if (!widgetData) {
+    return null
+  }
+
+  const { t } = useTranslation()
+  const actionOptions = useActionOptions()
+  const {
+    context,
+    chainContext,
+    chain: { chainId: nativeChainId },
+  } = actionOptions
+  const configureCreateShitStrapActionDefaults = useInitializedActionForKey(
+    ActionKey.ConfigureShitstrapPayments
+  )
+
+  if (chainContext.type !== ActionChainContextType.Supported) {
+    throw new Error('Unsupported chain context')
+  }
+
+  // get connected wallet balance info
+  const { address: walletAddress, getSigningClient } = useWallet()
+  const { chainId, bech32Prefix } = useChain()
+  const tokenBalances = useTokenBalances()
+
+  // create forms
+  const {
+    control,
+    register,
+    watch,
+    setValue,
+    setError,
+    getValues,
+    resetField,
+    clearErrors,
+  } = useFormContext<CreateShitstrapData>()
+
+  const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
+  const watchCutoffAmount = watch((fieldNamePrefix + 'cutoff') as 'cutoff')
+  const watchDescription = watch(
+    (fieldNamePrefix + 'description') as 'description'
+  )
+  const watchEligibleAssets = watch(
+    (fieldNamePrefix + 'possibleShit') as 'possibleShit'
+  )
+  const watchShitstrapOwner = watch(
+    (fieldNamePrefix + 'ownerEntity') as 'ownerEntity'
+  )
+  const watchTokentoShit = watch(
+    (fieldNamePrefix + 'tokenToShit') as 'tokenToShit'
+  )
+  const ownerEntityAddress: string | undefined = watch(
+    (fieldNamePrefix + 'ownerEntity.address') as 'ownerEntity.address'
+  )
+  const watchSelfEntity = watch(
+    (fieldNamePrefix + 'selfEntity') as 'selfEntity'
+  )
+  const {
+    fields: eligibleAssetFields,
+    append: appendEligibleAsset,
+    remove: removeEligibleAsset,
+  } = useFieldArray({
+    control,
+    name: (fieldNamePrefix + 'possibleShit') as 'possibleShit',
+  })
+
+  const selectedToken = tokens.find(
+    ({ token }) => token.denomOrAddress === watchTokentoShit.denomOrAddress
+  )
+  const selectedMicroBalance = selectedToken?.balance ?? 0
+  const selectedBalance = HugeDecimal.from(selectedMicroBalance)
+
+  const nativeToken = getNativeTokenForChainId(watchChainId)
+  const currentChain = getChainForChainId(watchChainId)
+
+  const chainAccounts = context.accounts.filter(
+    (a) => a.chainId === watchChainId
+  )
+  const chainAddressOwner = getChainAddressForActionOptions(
+    actionOptions,
+    watchChainId
+  )
+
+  const shitstrapFactoryExists = !!widgetData?.factories?.[watchChainId]
+  const shitstrapOwnerAddrValid =
+    !!watchShitstrapOwner &&
+    isValidBech32Address(watchShitstrapOwner.address, currentChain.bech32Prefix)
+
+  const crossChainAccountActionExists = allActionsWithData.some(
+    (action) => action.actionKey === ActionKey.ConfigureShitstrapPayments
+  )
+
+  // A DAO can create a shitstrap payment factory on the current chain and any
+  // polytone connection that is also a supported chain (since the shitstrap
+  // factory+contract only exists on supported chains).
+  const possibleChainIds = [
+    nativeChainId,
+    ...Object.keys(chainContext.config.polytone || {}).filter((chainId) =>
+      getSupportedChainConfig(chainId)
+    ),
+  ]
+
+  // Only set defaults once.
+  const [defaultsSet, setDefaultsSet] = useState(
+    !!watchSelfEntity && !!watchShitstrapOwner
+  )
+
+  useEffect(() => {
+    if (defaultsSet) {
+      return
     }
 
-    const { t } = useTranslation()
-    const actionOptions = useActionOptions()
-    const {
-      context,
-      chainContext,
-      chain: { chainId: nativeChainId },
-    } = actionOptions
-    const configureCreateShitStrapActionDefaults = useInitializedActionForKey(
-      ActionKey.ConfigureShitstrapPayments
-    )
-
-    if (chainContext.type !== ActionChainContextType.Supported) {
-      throw new Error('Unsupported chain context')
-    }
-
-    // get connected wallet balance info
-    const { address: walletAddress, getSigningClient } = useWallet()
-    const { chainId, bech32Prefix } = useChain()
-    const tokenBalances = useTokenBalances()
-
-    // create forms
-    const {
-      control,
-      register,
-      watch,
-      setValue,
-      setError,
-      getValues,
-      resetField,
-      clearErrors,
-    } = useFormContext<CreateShitstrapData>()
-
-    const watchChainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
-    const watchCutoffAmount = watch((fieldNamePrefix + 'cutoff') as 'cutoff')
-    const watchDescription = watch((fieldNamePrefix + 'description') as 'description')
-    const watchEligibleAssets = watch((fieldNamePrefix + 'possibleShit') as 'possibleShit')
-    const watchShitstrapOwner = watch((fieldNamePrefix + 'ownerEntity') as 'ownerEntity')
-    const watchTokentoShit = watch((fieldNamePrefix + 'tokenToShit') as 'tokenToShit')
-    const ownerEntityAddress: string | undefined = watch((fieldNamePrefix + 'ownerEntity.address') as 'ownerEntity.address')
-    const watchSelfEntity = watch((fieldNamePrefix + 'selfEntity') as 'selfEntity')
-    const {
-      fields: eligibleAssetFields,
-      append: appendEligibleAsset,
-      remove: removeEligibleAsset,
-    } = useFieldArray({
-      control,
-      name: (fieldNamePrefix + 'possibleShit') as 'possibleShit',
-    })
-
-    const selectedToken = tokens.find(
-      ({ token }) => token.denomOrAddress === watchTokentoShit.denomOrAddress
-    )
-    const selectedMicroBalance = selectedToken?.balance ?? 0
-    const selectedBalance = HugeDecimal.from(selectedMicroBalance)
-
-    const nativeToken = getNativeTokenForChainId(watchChainId)
-    const currentChain = getChainForChainId(watchChainId)
-
-    const chainAccounts = context.accounts.filter((a) => a.chainId === watchChainId)
-    const chainAddressOwner = getChainAddressForActionOptions(
-      actionOptions,
-      watchChainId
-    )
-
-
-
-    const shitstrapFactoryExists = !!widgetData?.factories?.[watchChainId]
-    const shitstrapOwnerAddrValid = !!watchShitstrapOwner && isValidBech32Address(watchShitstrapOwner.address, currentChain.bech32Prefix)
-
-    const crossChainAccountActionExists = allActionsWithData.some(
-      (action) => action.actionKey === ActionKey.ConfigureShitstrapPayments
-    )
-
-    // A DAO can create a shitstrap payment factory on the current chain and any
-    // polytone connection that is also a supported chain (since the shitstrap
-    // factory+contract only exists on supported chains).
-    const possibleChainIds = [
-      nativeChainId,
-      ...Object.keys(chainContext.config.polytone || {}).filter((chainId) =>
-        getSupportedChainConfig(chainId)
-      ),
-    ]
-
-    // Only set defaults once.
-    const [defaultsSet, setDefaultsSet] = useState(
-      !!watchSelfEntity && !!watchShitstrapOwner
-    )
-
-    useEffect(() => {
-      if (defaultsSet) {
-        return
-      }
-
-      // Default selfParty to first CW20 if present. Otherwise, native.
-      const selfEntitySetData =
-        tokenBalances.loading === false
-          ? tokenBalances.data.filter(
+    // Default selfParty to first CW20 if present. Otherwise, native.
+    const selfEntitySetData =
+      tokenBalances.loading === false
+        ? tokenBalances.data.filter(
             ({ token }) => token.chainId === watchChainId
           )
-          : []
+        : []
 
-      const selfPartyDefaultCw20 = selfEntitySetData.find(
-        (tokenBalance) => tokenBalance.token.type === TokenType.Cw20
-      )
-
-      resetField((fieldNamePrefix + 'selfEntity') as 'selfEntity', {
-        defaultValue: {
-          type: selfPartyDefaultCw20 ? TokenType.Cw20 : TokenType.Native,
-          denomOrAddress: selfPartyDefaultCw20
-            ? selfPartyDefaultCw20.token.denomOrAddress
-            : nativeToken.denomOrAddress,
-          amount: 0,
-          decimals: selfPartyDefaultCw20
-            ? selfPartyDefaultCw20.token.decimals
-            : nativeToken.decimals,
-        },
-      })
-
-      // reset owner
-      resetField((fieldNamePrefix + 'ownerEntity') as 'ownerEntity', {
-        defaultValue: {
-          address: '',
-          type: 'native',
-          denomOrAddress: nativeToken.denomOrAddress,
-          amount: 0,
-          decimals: nativeToken.decimals,
-        },
-      })
-
-      setDefaultsSet(true)
-      // Only run on mount.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
-
-
-    // Get counterparty entity, which reverse engineers a DAO from its polytone
-    // proxy.
-    // Get entities
-    const [usingOwnShit, setUsingOwnShit] = useState(true)
-    const { entity: watchShitstrapOwnerEntity } = useEntity(
-      usingOwnShit
-        ? isValidBech32Address(ownerEntityAddress, bech32Prefix)
-          ? ownerEntityAddress
-          : ''
-        : walletAddress
-          ? isValidBech32Address(walletAddress, bech32Prefix)
-            ? walletAddress
-            : ''
-          : ''
+    const selfPartyDefaultCw20 = selfEntitySetData.find(
+      (tokenBalance) => tokenBalance.token.type === TokenType.Cw20
     )
 
-    const { entity: walletEntity } = useEntity(
-      walletAddress
+    resetField((fieldNamePrefix + 'selfEntity') as 'selfEntity', {
+      defaultValue: {
+        type: selfPartyDefaultCw20 ? TokenType.Cw20 : TokenType.Native,
+        denomOrAddress: selfPartyDefaultCw20
+          ? selfPartyDefaultCw20.token.denomOrAddress
+          : nativeToken.denomOrAddress,
+        amount: 0,
+        decimals: selfPartyDefaultCw20
+          ? selfPartyDefaultCw20.token.decimals
+          : nativeToken.decimals,
+      },
+    })
+
+    // reset owner
+    resetField((fieldNamePrefix + 'ownerEntity') as 'ownerEntity', {
+      defaultValue: {
+        address: '',
+        type: 'native',
+        denomOrAddress: nativeToken.denomOrAddress,
+        amount: 0,
+        decimals: nativeToken.decimals,
+      },
+    })
+
+    setDefaultsSet(true)
+    // Only run on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Get counterparty entity, which reverse engineers a DAO from its polytone
+  // proxy.
+  // Get entities
+  const [usingOwnShit, setUsingOwnShit] = useState(true)
+  const { entity: watchShitstrapOwnerEntity } = useEntity(
+    usingOwnShit
+      ? isValidBech32Address(ownerEntityAddress, bech32Prefix)
+        ? ownerEntityAddress
+        : ''
+      : walletAddress
         ? isValidBech32Address(walletAddress, bech32Prefix)
           ? walletAddress
           : ''
         : ''
-    )
+  )
 
-    // Try to retrieve governance token address, failing if not a cw20-based DAO.
-    const currentEntityDAOTokenLoadable = useRecoilValueLoadable(
-      !watchShitstrapOwnerEntity.loading &&
-        watchShitstrapOwnerEntity.data.type === EntityType.Dao &&
-        // Only care about loading the governance token if on the chain we're
-        // creating the token swap on.
-        watchShitstrapOwnerEntity.data.chainId === watchChainId
-        ? DaoDaoCoreSelectors.tryFetchGovernanceTokenAddressSelector({
+  const { entity: walletEntity } = useEntity(
+    walletAddress
+      ? isValidBech32Address(walletAddress, bech32Prefix)
+        ? walletAddress
+        : ''
+      : ''
+  )
+
+  // Try to retrieve governance token address, failing if not a cw20-based DAO.
+  const currentEntityDAOTokenLoadable = useRecoilValueLoadable(
+    !watchShitstrapOwnerEntity.loading &&
+      watchShitstrapOwnerEntity.data.type === EntityType.Dao &&
+      // Only care about loading the governance token if on the chain we're
+      // creating the token swap on.
+      watchShitstrapOwnerEntity.data.chainId === watchChainId
+      ? DaoDaoCoreSelectors.tryFetchGovernanceTokenAddressSelector({
           chainId: watchChainId,
           contractAddress: watchShitstrapOwnerEntity.data.address,
         })
-        : constSelector(undefined)
-    )
+      : constSelector(undefined)
+  )
 
-    // Load balances as loadables since they refresh automatically on a timer.
-    const currentWalletTokenBalances = useCachedLoading(
-      walletAddress &&
-        !walletEntity.loading &&
-        walletEntity.data &&
-        currentEntityDAOTokenLoadable.state !== 'loading'
-        ? genericTokenBalancesSelector({
+  // Load balances as loadables since they refresh automatically on a timer.
+  const currentWalletTokenBalances = useCachedLoading(
+    walletAddress &&
+      !walletEntity.loading &&
+      walletEntity.data &&
+      currentEntityDAOTokenLoadable.state !== 'loading'
+      ? genericTokenBalancesSelector({
           chainId: walletEntity.data.chainId,
           address: walletEntity.data.address,
           cw20GovernanceTokenAddress: undefined,
@@ -292,14 +304,14 @@ export const CreateShitstrap: ComponentType<
             },
           },
         })
-        : undefined,
-      []
-    )
+      : undefined,
+    []
+  )
 
-    // Load balances as loadables since they refresh automatically on a timer.
-    const watchShitstrapOwnerTokenBalances = useCachedLoading(
-      ownerEntityAddress && !walletEntity.loading && walletEntity.data
-        ? genericTokenBalancesSelector({
+  // Load balances as loadables since they refresh automatically on a timer.
+  const watchShitstrapOwnerTokenBalances = useCachedLoading(
+    ownerEntityAddress && !walletEntity.loading && walletEntity.data
+      ? genericTokenBalancesSelector({
           chainId: walletEntity.data.chainId,
           address: walletEntity.data.address,
           cw20GovernanceTokenAddress: undefined,
@@ -310,268 +322,281 @@ export const CreateShitstrap: ComponentType<
             },
           },
         })
-        : undefined,
-      []
-    )
+      : undefined,
+    []
+  )
 
-    // if wallet is selected to make payment, use wallet tokens in TokenInput, broacast payment via wallet
-    useEffect(() => {
-      if (context.type === ActionContextType.Wallet) {
-        setUsingOwnShit(true)
-      }
-    }, [context.type])
+  // if wallet is selected to make payment, use wallet tokens in TokenInput, broacast payment via wallet
+  useEffect(() => {
+    if (context.type === ActionContextType.Wallet) {
+      setUsingOwnShit(true)
+    }
+  }, [context.type])
 
-    return (
-      <>
-        <p className="max-w-prose">{t('info.shitStrapExplanation')}</p>
-        {context.type === ActionContextType.Dao && (
-          <DaoSupportedChainPickerInput
-            disabled={!isCreating}
-            fieldName={fieldNamePrefix + 'chainId'}
-            onChange={(chainId) => {
-              // Reset when switching chain.
-              setValue((fieldNamePrefix + 'cutoff') as 'cutoff', "")
-              setValue((fieldNamePrefix + 'chainId') as 'chainId', chainId)
-              setValue((fieldNamePrefix + 'possibleShit') as 'possibleShit', [])
-              setValue(
-                (fieldNamePrefix + 'ownerEntity.address') as 'ownerEntity.address',
-                chainAddressOwner ? chainAddressOwner : ''
-              )
-            }}
-          />
-        )}
-        <div className="flex  flex-col gap-4">
-
-          {isCreating &&
-            !shitstrapFactoryExists &&
-            (
-              <StatusCard
-                className="max-w-lg"
-                content={t('info.shitstrapManagerNeeded', {
-                  chain: getDisplayNameForChainId(watchChainId),
-                })}
-                style="warning"
-              >
-                {/* {console.log("crossChainAccountActionExists", crossChainAccountActionExists)}
+  return (
+    <>
+      <p className="max-w-prose">{t('info.shitStrapExplanation')}</p>
+      {context.type === ActionContextType.Dao && (
+        <DaoSupportedChainPickerInput
+          disabled={!isCreating}
+          fieldName={fieldNamePrefix + 'chainId'}
+          onChange={(chainId) => {
+            // Reset when switching chain.
+            setValue((fieldNamePrefix + 'cutoff') as 'cutoff', '')
+            setValue((fieldNamePrefix + 'chainId') as 'chainId', chainId)
+            setValue((fieldNamePrefix + 'possibleShit') as 'possibleShit', [])
+            setValue(
+              (fieldNamePrefix +
+                'ownerEntity.address') as 'ownerEntity.address',
+              chainAddressOwner ? chainAddressOwner : ''
+            )
+          }}
+        />
+      )}
+      <div className="flex  flex-col gap-4">
+        {isCreating && !shitstrapFactoryExists && (
+          <StatusCard
+            className="max-w-lg"
+            content={t('info.shitstrapManagerNeeded', {
+              chain: getDisplayNameForChainId(watchChainId),
+            })}
+            style="warning"
+          >
+            {/* {console.log("crossChainAccountActionExists", crossChainAccountActionExists)}
                 {console.log("configureCreateShitStrapActionDefaults", configureCreateShitStrapActionDefaults)} */}
-                <Button
-                  disabled={shitstrapFactoryExists}
-                  onClick={() => {
-                    remove()
-                    addAction(
-                      {
-                        actionKey: ActionKey.ConfigureShitstrapPayments,
-                        data: !configureCreateShitStrapActionDefaults.errored &&
-                          !configureCreateShitStrapActionDefaults.loading ? configureCreateShitStrapActionDefaults.data.defaults : {},
-                      },
-                      actionIndex
-                    )
-                  }}
-                  variant="primary"
-                >
-                  {shitstrapFactoryExists
-                    ? t('button.shitstrapManagerSetupActionAdded')
-                    : t('button.addShitstrapManagerSetupAction')}
-                </Button>
-              </StatusCard>
-            )}
+            <Button
+              disabled={shitstrapFactoryExists}
+              onClick={() => {
+                remove()
+                addAction(
+                  {
+                    actionKey: ActionKey.ConfigureShitstrapPayments,
+                    data:
+                      !configureCreateShitStrapActionDefaults.errored &&
+                      !configureCreateShitStrapActionDefaults.loading
+                        ? configureCreateShitStrapActionDefaults.data.defaults
+                        : {},
+                  },
+                  actionIndex
+                )
+              }}
+              variant="primary"
+            >
+              {shitstrapFactoryExists
+                ? t('button.shitstrapManagerSetupActionAdded')
+                : t('button.addShitstrapManagerSetupAction')}
+            </Button>
+          </StatusCard>
+        )}
+        <div className="space-y-2">
+          <InputLabel name={t('form.title')} />
+          <TextInput
+            disabled={!isCreating}
+            error={errors?.title}
+            fieldName={(fieldNamePrefix + 'title') as 'title'}
+            register={register}
+            required
+          />
+          <InputErrorMessage error={errors?.title} />
+        </div>
+
+        {(isCreating || !!watchDescription) && (
           <div className="space-y-2">
-            <InputLabel name={t('form.title')} />
-            <TextInput
+            <InputLabel name={t('form.descriptionOptional')} />
+            <TextAreaInput
               disabled={!isCreating}
-              error={errors?.title}
-              fieldName={(fieldNamePrefix + 'title') as 'title'}
+              error={errors?.description}
+              fieldName={(fieldNamePrefix + 'description') as 'description'}
               register={register}
-              required
             />
-            <InputErrorMessage error={errors?.title} />
+            <InputErrorMessage error={errors?.description} />
           </div>
-
-          {(isCreating || !!watchDescription) && (
-            <div className="space-y-2">
-              <InputLabel name={t('form.descriptionOptional')} />
-              <TextAreaInput
+        )}
+        <div className="space-y-2">
+          <InputLabel name={t('form.tokenToShitstrap')} />
+          {/* Allow to enter value for tokens to shitstrap than what they currently have in the treasury, since they could accept it at a future time when they do have the amount. In other words, don't set a max. */}
+          <div className="flex min-w-0 flex-col flex-wrap gap-x-3 gap-y-2 sm:flex-row sm:items-stretch">
+            <div className="flex flex-row items-center pl-1 sm:pl-0">
+              <AddressInput
+                containerClassName="grow"
                 disabled={!isCreating}
-                error={errors?.description}
-                fieldName={(fieldNamePrefix + 'description') as 'description'}
+                error={errors?.recipient}
+                fieldName={
+                  (fieldNamePrefix +
+                    'ownerEntity.address') as 'ownerEntity.address'
+                }
                 register={register}
+                validation={[
+                  validateRequired,
+                  makeValidateAddress(currentChain.bech32Prefix),
+                ]}
               />
-              <InputErrorMessage error={errors?.description} />
-            </div>
-          )}
-          <div className="space-y-2">
-            <InputLabel name={t('form.tokenToShitstrap')} />
-            {/* Allow to enter value for tokens to shitstrap than what they currently have in the treasury, since they could accept it at a future time when they do have the amount. In other words, don't set a max. */}
-            <div className="flex min-w-0 flex-col flex-wrap gap-x-3 gap-y-2 sm:flex-row sm:items-stretch">
-              <div className="flex flex-row items-center pl-1 sm:pl-0">
-                <AddressInput
-                  containerClassName="grow"
-                  disabled={!isCreating}
-                  error={errors?.recipient}
-                  fieldName={
-                    (fieldNamePrefix +
-                      'ownerEntity.address') as 'ownerEntity.address'
-                  }
-                  register={register}
-                  validation={[
-                    validateRequired,
-                    makeValidateAddress(currentChain.bech32Prefix),
-                  ]}
-                />
-                <div className="flex min-w-0 grow flex-row items-stretch gap-2 sm:gap-3">
-                  <ArrowRightAltRounded className="!hidden !h-6 !w-6 text-text-secondary sm:!block" />
-                  <SubdirectoryArrowRightRounded className="!h-4 !w-4 text-text-secondary sm:!hidden" />
-                </div>
+              <div className="flex min-w-0 grow flex-row items-stretch gap-2 sm:gap-3">
+                <ArrowRightAltRounded className="!hidden !h-6 !w-6 text-text-secondary sm:!block" />
+                <SubdirectoryArrowRightRounded className="!h-4 !w-4 text-text-secondary sm:!hidden" />
               </div>
+            </div>
 
-              {watchShitstrapOwner?.address ? (
-                <TokenInput
-                  amount={{
-                    watch,
-                    setValue,
-                    register,
-                    getValues,
-                    fieldName: (fieldNamePrefix + 'cutoff') as 'cutoff',
-                    error: errors?.amount,
-                    min: HugeDecimal.one.toHumanReadableNumber(6),
-                    step: HugeDecimal.one.toHumanReadableNumber(6),
-                    ...props,
-                  }}
-                  // disabled={!shitstrapOwnerAddrValid}
-                  onSelectToken={(token) => {
-                    setValue(
-                      (fieldNamePrefix +
-                        'tokenToShit.denomOrAddress') as 'tokenToShit.denomOrAddress',
-                      token?.denomOrAddress!
-                    )
-                    setValue(
-                      (fieldNamePrefix +
-                        'tokenToShit.type') as 'tokenToShit.type',
-                      token?.type!
-                    )
-                    setValue(
-                      (fieldNamePrefix +
-                        'tokenToShit.chainId') as 'tokenToShit.chainId',
-                      chainId
-                    )
-                  }}
-                  onCustomTokenChange={(custom) => {
-                    setValue(
-                      (fieldNamePrefix +
-                        'tokenToShit.denomOrAddress') as 'tokenToShit.denomOrAddress',
-                      custom
-                    )
-                    // if custom starts with  the chain prefix, it is a cw20 for the type, else it is native
-                    setValue(
-                      (fieldNamePrefix +
-                        'tokenToShit.type') as 'tokenToShit.type',
-                      custom.startsWith(bech32Prefix) ? TokenType.Cw20 : TokenType.Native
-                    )
-                    setValue(
-                      (fieldNamePrefix +
-                        'tokenToShit.chainId') as 'tokenToShit.chainId',
-                      chainId
-                    )
-                  }}
-                  allowCustomToken
-                  // readOnly={!isCreating}
-                  selectedToken={{
-                    type: watchTokentoShit.type,
-                    denomOrAddress: watchTokentoShit.denomOrAddress,
-                    chainId: watchTokentoShit.chainId,
-                  }}
-                  showChainImage
-                  tokens={
-                    !shitstrapOwnerAddrValid
-                      ? { loading: false, data: [] }
-                      : watchShitstrapOwnerTokenBalances.loading
-                        ? { loading: true }
-                        : {
+            {watchShitstrapOwner?.address ? (
+              <TokenInput
+                allowCustomToken
+                // disabled={!shitstrapOwnerAddrValid}
+                amount={{
+                  watch,
+                  setValue,
+                  register,
+                  getValues,
+                  fieldName: (fieldNamePrefix + 'cutoff') as 'cutoff',
+                  error: errors?.amount,
+                  min: HugeDecimal.one.toHumanReadableNumber(6),
+                  step: HugeDecimal.one.toHumanReadableNumber(6),
+                  ...props,
+                }}
+                onCustomTokenChange={(custom) => {
+                  setValue(
+                    (fieldNamePrefix +
+                      'tokenToShit.denomOrAddress') as 'tokenToShit.denomOrAddress',
+                    custom
+                  )
+                  // if custom starts with  the chain prefix, it is a cw20 for the type, else it is native
+                  setValue(
+                    (fieldNamePrefix +
+                      'tokenToShit.type') as 'tokenToShit.type',
+                    custom.startsWith(bech32Prefix)
+                      ? TokenType.Cw20
+                      : TokenType.Native
+                  )
+                  setValue(
+                    (fieldNamePrefix +
+                      'tokenToShit.chainId') as 'tokenToShit.chainId',
+                    chainId
+                  )
+                }}
+                onSelectToken={(token) => {
+                  setValue(
+                    (fieldNamePrefix +
+                      'tokenToShit.denomOrAddress') as 'tokenToShit.denomOrAddress',
+                    token?.denomOrAddress!
+                  )
+                  setValue(
+                    (fieldNamePrefix +
+                      'tokenToShit.type') as 'tokenToShit.type',
+                    token?.type!
+                  )
+                  setValue(
+                    (fieldNamePrefix +
+                      'tokenToShit.chainId') as 'tokenToShit.chainId',
+                    chainId
+                  )
+                }}
+                // readOnly={!isCreating}
+                selectedToken={{
+                  type: watchTokentoShit.type,
+                  denomOrAddress: watchTokentoShit.denomOrAddress,
+                  chainId: watchTokentoShit.chainId,
+                }}
+                showChainImage
+                tokens={
+                  !shitstrapOwnerAddrValid
+                    ? { loading: false, data: [] }
+                    : watchShitstrapOwnerTokenBalances.loading
+                      ? { loading: true }
+                      : {
                           loading: false,
                           data: watchShitstrapOwnerTokenBalances.data.map(
                             ({ token, balance }) => ({
                               ...token,
-                              description: t('title.balance') + ': ' + HugeDecimal
-                                .from(balance).toInternationalizedHumanReadableString({ decimals: 6, }),
+                              description:
+                                t('title.balance') +
+                                ': ' +
+                                HugeDecimal.from(
+                                  balance
+                                ).toInternationalizedHumanReadableString({
+                                  decimals: 6,
+                                }),
                             })
                           ),
                         }
-                  }
-                />
-              ) : undefined}
-            </div>
+                }
+              />
+            ) : undefined}
           </div>
-          {(errors?.amount || errors?.denomOrAddress || errors?.recipient) && (
-            <div className="space-y-1">
-              <InputErrorMessage error={errors?.amount} />
-              <InputErrorMessage error={errors?.denomOrAddress} />
-              <InputErrorMessage error={errors?.recipient} />
-            </div>
-          )}
         </div>
-        {/* Eligible Assets */}
-        <div className="flex flex-col gap-3">
-          <InputLabel name={t('form.possibleShit')} primary />
-          {eligibleAssetFields.map((props, index) => {
-            return (
-              <div key={props.id} className="flex flex-row flex-wrap items-center gap-2">
-                <div className="flex shrink-0 flex-col gap-1">
-                  <div className="flex flex-row items-end justify-between gap-2"></div>
-                  <div className="flex flex-row gap-1">
-                    <TokenInput
-                      amount={{
-                        watch,
-                        setValue,
-                        getValues,
-                        register,
-                        fieldName: (fieldNamePrefix +
-                          `possibleShit.${index}.shit_rate`) as `possibleShit.${number}.shit_rate`,
-                        // error: errors?.amount,
-                        min: HugeDecimal.one.toHumanReadableNumber(6),
-                        step: HugeDecimal.one.toHumanReadableNumber(6),
-                      }}
-                      onSelectToken={(token) => {
-                        if (token?.type! === TokenType.Native) {
-                          setValue(
-                            (fieldNamePrefix +
-                              `possibleShit.${index}.token`) as `possibleShit.${number}.token`,
-                            token?.denomOrAddress!
-                          )
-                        }
-                      }}
-                      onCustomTokenChange={(custom) => {
+        {(errors?.amount || errors?.denomOrAddress || errors?.recipient) && (
+          <div className="space-y-1">
+            <InputErrorMessage error={errors?.amount} />
+            <InputErrorMessage error={errors?.denomOrAddress} />
+            <InputErrorMessage error={errors?.recipient} />
+          </div>
+        )}
+      </div>
+      {/* Eligible Assets */}
+      <div className="flex flex-col gap-3">
+        <InputLabel name={t('form.possibleShit')} primary />
+        {eligibleAssetFields.map((props, index) => {
+          return (
+            <div
+              key={props.id}
+              className="flex flex-row flex-wrap items-center gap-2"
+            >
+              <div className="flex shrink-0 flex-col gap-1">
+                <div className="flex flex-row items-end justify-between gap-2"></div>
+                <div className="flex flex-row gap-1">
+                  <TokenInput
+                    allowCustomToken={true}
+                    amount={{
+                      watch,
+                      setValue,
+                      getValues,
+                      register,
+                      fieldName: (fieldNamePrefix +
+                        `possibleShit.${index}.shit_rate`) as `possibleShit.${number}.shit_rate`,
+                      // error: errors?.amount,
+                      min: HugeDecimal.one.toHumanReadableNumber(6),
+                      step: HugeDecimal.one.toHumanReadableNumber(6),
+                    }}
+                    onCustomTokenChange={(custom) => {
+                      setValue(
+                        (fieldNamePrefix +
+                          `possibleShit.${index}.token`) as `possibleShit.${number}.token`,
+                        custom
+                      )
+                      // if custom starts with  the chain prefix, it is a cw20 for the type, else it is native
+                      setValue(
+                        (fieldNamePrefix +
+                          'tokenToShit.type') as 'tokenToShit.type',
+                        custom.startsWith(bech32Prefix)
+                          ? TokenType.Cw20
+                          : TokenType.Native
+                      )
+                    }}
+                    onSelectToken={(token) => {
+                      if (token?.type! === TokenType.Native) {
                         setValue(
                           (fieldNamePrefix +
                             `possibleShit.${index}.token`) as `possibleShit.${number}.token`,
-                          custom
+                          token?.denomOrAddress!
                         )
-                        // if custom starts with  the chain prefix, it is a cw20 for the type, else it is native
-                        setValue(
-                          (fieldNamePrefix +
-                            'tokenToShit.type') as 'tokenToShit.type',
-                          custom.startsWith(bech32Prefix) ? TokenType.Cw20 : TokenType.Native
-                        )
-
-                      }}
-                      allowCustomToken={true}
-                      readOnly={!isCreating}
-                      required={index == 0 ? true : false}
-                      selectedToken={
-                        !currentWalletTokenBalances.loading
-                          ? currentWalletTokenBalances.data.find(
+                      }
+                    }}
+                    readOnly={!isCreating}
+                    required={index == 0 ? true : false}
+                    selectedToken={
+                      !currentWalletTokenBalances.loading
+                        ? currentWalletTokenBalances.data.find(
                             ({ token }) =>
                               watchEligibleAssets[index] &&
                               watchEligibleAssets[index].token &&
                               watchEligibleAssets[index].token ===
-                              token.denomOrAddress
+                                token.denomOrAddress
                           )?.token
-                          : watchTokentoShit
-                      }
-                      showChainImage
-                      tokens={{
-                        loading: false,
-                        data: !currentWalletTokenBalances.loading
-                          ? currentWalletTokenBalances.data
+                        : watchTokentoShit
+                    }
+                    showChainImage
+                    tokens={{
+                      loading: false,
+                      data: !currentWalletTokenBalances.loading
+                        ? currentWalletTokenBalances.data
                             .filter(({ token: { chainId } }) =>
                               possibleChainIds.includes(chainId)
                             )
@@ -586,35 +611,35 @@ export const CreateShitstrap: ComponentType<
                                   decimals: 6,
                                 }),
                             }))
-                          : [],
-                      }}
+                        : [],
+                    }}
+                  />
+                  {isCreating && (
+                    <IconButton
+                      Icon={Close}
+                      className="mt-6"
+                      onClick={() => removeEligibleAsset(index)}
+                      size="sm"
+                      variant="ghost"
                     />
-                    {isCreating && (
-                      <IconButton
-                        Icon={Close}
-                        className="mt-6"
-                        onClick={() => removeEligibleAsset(index)}
-                        size="sm"
-                        variant="ghost"
-                      />
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
-            )
-          })}
+            </div>
+          )
+        })}
 
-          {isCreating && (
-            <Button
-              className="self-start"
-              onClick={() => appendEligibleAsset({})}
-              variant="secondary"
-            >
-              {t('button.addEligibleAsset')}
-            </Button>
-          )}
-          <InputErrorMessage error={errors?.possibleShit} />
-        </div>
-      </>
-    )
-  }
+        {isCreating && (
+          <Button
+            className="self-start"
+            onClick={() => appendEligibleAsset({})}
+            variant="secondary"
+          >
+            {t('button.addEligibleAsset')}
+          </Button>
+        )}
+        <InputErrorMessage error={errors?.possibleShit} />
+      </div>
+    </>
+  )
+}

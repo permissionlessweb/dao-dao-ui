@@ -872,9 +872,9 @@
       "DaoVotingCw4": 1863,
       "DaoVotingCw721Staked": 1864,
       "DaoVotingTokenStaked": 1865,
-      "ValenceAccount": 1618,
       "ShitStrap": 2986,
-      "ShitStrapFactory": 2985
+      "ShitStrapFactory": 2985,
+      "ValenceAccount": 1618
     },
     "2.6.0": {
       "Cw1Whitelist": 552,
@@ -1296,6 +1296,7 @@
       "Cw4Group": 83,
       "Cw721Base": 41,
       "CwAdminFactory": 84,
+      "CwInfuser": 595,
       "CwPayrollFactory": 85,
       "CwTokenSwap": 86,
       "CwVesting": 87,
@@ -1304,11 +1305,11 @@
       "DaoPreProposeSingle": 90,
       "DaoProposalMultiple": 91,
       "DaoProposalSingle": 92,
-      "DaoVotingCw4": 93,
-      "CwInfuser": 595
+      "DaoVotingCw4": 93
     },
     "2.3.0": {
       "Cw4Group": 83,
+      "CwInfuser": 595,
       "CwPayrollFactory": 124,
       "CwTokenSwap": 125,
       "CwTokenfactoryIssuer": 122,
@@ -1320,12 +1321,12 @@
       "DaoProposalSingle": 132,
       "DaoVotingCw4": 133,
       "DaoVotingCw721Staked": 120,
-      "DaoVotingTokenStaked": 121,
-      "CwInfuser": 595
+      "DaoVotingTokenStaked": 121
     },
     "2.4.0": {
       "Cw1Whitelist": 152,
       "Cw4Group": 83,
+      "CwInfuser": 595,
       "CwPayrollFactory": 148,
       "CwTokenSwap": 149,
       "CwTokenfactoryIssuer": 150,
@@ -1341,13 +1342,13 @@
       "DaoVotingCw721Staked": 161,
       "DaoVotingTokenStaked": 162,
       "ShitStrap": 4734,
-      "ShitStrapFactory": 4733,
-      "CwInfuser": 595
+      "ShitStrapFactory": 4733
     },
     "2.5.0": {
       "Cw1Whitelist": 152,
       "Cw4Group": 83,
       "CwAdminFactory": 336,
+      "CwInfuser": 595,
       "CwPayrollFactory": 337,
       "CwTokenSwap": 338,
       "CwTokenfactoryIssuer": 339,
@@ -1364,13 +1365,13 @@
       "DaoVotingCw721Staked": 350,
       "DaoVotingTokenStaked": 351,
       "ShitStrap": 4734,
-      "ShitStrapFactory": 4733,
-      "CwInfuser": 595
+      "ShitStrapFactory": 4733
     },
     "2.6.0": {
       "Cw1Whitelist": 152,
       "Cw4Group": 83,
       "CwAdminFactory": 427,
+      "CwInfuser": 595,
       "CwPayrollFactory": 428,
       "CwTokenSwap": 429,
       "CwTokenfactoryIssuer": 442,
@@ -1386,8 +1387,7 @@
       "DaoRewardsDistributor": 438,
       "DaoVotingCw4": 439,
       "DaoVotingCw721Staked": 441,
-      "DaoVotingTokenStaked": 443,
-      "CwInfuser": 595
+      "DaoVotingTokenStaked": 443
     }
   },
   "theta-testnet-001": {

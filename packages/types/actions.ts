@@ -35,11 +35,11 @@ export enum ActionCategoryKey {
 }
 
 export enum ActionKey {
-  Headstash = 'headstash',
+  ManageHeadstash = 'headstash',
   ConfigureShitstrapPayments = 'configureShitstrapPayments',
   ManageShitstrap = 'manageShitstrap',
   InfuseNfts = 'infuseNfts',
-  
+
   Spend = 'spend',
   CommunityPoolSpend = 'communityPoolSpend',
   CommunityPoolDeposit = 'communityPoolDeposit',
@@ -129,7 +129,7 @@ export enum ActionKey {
   ResumeRewardDistribution = 'resumeRewardDistribution',
 
   FixRewardDistributor = 'fixRewardDistributor',
-  
+
   // dnas
   ManageDnas = 'manageDnas',
 }

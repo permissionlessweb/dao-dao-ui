@@ -1,6 +1,7 @@
 import { toHex } from '@cosmjs/encoding'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+
 import { getChainForChainId, signOffChainAuth } from '@dao-dao/utils'
 
 import { useWallet } from './useWallet'
@@ -14,9 +15,9 @@ const lastSuccessfulNonceForApiAndPublicKey: Record<
 > = {}
 
 /**
-* Hook that makes it easy to interact with our various Cloudflare Workers that
-* use off-chain wallet auth.
-*/
+ * Hook that makes it easy to interact with our various Cloudflare Workers that
+ * use off-chain wallet auth.
+ */
 export const useCfWorkerAuthPostRequest = (
   apiBase: string,
   defaultSignatureType: string,
@@ -47,8 +48,8 @@ export const useCfWorkerAuthPostRequest = (
 
       const thisChainWallet = overrideChainId
         ? chainWallet?.mainWallet.getChainWallet(
-          getChainForChainId(overrideChainId).chainName
-        )
+            getChainForChainId(overrideChainId).chainName
+          )
         : chainWallet
 
       // If hex public key not loaded, load it from the wallet.
@@ -134,8 +135,8 @@ export const useCfWorkerAuthPostRequest = (
       const thisChainWallet =
         overrideChainId && overrideChainId !== chain.chainId
           ? chainWallet?.mainWallet.getChainWallet(
-            getChainForChainId(overrideChainId).chainName
-          )
+              getChainForChainId(overrideChainId).chainName
+            )
           : chainWallet
 
       if (!thisChainWallet?.address) {
@@ -173,7 +174,7 @@ export const useCfWorkerAuthPostRequest = (
       })
 
       const bodyDebug = JSON.stringify(body)
-      console.log("bodyDebug", bodyDebug)
+      console.log('bodyDebug', bodyDebug)
       // Send request.
       const response = await fetch(apiBase + endpoint, {
         method,
@@ -201,7 +202,9 @@ export const useCfWorkerAuthPostRequest = (
 
       // If response OK, return response body (unless 204 no content, in which
       // case return undefined).
-      return response.status === 204 ? undefined as any : await response.json()
+      return response.status === 204
+        ? (undefined as any)
+        : await response.json()
     },
     [
       defaultSignatureType,
@@ -213,7 +216,6 @@ export const useCfWorkerAuthPostRequest = (
       t,
     ]
   )
-
 
   const postDnasRequest = useCallback(
     async <R = any>(
@@ -229,14 +231,13 @@ export const useCfWorkerAuthPostRequest = (
        */
       method = 'POST'
     ): Promise<R> => {
-
       // removed second signOffchain auth for using dnas keys
       const bodyDebug = JSON.stringify(data)
-      console.log("bodyDebug", bodyDebug)
+      console.log('bodyDebug', bodyDebug)
       // Send request.
       const response = await fetch(apiBase + endpoint, {
         method,
-        body: data as any
+        body: data as any,
       })
 
       // If response not OK, throw error.
@@ -256,7 +257,9 @@ export const useCfWorkerAuthPostRequest = (
 
       // If response OK, return response body (unless 204 no content, in which
       // case return undefined).
-      return response.status === 204 ? undefined as any : await response.json()
+      return response.status === 204
+        ? (undefined as any)
+        : await response.json()
     },
     [
       defaultSignatureType,

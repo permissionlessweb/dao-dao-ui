@@ -20,7 +20,6 @@ import {
   SupportedChainConfig,
   TokenType,
   Validator,
-  GenericTokenSource
 } from '@dao-dao/types'
 import {
   Validator as RpcValidator,
@@ -176,9 +175,9 @@ export const getImageUrlForChainId = (chainId: string): string => {
   // Some chain logos are not square, so use the coin instead.
   const image =
     (chainId === ChainId.OsmosisMainnet ||
-      chainId === ChainId.OsmosisTestnet ||
-      chainId === ChainId.NeutronMainnet ||
-      chainId === ChainId.NeutronTestnet
+    chainId === ChainId.OsmosisTestnet ||
+    chainId === ChainId.NeutronMainnet ||
+    chainId === ChainId.NeutronTestnet
       ? nativeTokenImageUrl
       : chainImageUrl) ||
     nativeTokenImageUrl ||
@@ -346,7 +345,6 @@ export const getTokenForChainIdAndDenom = (
 
     return cachedTokens[key]!
   } catch (err) {
-
     if (placeholder) {
       return Object.freeze({
         chainId,
@@ -404,7 +402,7 @@ export const getIbcTransferInfoBetweenChains = (
     ({
       [`chain_${srcChainNumber}` as `chain_${typeof srcChainNumber}`]: srcChain,
       [`chain_${destChainNumber}` as `chain_${typeof srcChainNumber}`]:
-      destChain,
+        destChain,
       version,
     }) =>
       version === 'ics20-1' &&
@@ -758,49 +756,95 @@ export const getPublicKeyTypeForChain = (chainId: string): string => {
 
 /**for a given chain-id and denom address, get the Generic token source
  */
-export const  lastDitchEffortFetchShitTokenSource = (
+export const lastDitchEffortFetchShitTokenSource = (
   chainId: string,
   denomOrAddress: string
 ): GenericToken | undefined => {
   const patchedIbcShitToken = TokenSourcesIndex[chainId]?.[denomOrAddress]
-  return patchedIbcShitToken;
-};
+  return patchedIbcShitToken
+}
 
-
-export const TokenSourcesIndex: { [chainId: string]: { [denomOrAddress: string]: GenericToken } } = {
+export const TokenSourcesIndex: {
+  [chainId: string]: { [denomOrAddress: string]: GenericToken }
+} = {
   'juno-1': {
     // STARS from home
-    'ibc/F6B367385300865F654E110976B838502504231705BAC0849B0651C226385885':
-    {
-      chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/F6B367385300865F654E110976B838502504231705BAC0849B0651C226385885", symbol: "junoSTARS", decimals: 6, imageUrl: getImageUrlForChainId("stargaze-1"),
-      source: { denomOrAddress: "ustars", type: TokenType.Native, chainId: "stargaze-1" }
+    'ibc/F6B367385300865F654E110976B838502504231705BAC0849B0651C226385885': {
+      chainId: 'juno-1',
+      type: TokenType.Native,
+      denomOrAddress:
+        'ibc/F6B367385300865F654E110976B838502504231705BAC0849B0651C226385885',
+      symbol: 'junoSTARS',
+      decimals: 6,
+      imageUrl: getImageUrlForChainId('stargaze-1'),
+      source: {
+        denomOrAddress: 'ustars',
+        type: TokenType.Native,
+        chainId: 'stargaze-1',
+      },
     },
     // OSMO from home
-    'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518':
-    {
-      chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", symbol: "junoOSMO", decimals: 6, imageUrl: getImageUrlForChainId("osmosis-1"),
-      source: { denomOrAddress: "uosmo", type: TokenType.Native, chainId: "osmosis-1" }
+    'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518': {
+      chainId: 'juno-1',
+      type: TokenType.Native,
+      denomOrAddress:
+        'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518',
+      symbol: 'junoOSMO',
+      decimals: 6,
+      imageUrl: getImageUrlForChainId('osmosis-1'),
+      source: {
+        denomOrAddress: 'uosmo',
+        type: TokenType.Native,
+        chainId: 'osmosis-1',
+      },
     },
     // ATOM from home
-    'ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9':
-    {
-      chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9", symbol: "junoATOM", decimals: 6, imageUrl: getImageUrlForChainId("cosmoshub-4"),
-      source: { denomOrAddress: "uatom", type: TokenType.Native, chainId: "cosmoshub-4" }
+    'ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9': {
+      chainId: 'juno-1',
+      type: TokenType.Native,
+      denomOrAddress:
+        'ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9',
+      symbol: 'junoATOM',
+      decimals: 6,
+      imageUrl: getImageUrlForChainId('cosmoshub-4'),
+      source: {
+        denomOrAddress: 'uatom',
+        type: TokenType.Native,
+        chainId: 'cosmoshub-4',
+      },
     },
     // AKT from home
-    'ibc/DFC6F33796D5D0075C5FB54A4D7B8E76915ACF434CB1EE2A1BA0BB8334E17C3A':
-    {
-      chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/DFC6F33796D5D0075C5FB54A4D7B8E76915ACF434CB1EE2A1BA0BB8334E17C3A", symbol: "junoAKT", decimals: 6, imageUrl: getImageUrlForChainId("akash-1"),
-      source: { denomOrAddress: "uakt", type: TokenType.Native, chainId: "akash-1" }
+    'ibc/DFC6F33796D5D0075C5FB54A4D7B8E76915ACF434CB1EE2A1BA0BB8334E17C3A': {
+      chainId: 'juno-1',
+      type: TokenType.Native,
+      denomOrAddress:
+        'ibc/DFC6F33796D5D0075C5FB54A4D7B8E76915ACF434CB1EE2A1BA0BB8334E17C3A',
+      symbol: 'junoAKT',
+      decimals: 6,
+      imageUrl: getImageUrlForChainId('akash-1'),
+      source: {
+        denomOrAddress: 'uakt',
+        type: TokenType.Native,
+        chainId: 'akash-1',
+      },
     },
     // BTSG from home
-    'ibc/008BFD000A10BCE5F0D4DD819AE1C1EC2942396062DABDD6AE64A655ABC7085B':
-    {
-      chainId: "juno-1", type: TokenType.Native, denomOrAddress: "ibc/008BFD000A10BCE5F0D4DD819AE1C1EC2942396062DABDD6AE64A655ABC7085B", symbol: "junoBTSG", decimals: 6, imageUrl: getImageUrlForChainId("bitsong-2b"),
-      source: { denomOrAddress: "ubtsg", type: TokenType.Native, chainId: "bitsong2b" }
+    'ibc/008BFD000A10BCE5F0D4DD819AE1C1EC2942396062DABDD6AE64A655ABC7085B': {
+      chainId: 'juno-1',
+      type: TokenType.Native,
+      denomOrAddress:
+        'ibc/008BFD000A10BCE5F0D4DD819AE1C1EC2942396062DABDD6AE64A655ABC7085B',
+      symbol: 'junoBTSG',
+      decimals: 6,
+      imageUrl: getImageUrlForChainId('bitsong-2b'),
+      source: {
+        denomOrAddress: 'ubtsg',
+        type: TokenType.Native,
+        chainId: 'bitsong2b',
+      },
     },
   },
   // 'bitsong-2b': {
   //   // Add more denom/address mappings for chains
   // },
-};
+}

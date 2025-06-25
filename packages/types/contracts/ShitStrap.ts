@@ -14,21 +14,21 @@ export type ShitstrapInfo = {
 }
 
 export interface ShitToken extends GenericToken {
-  shit_rate: string;
+  shit_rate: string
 }
 
 export type ShitstrapInfoGeneric = Omit<ShitstrapInfo, 'possibleShit'> & {
-  possibleShit: ShitToken[];
+  possibleShit: ShitToken[]
 }
 
 export type Uint128 = string
 export type UncheckedDenom =
   | {
-    native: string
-  }
+      native: string
+    }
   | {
-    cw20: string
-  }
+      cw20: string
+    }
 export interface InstantiateMsg {
   title: string
   description: string
@@ -43,19 +43,19 @@ export interface PossibleShit {
 }
 export type ExecuteMsg =
   | {
-    shit_strap: {
-      shit: AssetUnchecked
+      shit_strap: {
+        shit: AssetUnchecked
+      }
     }
-  }
   | {
-    flush: {}
-  }
+      flush: {}
+    }
   | {
-    receive: Cw20ReceiveMsg
-  }
+      receive: Cw20ReceiveMsg
+    }
   | {
-    refund_shitter: {}
-  }
+      refund_shitter: {}
+    }
 export type Binary = string
 export interface AssetUnchecked {
   amount: Uint128
@@ -68,22 +68,22 @@ export interface Cw20ReceiveMsg {
 }
 export type QueryMsg =
   | {
-    config: {}
-  }
-  | {
-    shit_pile: {}
-  }
-  | {
-    full_of_shit: {}
-  }
-  | {
-    shit_rate: {
-      asset: string
+      config: {}
     }
-  }
   | {
-    shit_rates: {}
-  }
+      shit_pile: {}
+    }
+  | {
+      full_of_shit: {}
+    }
+  | {
+      shit_rate: {
+        asset: string
+      }
+    }
+  | {
+      shit_rates: {}
+    }
 export type Addr = string
 export interface Config {
   accepted: PossibleShit[]

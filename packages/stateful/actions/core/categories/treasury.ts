@@ -30,4 +30,3 @@ export const makeTreasuryActionCategory: ActionCategoryMaker = ({
     ActionKey.CommunityPoolDeposit,
   ],
 })
-  

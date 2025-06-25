@@ -1,10 +1,10 @@
 import { useQueries, useQueryClient } from '@tanstack/react-query'
+import uniqBy from 'lodash.uniqby'
 import { Trans } from 'next-i18next'
 
 import {
   cwShitstrapExtraQueries,
   cwShitstrapFactoriesExtraQuery,
-  tokenQueries,
 } from '@dao-dao/state/query'
 import {
   ButtonLink,
@@ -12,20 +12,17 @@ import {
   useDaoNavHelpers,
   useInitializedActionForKey,
 } from '@dao-dao/stateless'
-import { ActionKey, TokenType, WidgetRendererProps } from '@dao-dao/types'
+import { ActionKey, WidgetRendererProps } from '@dao-dao/types'
 import {
   getDaoProposalSinglePrefill,
   makeCombineQueryResultsIntoLoadingDataWithError,
 } from '@dao-dao/utils'
 
-import {
-  ShitstrapPaymentLine,
-} from '../../../../../components/shitstrap'
-import { useMembership, useQueryLoadingDataWithError } from '../../../../../hooks'
+import { ShitstrapPaymentLine } from '../../../../../components/shitstrap'
+import { useMembership } from '../../../../../hooks'
+import { ShitstrapPaymentCard } from '../../components/stateless/ShitstrapPaymentCard'
 import { ShitstrapPaymentWidgetData } from '../../types'
 import { ShitstrapTabRenderer as StatelessTabRenderer } from './TabRenderer'
-import uniqBy from 'lodash.uniqby'
-import { ShitstrapPaymentCard } from '../../components/stateless/ShitstrapPaymentCard'
 
 export const TabRenderer = ({
   variables: { factories, factory },
@@ -44,13 +41,19 @@ export const TabRenderer = ({
     queries: [
       // Factory or factory list depending on version.
       ...(factories
-        ? Object.entries(factories).map(([chainId, { address }]) => ({ chainId, address })) :
-        factory ? [{ chainId: defaultChainId, address: factory }] : []).map(({ chainId, address }) =>
-          cwShitstrapFactoriesExtraQuery.listAllShitstrapContracts(queryClient, {
+        ? Object.entries(factories).map(([chainId, { address }]) => ({
             chainId,
             address,
-          })
-        ),
+          }))
+        : factory
+          ? [{ chainId: defaultChainId, address: factory }]
+          : []
+      ).map(({ chainId, address }) =>
+        cwShitstrapFactoriesExtraQuery.listAllShitstrapContracts(queryClient, {
+          chainId,
+          address,
+        })
+      ),
 
       // TODO: implement with correct indexer query
       // // Contracts owned by any of this DAO's accounts. This detects contracts
@@ -62,7 +65,6 @@ export const TabRenderer = ({
       //     address,
       //   })
       // ),
-
     ],
     combine: makeCombineQueryResultsIntoLoadingDataWithError({
       firstLoad: 'one',
@@ -75,13 +77,13 @@ export const TabRenderer = ({
       shitstrapsContractsLoading.loading || shitstrapsContractsLoading.errored
         ? []
         : shitstrapsContractsLoading.data.flatMap(({ chainId, contracts }) =>
-          contracts.map(({ contract }) =>
-            cwShitstrapExtraQueries.info(queryClient, {
-              chainId,
-              contractAddress: contract,
-            })
-          )
-        ),
+            contracts.map(({ contract }) =>
+              cwShitstrapExtraQueries.info(queryClient, {
+                chainId,
+                contractAddress: contract,
+              })
+            )
+          ),
     combine: makeCombineQueryResultsIntoLoadingDataWithError({
       firstLoad: 'one',
       transform: (infos) =>
@@ -92,40 +94,47 @@ export const TabRenderer = ({
     }),
   })
 
-
   // shitstrap payments that are not full.
-  const shitstrapPaymentsNotFull = shitstrapInfosLoading.loading || shitstrapInfosLoading.errored ?
-    [] : shitstrapInfosLoading.data.filter((props) => props.full != true)
+  const shitstrapPaymentsNotFull =
+    shitstrapInfosLoading.loading || shitstrapInfosLoading.errored
+      ? []
+      : shitstrapInfosLoading.data.filter((props) => props.full != true)
 
   // shitstrap payments that are  full.
-  const shitstrapPaymentsFull = shitstrapInfosLoading.loading || shitstrapInfosLoading.errored ?
-    [] : shitstrapInfosLoading.data.filter((props) => props.full == true)
+  const shitstrapPaymentsFull =
+    shitstrapInfosLoading.loading || shitstrapInfosLoading.errored
+      ? []
+      : shitstrapInfosLoading.data.filter((props) => props.full == true)
 
-
-
-  return (<>
-    <StatelessTabRenderer
-      ButtonLink={ButtonLink}
-      ShitStrapCard={ShitstrapPaymentCard}
-      ShitStrapLine={ShitstrapPaymentLine}
-      Trans={Trans}
-      createShitStrapHref={!shitAction.loading &&
-        !shitAction.errored ?
-        getDaoProposalPath(coreAddress, 'create', {
-          prefill: getDaoProposalSinglePrefill({
-            actions: [
-              {
-                actionKey: shitAction.data.key, // defines the action key available
-                data: shitAction.data.defaults, // sets the defaults to it
-              },
-            ],
-          }),
-        })
-        : undefined}
-      isMember={isMember}
-      shitStrapsLoading={{ loading: false, errored: false, data: shitstrapPaymentsNotFull }}
-      queryClient={queryClient}
-    />
-  </>
+  return (
+    <>
+      <StatelessTabRenderer
+        ButtonLink={ButtonLink}
+        ShitStrapCard={ShitstrapPaymentCard}
+        ShitStrapLine={ShitstrapPaymentLine}
+        Trans={Trans}
+        createShitStrapHref={
+          !shitAction.loading && !shitAction.errored
+            ? getDaoProposalPath(coreAddress, 'create', {
+                prefill: getDaoProposalSinglePrefill({
+                  actions: [
+                    {
+                      actionKey: shitAction.data.key, // defines the action key available
+                      data: shitAction.data.defaults, // sets the defaults to it
+                    },
+                  ],
+                }),
+              })
+            : undefined
+        }
+        isMember={isMember}
+        queryClient={queryClient}
+        shitStrapsLoading={{
+          loading: false,
+          errored: false,
+          data: shitstrapPaymentsNotFull,
+        }}
+      />
+    </>
   )
 }

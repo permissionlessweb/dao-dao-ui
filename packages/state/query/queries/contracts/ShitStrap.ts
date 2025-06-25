@@ -16,7 +16,6 @@ import {
 import { getCosmWasmClientForChainId } from '@dao-dao/utils'
 
 import { ShitStrapQueryClient } from '../../../contracts/ShitStrap'
-import { indexerQueries } from '../indexer'
 export const shitStrapQueryKeys = {
   contract: [
     {
@@ -121,7 +120,7 @@ export const shitStrapQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
   hasShit: <TData = Uint128>(
     queryClient: QueryClient,
@@ -151,7 +150,7 @@ export const shitStrapQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
   fullOfShit: <TData = Boolean>(
     queryClient: QueryClient,
@@ -181,7 +180,7 @@ export const shitStrapQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
   shitRate: <TData = NullableUint128>(
     queryClient: QueryClient,
@@ -211,7 +210,7 @@ export const shitStrapQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
   shitRates: <TData = NullableArrayOfPossibleShit>(
     queryClient: QueryClient,
@@ -241,7 +240,7 @@ export const shitStrapQueries = {
     ...options,
     enabled:
       !!contractAddress &&
-      (options?.enabled != undefined ? options.enabled : true),
+      (options?.enabled !== undefined ? options.enabled : true),
   }),
 }
 

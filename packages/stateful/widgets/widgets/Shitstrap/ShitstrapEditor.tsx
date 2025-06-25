@@ -126,7 +126,7 @@ const ShitStrapChain = ({
     }
     setInstantiating(true)
     try {
-      const timeVar = `ShitStrapFactory-v1_${chainId}_${Date.now()}`;
+      const timeVar = `ShitStrapFactory-v1_${chainId}_${Date.now()}`
       console.log(codeIds)
       console.log(codeIds.ShitStrapFactory)
       console.log(timeVar)
@@ -178,38 +178,38 @@ const ShitStrapChain = ({
       {!isCreating || shitStrap?.version === 1 ? (
         <Check className="!h-6 !w-6" />
       ) : // If DAO does not have cross-chain account, add button to create action.
-        props.type === 'action' && !daoChainAccountAddress ? (
-          <Tooltip title={t('info.shitstrapCrossChainAccountCreationTooltip')}>
-            <Button
-              disabled={crossChainAccountActionExists}
-              onClick={() =>
-                props.addAction?.({
-                  actionKey: ActionKey.CreateCrossChainAccount,
-                  data: {
-                    chainId,
-                  },
-                })
-              }
-              variant="primary"
-            >
-              {crossChainAccountActionExists
-                ? t('button.accountCreationActionAdded')
-                : t('button.addAccountCreationAction')}
-            </Button>
-          </Tooltip>
-        ) : isWalletConnected ? (
+      props.type === 'action' && !daoChainAccountAddress ? (
+        <Tooltip title={t('info.shitstrapCrossChainAccountCreationTooltip')}>
           <Button
-            loading={instantiating}
-            onClick={instantiateShitStrapFactory}
+            disabled={crossChainAccountActionExists}
+            onClick={() =>
+              props.addAction?.({
+                actionKey: ActionKey.CreateCrossChainAccount,
+                data: {
+                  chainId,
+                },
+              })
+            }
             variant="primary"
           >
-            {t('button.create')}
+            {crossChainAccountActionExists
+              ? t('button.accountCreationActionAdded')
+              : t('button.addAccountCreationAction')}
           </Button>
-        ) : (
-          <ChainProvider chainId={chainId}>
-            <ConnectWallet />
-          </ChainProvider>
-        )}
+        </Tooltip>
+      ) : isWalletConnected ? (
+        <Button
+          loading={instantiating}
+          onClick={instantiateShitStrapFactory}
+          variant="primary"
+        >
+          {t('button.create')}
+        </Button>
+      ) : (
+        <ChainProvider chainId={chainId}>
+          <ConnectWallet />
+        </ChainProvider>
+      )}
     </div>
   )
 }

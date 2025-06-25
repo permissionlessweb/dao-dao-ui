@@ -1,54 +1,38 @@
 import { Add, WarningRounded } from '@mui/icons-material'
-import { ComponentType, useCallback, useEffect, useMemo, useState } from 'react'
+import { QueryClient, useQueries } from '@tanstack/react-query'
+import { ComponentType, useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { tokenQueries } from '@dao-dao/state/query'
 import {
-  ButtonPopup,
   ChainProvider,
   Dropdown,
   DropdownIconButton,
   ErrorPage,
-  FormSwitch,
-  InputLabel,
   LineLoaders,
   Loader,
   Modal,
   NoContent,
-  SearchBar,
-  Switch,
   Tooltip,
-  useButtonPopupFilter,
   useDao,
   useDaoNavHelpers,
-  useSearchFilter,
 } from '@dao-dao/stateless'
 import {
   ButtonLinkProps,
-  FilterFn,
-  GenericToken,
-  GenericTokenSource,
   LoadingDataWithError,
   StatefulShitStrapPaymentCardProps,
   StatefulShitStrapPaymentLineProps,
-  TokenType,
   TransProps,
   TypedOption,
   WidgetId,
 } from '@dao-dao/types'
-import { ShitstrapInfo, ShitstrapInfoGeneric } from '@dao-dao/types/contracts/ShitStrap'
-
-import { useWallet } from '../../../../../hooks'
-import { QueryClient, useQueries, useQueryClient } from '@tanstack/react-query'
-import { makeCombineQueryResultsIntoLoadingDataWithError } from '@dao-dao/utils'
-import { tokenQueries } from '@dao-dao/state/query'
-import uniqBy from 'lodash.uniqby'
-import clsx from 'clsx'
-import { HugeDecimal } from '@dao-dao/math'
+import { ShitstrapInfoGeneric } from '@dao-dao/types/contracts/ShitStrap'
 import { PossibleShitWithGenericToken } from '@dao-dao/types/ShitStrap'
+import { makeCombineQueryResultsIntoLoadingDataWithError } from '@dao-dao/utils'
 
 export interface TabRendererProps {
   shitStrapsLoading: LoadingDataWithError<ShitstrapInfoGeneric[]>
-  queryClient: QueryClient,
+  queryClient: QueryClient
   isMember: boolean
   createShitStrapHref: string | undefined
   ButtonLink: ComponentType<ButtonLinkProps>
@@ -76,31 +60,41 @@ export const ShitstrapTabRenderer = ({
   // const { address: walletAddress } = useWallet()
   const [usingFilters, setUseFilters] = useState(false)
 
-  const openShitstrapContract = daoSubpathComponents[0] === WidgetId.ShitStrap ? daoSubpathComponents[1] : undefined
+  const openShitstrapContract =
+    daoSubpathComponents[0] === WidgetId.ShitStrap
+      ? daoSubpathComponents[1]
+      : undefined
 
   const setOpenShitStrapContract = useCallback(
-    (contract?: string) => goToDao(
-      coreAddress,
-      WidgetId.ShitStrap + (contract ? `/${contract}` : ''),
-      undefined,
-      { shallow: true }
-    ),
+    (contract?: string) =>
+      goToDao(
+        coreAddress,
+        WidgetId.ShitStrap + (contract ? `/${contract}` : ''),
+        undefined,
+        { shallow: true }
+      ),
     [coreAddress, goToDao]
   )
 
   // type gaurd function guarantees data property exists if true
-  function isLoadingDataWithErrorLoaded<D>(data: LoadingDataWithError<D>):
-    data is { loading: false; errored: false; data: D } {
+  function isLoadingDataWithErrorLoaded<D>(
+    data: LoadingDataWithError<D>
+  ): data is { loading: false; errored: false; data: D } {
     return !data.loading && !data.errored
   }
 
-  const allShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading) ? shitStrapsLoading.data : []
-  const activeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading) ? shitStrapsLoading.data.filter(({ full }) => !full) : []
-  const completeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading) ? shitStrapsLoading.data.filter(({ full }) => full) : []
-  const [filteredShitstraps, setFilteredShitstraps] = useState(allShitstraps);
-  const shitstrapsToDisplay = filteredShitstraps.length != 0 ? filteredShitstraps : activeShitstraps
-
-
+  const allShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading)
+    ? shitStrapsLoading.data
+    : []
+  const activeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading)
+    ? shitStrapsLoading.data.filter(({ full }) => !full)
+    : []
+  const completeShitstraps = isLoadingDataWithErrorLoaded(shitStrapsLoading)
+    ? shitStrapsLoading.data.filter(({ full }) => full)
+    : []
+  const [filteredShitstraps, setFilteredShitstraps] = useState(allShitstraps)
+  const shitstrapsToDisplay =
+    filteredShitstraps.length != 0 ? filteredShitstraps : activeShitstraps
 
   const shitstrapEligibleAssetsGenericTokenLoading = useQueries({
     queries: activeShitstraps.flatMap(({ chainId, possibleShit }) =>
@@ -119,18 +113,24 @@ export const ShitstrapTabRenderer = ({
   })
 
   const [showingCompleted, setShowingCompleted] = useState(false)
-  const [shitstrapPaymentModalOpen, setShitstrapPaymentModalOpen] = useState(!!openShitstrapContract)
-  const openShitstrapPayment = activeShitstraps.find(({ shitstrapContractAddr }) => shitstrapContractAddr === openShitstrapContract)
+  const [shitstrapPaymentModalOpen, setShitstrapPaymentModalOpen] = useState(
+    !!openShitstrapContract
+  )
+  const openShitstrapPayment = activeShitstraps.find(
+    ({ shitstrapContractAddr }) =>
+      shitstrapContractAddr === openShitstrapContract
+  )
 
   // 1. create filterable options from all shitstrap contracts DAO owns
-  // - accepted shit  
-  // - chain-id  
-  // - token 
+  // - accepted shit
+  // - chain-id
+  // - token
   const possibleShitOptions: TypedOption<PossibleShitWithGenericToken>[] =
     allShitstraps.flatMap((shitstrapInfo) => {
       return shitstrapInfo.possibleShit.map((asset, index) => {
         // console.log(index, asset, somePossibleshit)
-        const displayToken = asset.source.chainId != asset.chainId ? asset.symbol : asset.symbol
+        const displayToken =
+          asset.source.chainId != asset.chainId ? asset.symbol : asset.symbol
         return {
           label: asset.symbol,
           value: { shit_rate: asset.shit_rate, token: asset },
@@ -147,28 +147,38 @@ export const ShitstrapTabRenderer = ({
 
   const allPossibleShitOptions = possibleShitOptions.map((asset, index) => ({
     value: [asset],
-    label: asset.label
+    label: asset.label,
   }))
 
   const allBeingShitOptions = beingShitOptions.map((asset, index) => ({
     value: [asset],
-    label: asset.label
+    label: asset.label,
   }))
 
-  const handleFilterByAcceptedShit = (option: typeof possibleShitOptions, index: number) => {
-    const filteredList = allShitstraps.filter(shitstrap => shitstrap.possibleShit.find((ac, index) => {
-      return ac.symbol === option[index].value.token.symbol
-    }));
-    setFilteredShitstraps(filteredList);
+  const handleFilterByAcceptedShit = (
+    option: typeof possibleShitOptions,
+    index: number
+  ) => {
+    const filteredList = allShitstraps.filter((shitstrap) =>
+      shitstrap.possibleShit.find((ac, index) => {
+        return ac.symbol === option[index].value.token.symbol
+      })
+    )
+    setFilteredShitstraps(filteredList)
   }
-  
-  const handleFilterByBeingShit = (option: typeof beingShitOptions, index: number) => {
+
+  const handleFilterByBeingShit = (
+    option: typeof beingShitOptions,
+    index: number
+  ) => {
     console.log(index)
-    const filteredList = allShitstraps.filter((shitstrap) => option[index].value.token.denomOrAddress === shitstrap.shit.denomOrAddress);
-    setFilteredShitstraps(filteredList);
+    const filteredList = allShitstraps.filter(
+      (shitstrap) =>
+        option[index].value.token.denomOrAddress ===
+        shitstrap.shit.denomOrAddress
+    )
+    setFilteredShitstraps(filteredList)
   }
-
-
 
   // Wait for modal to close before clearing the open shitstrap payment modal to prevent
   // UI flicker.
@@ -177,20 +187,32 @@ export const ShitstrapTabRenderer = ({
       const timeout = setTimeout(() => setOpenShitStrapContract(undefined), 200)
       return () => clearTimeout(timeout)
     }
-
-  }, [openShitstrapContract, openShitstrapPayment, setOpenShitStrapContract, shitstrapPaymentModalOpen])
+  }, [
+    openShitstrapContract,
+    openShitstrapPayment,
+    setOpenShitStrapContract,
+    shitstrapPaymentModalOpen,
+  ])
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-row items-center justify-between gap-8">
         <div className="flex flex-row flex-wrap items-center gap-x-4 gap-y-1">
-          <p className="title-text text-text-body">{t('title.availableShitstraps')}</p>
+          <p className="title-text text-text-body">
+            {t('title.availableShitstraps')}
+          </p>
           <p className="secondary-text">{t('info.shitstrapSecondaryText')}</p>
         </div>
       </div>
       <div className=" items-center  mb-9">
         {createShitStrapHref && (
-          <Tooltip title={!isMember ? t('error.mustBeMemberToCreateShitstrapPayment') : undefined}>
+          <Tooltip
+            title={
+              !isMember
+                ? t('error.mustBeMemberToCreateShitstrapPayment')
+                : undefined
+            }
+          >
             <ButtonLink
               className="shrink-0"
               disabled={!isMember}
@@ -198,7 +220,9 @@ export const ShitstrapTabRenderer = ({
               variant="primary"
             >
               <Add className="!h-4 !w-4" />
-              <span className="hidden md:inline">{t('button.newShitstrap')}</span>
+              <span className="hidden md:inline">
+                {t('button.newShitstrap')}
+              </span>
               <span className="md:hidden">{t('button.new')}</span>
             </ButtonLink>
           </Tooltip>
@@ -214,7 +238,6 @@ export const ShitstrapTabRenderer = ({
         ) : shitStrapsLoading.data.length ? (
           <div className="space-y-6 border-t border-border-secondary pt-6">
             <div className="flex flex-row items-stretch gap-2">
-
               {/* display map of eligible assets & their shit_rates */}
               <div onClick={(event) => event.stopPropagation()}>
                 <Dropdown
@@ -242,15 +265,21 @@ export const ShitstrapTabRenderer = ({
                 {/* <ActiveShitStrapLineHeader /> */}
                 {shitstrapsToDisplay.map((shitstrapInfo, index) => (
                   <ShitStrapLine
-                    key={shitstrapInfo.chainId + shitstrapInfo.shitstrapContractAddr}
+                    key={
+                      shitstrapInfo.chainId +
+                      shitstrapInfo.shitstrapContractAddr
+                    }
+                    eligibleShit={shitstrapEligibleAssetsGenericTokenLoading}
                     onClick={() => {
                       setShitstrapPaymentModalOpen(true)
-                      setOpenShitStrapContract(shitstrapInfo.shitstrapContractAddr)
+                      setOpenShitStrapContract(
+                        shitstrapInfo.shitstrapContractAddr
+                      )
                     }}
+                    queryClient={queryClient}
                     shitstrapInfo={shitstrapInfo}
                     transparentBackground={index % 2 !== 0}
-                    eligibleShit={shitstrapEligibleAssetsGenericTokenLoading}
-                    queryClient={queryClient} />
+                  />
                 ))}
               </div>
             )}
@@ -286,15 +315,22 @@ export const ShitstrapTabRenderer = ({
 
                       {completeShitstraps.map((shitstrapInfo, index) => (
                         <ShitStrapLine
-                          key={shitstrapInfo.chainId + shitstrapInfo.shitstrapContractAddr}
+                          key={
+                            shitstrapInfo.chainId +
+                            shitstrapInfo.shitstrapContractAddr
+                          }
+                          eligibleShit={
+                            shitstrapEligibleAssetsGenericTokenLoading
+                          }
                           onClick={() => {
                             setShitstrapPaymentModalOpen(true)
-                            setOpenShitStrapContract(shitstrapInfo.shitstrapContractAddr)
+                            setOpenShitStrapContract(
+                              shitstrapInfo.shitstrapContractAddr
+                            )
                           }}
                           queryClient={queryClient}
                           shitstrapInfo={shitstrapInfo}
                           transparentBackground={index % 2 !== 0}
-                          eligibleShit={shitstrapEligibleAssetsGenericTokenLoading}
                         />
                       ))}
                     </div>
@@ -323,7 +359,11 @@ export const ShitstrapTabRenderer = ({
       >
         {openShitstrapPayment ? (
           <ChainProvider chainId={openShitstrapPayment.chainId}>
-            <ShitStrapCard shitstrapInfo={openShitstrapPayment} usingPersonalShit={false} queryClient={queryClient} />
+            <ShitStrapCard
+              queryClient={queryClient}
+              shitstrapInfo={openShitstrapPayment}
+              usingPersonalShit={false}
+            />
           </ChainProvider>
         ) : (
           <Loader />

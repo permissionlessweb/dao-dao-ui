@@ -2,32 +2,42 @@ import clsx from 'clsx'
 import { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { HugeDecimal } from '@dao-dao/math'
 import {
-  PopupTriggerCustomComponent,
-  ShitstrapPickerProps,
-} from '@dao-dao/types'
+  Button,
+  FilterableItemPopup,
+  InputThemedText,
+} from '@dao-dao/stateless'
+import { PopupTriggerCustomComponent } from '@dao-dao/types'
 
-import { Button } from './buttons'
-import { InputThemedText } from './inputs'
-import { FilterableItemPopup } from './popup'
-import { TokenAmountDisplay } from './token'
+import { HeadstashConfigWithContractAddr } from '../types'
 
-export const ShitstrapPicker = ({
-  shitstraps,
+export type HeadstashPickerProps = {
+  headstashes: HeadstashConfigWithContractAddr[]
+  selectedAddress?: string
+  readOnly?: boolean
+  onSelect: (shitstrap: string) => void
+  // Token being staked.
+  // token: GenericToken``
+  displayClassName?: string
+}
+
+export const HeadstashPicker = ({
+  headstashes,
   selectedAddress,
   readOnly = false,
   onSelect,
   displayClassName,
-}: ShitstrapPickerProps) => {
+}: HeadstashPickerProps) => {
   const { t } = useTranslation()
 
-  const selectedShistrap = shitstraps.find((shit) => {
-    shit.shitstrapContractAddr === selectedAddress
+  const selectedHeadstash = headstashes.find((s) => {
+    s.contractAddr == selectedAddress
   })
+
   useEffect(() => {
-    console.log(shitstraps)
+    console.log(headstashes)
   }, [onSelect])
+
   const TriggerRenderer: PopupTriggerCustomComponent = useCallback(
     ({ open, ...props }) => (
       <div className={clsx('flex', displayClassName)}>
@@ -46,16 +56,18 @@ export const ShitstrapPicker = ({
             )}
           </InputThemedText>
         ) : !readOnly ? (
-          <Button
-            center
-            className="grow"
-            pressed={open}
-            size="lg"
-            variant="primary"
-            {...props}
-          >
-            {t('button.selectShitstrap')}
-          </Button>
+          <>
+            <Button
+              center
+              className="grow"
+              pressed={open}
+              size="lg"
+              variant="primary"
+              {...props}
+            >
+              {t('button.selectShitstrap')}
+            </Button>
+          </>
         ) : null}
       </div>
     ),
@@ -65,11 +77,11 @@ export const ShitstrapPicker = ({
   return (
     <FilterableItemPopup
       filterableItemKeys={FILTERABLE_KEYS}
-      items={shitstraps.map((shitstrap) => {
+      items={headstashes.map((c) => {
         return {
-          shitstrap,
-          key: shitstrap.shitstrapContractAddr,
-          label: shitstrap.title,
+          c,
+          key: c.contractAddr,
+          label: c.owner,
           description: (
             <div className="flex flex-col gap-1">
               {/* <p>
@@ -112,15 +124,15 @@ export const ShitstrapPicker = ({
                     </>
                     )} */}
 
-              <TokenAmountDisplay
+              {/* <TokenAmountDisplay
                 amount={HugeDecimal.from(shitstrap.cutoff)}
                 decimals={shitstrap.shit.decimals}
                 iconUrl={shitstrap.shit.imageUrl}
                 symbol={shitstrap.shit.symbol}
-              />
+              /> */}
             </div>
           ),
-          searchableDescription: shitstrap.shit.symbol + shitstrap.possibleShit,
+          // searchableDescription: shitstrap.shit.symbol + shitstrap.possibleShit,
           rightNode: undefined,
           // website ? (
           //   <Tooltip title={website}>
@@ -135,7 +147,7 @@ export const ShitstrapPicker = ({
           //     />
           //   </Tooltip>
           // ) : undefined,
-          selected: shitstrap.shitstrapContractAddr === selectedAddress,
+          selected: c.contractAddr === selectedAddress,
         }
       })}
       onSelect={(shit) => onSelect(shit.key)} // {onSelect(shitstrap)}

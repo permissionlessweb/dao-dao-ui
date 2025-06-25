@@ -57,14 +57,14 @@ const Component: ActionComponent = (props) => {
     props.isCreating
       ? context.type === ActionContextType.Wallet
         ? walletLazyNftCardInfosSelector({
-          walletAddress: address,
-          chainId: currentChainId,
-        })
+            walletAddress: address,
+            chainId: currentChainId,
+          })
         : lazyNftCardInfosForDaoSelector({
-          chainId: currentChainId,
-          coreAddress: address,
-          governanceCollectionAddress,
-        })
+            chainId: currentChainId,
+            coreAddress: address,
+            governanceCollectionAddress,
+          })
       : undefined
   )
   const nftInfos = useQueries({
@@ -81,10 +81,10 @@ const Component: ActionComponent = (props) => {
     options.loading || options.errored
       ? options
       : combineLoadingDataWithErrors(
-        ...Object.values(options.data).filter(
-          (data): data is LoadingDataWithError<LazyNftCardInfo[]> => !!data
+          ...Object.values(options.data).filter(
+            (data): data is LoadingDataWithError<LazyNftCardInfo[]> => !!data
+          )
         )
-      )
 
   return (
     <TransferNftComponent

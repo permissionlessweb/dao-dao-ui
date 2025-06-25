@@ -2,17 +2,17 @@
 // See the "LICENSE" file in the root directory of this package for more copyright information.
 
 // TODO: create payment option to  access ui for dao
-// const ALLOWED_ADDRESSES = ['address1', 'address2', 'address3']; 
-// const NOT_ALLOWED_URL = '/wanna-shit'; 
+// const ALLOWED_ADDRESSES = ['address1', 'address2', 'address3'];
+// const NOT_ALLOWED_URL = '/wanna-shit';
 
 // // Next.js redirect function
 // const redirects = async () =>  {
-  
+
 //   const response = await fetch('https://api.example.com/allowed-addresses');
 //   const allowedAddresses = await response.json();
 
 //   return [
-  
+
 //   {
 //     source: '/dao/:slug*',
 //     permanent: true,

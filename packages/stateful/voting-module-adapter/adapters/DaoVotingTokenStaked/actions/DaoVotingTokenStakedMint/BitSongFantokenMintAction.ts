@@ -38,7 +38,7 @@ export class BitSongFantokenMintAction extends ActionBase<MintData> {
     })
 
     // Fire async init immediately since we may hide this action.
-    this.init().catch(() => { })
+    this.init().catch(() => {})
   }
 
   async setup() {

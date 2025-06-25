@@ -125,7 +125,7 @@ export class NeutronOverruleSubDaoProposalAction extends ActionBase<NeutronOverr
       ({ prePropose }) =>
         prePropose?.type === PreProposeModuleType.NeutronSubdaoSingle &&
         prePropose.config.timelockAddress ===
-        decodedMessage.wasm.execute.contract_addr
+          decodedMessage.wasm.execute.contract_addr
     )
 
     return !!proposalModule
@@ -158,7 +158,7 @@ export class NeutronOverruleSubDaoProposalAction extends ActionBase<NeutronOverr
       ({ prePropose }) =>
         prePropose?.type === PreProposeModuleType.NeutronSubdaoSingle &&
         prePropose.config.timelockAddress ===
-        decodedMessage.wasm.execute.contract_addr
+          decodedMessage.wasm.execute.contract_addr
     )
 
     // Should never happen as this is validated in match.

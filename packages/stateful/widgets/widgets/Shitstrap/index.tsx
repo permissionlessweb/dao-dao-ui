@@ -18,7 +18,7 @@ export const ShitstrapWidget: Widget<ShitstrapPaymentWidgetData> = {
   location: WidgetLocation.Home,
   visibilityContext: WidgetVisibilityContext.Always,
   defaultValues: {
-    factories: {}
+    factories: {},
   },
   Renderer,
   Editor,

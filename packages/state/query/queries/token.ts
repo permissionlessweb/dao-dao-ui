@@ -74,11 +74,11 @@ export const fetchTokenInfo = async (
       snip20CodeHash:
         isSecretNetwork(asset.chain_id) && asset.is_cw20 && asset.token_contract
           ? await queryClient.fetchQuery(
-            contractQueries.secretCodeHash({
-              chainId: asset.chain_id,
-              address: asset.token_contract,
-            })
-          )
+              contractQueries.secretCodeHash({
+                chainId: asset.chain_id,
+                address: asset.token_contract,
+              })
+            )
           : null,
     }
   } else if (source.chainId !== chainId) {
@@ -104,11 +104,11 @@ export const fetchTokenInfo = async (
         snip20CodeHash:
           isSecretNetwork(chainId) && type === TokenType.Cw20
             ? await queryClient.fetchQuery(
-              contractQueries.secretCodeHash({
-                chainId,
-                address: denomOrAddress,
-              })
-            )
+                contractQueries.secretCodeHash({
+                  chainId,
+                  address: denomOrAddress,
+                })
+              )
             : null,
       }
     }
@@ -140,11 +140,11 @@ export const fetchTokenInfo = async (
       source,
       snip20CodeHash: isSecretNetwork(chainId)
         ? await queryClient.fetchQuery(
-          contractQueries.secretCodeHash({
-            chainId,
-            address: denomOrAddress,
-          })
-        )
+            contractQueries.secretCodeHash({
+              chainId,
+              address: denomOrAddress,
+            })
+          )
         : null,
     }
   }
@@ -158,11 +158,11 @@ export const fetchTokenInfo = async (
       snip20CodeHash:
         isSecretNetwork(chainId) && token.type === TokenType.Cw20
           ? await queryClient.fetchQuery(
-            contractQueries.secretCodeHash({
-              chainId,
-              address: denomOrAddress,
-            })
-          )
+              contractQueries.secretCodeHash({
+                chainId,
+                address: denomOrAddress,
+              })
+            )
           : null,
     }
   } catch (err) {

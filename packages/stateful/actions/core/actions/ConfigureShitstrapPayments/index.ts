@@ -1,11 +1,7 @@
 import cloneDeep from 'lodash.clonedeep'
 
 import { ActionBase, SuitAndTieEmoji } from '@dao-dao/stateless'
-import {
-  UnifiedCosmosMsg,
-  VestingPaymentsWidgetData,
-  WidgetId,
-} from '@dao-dao/types'
+import { UnifiedCosmosMsg, WidgetId } from '@dao-dao/types'
 import {
   ActionContextType,
   ActionKey,
@@ -15,9 +11,9 @@ import {
 } from '@dao-dao/types/actions'
 import { getWidgetStorageItemKey } from '@dao-dao/utils'
 
+import { ShitstrapPaymentWidgetData } from '../../../../widgets/widgets/Shitstrap/types'
 import { ManageWidgetsAction } from '../ManageWidgets'
 import { ConfigureShitstrapPaymentsComponent } from './Component'
-import { ShitstrapPaymentWidgetData } from '../../../../widgets/widgets/Shitstrap/types'
 
 export class ConfigureShitstrapPaymentsAction extends ActionBase<ShitstrapPaymentWidgetData> {
   public readonly key = ActionKey.ConfigureShitstrapPayments
@@ -32,7 +28,7 @@ export class ConfigureShitstrapPaymentsAction extends ActionBase<ShitstrapPaymen
 
     const enabled =
       !!options.context.dao.info.items[
-      getWidgetStorageItemKey(WidgetId.ShitStrap)
+        getWidgetStorageItemKey(WidgetId.ShitStrap)
       ]
 
     super(options, {
@@ -61,8 +57,8 @@ export class ConfigureShitstrapPaymentsAction extends ActionBase<ShitstrapPaymen
     this._defaults = widget
       ? cloneDeep(widget.values)
       : {
-        factories: {},
-      }
+          factories: {},
+        }
   }
 
   encode(data: ShitstrapPaymentWidgetData): UnifiedCosmosMsg {

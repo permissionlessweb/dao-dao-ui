@@ -4,7 +4,6 @@ import { Web3AuthPromptModal } from './Web3AuthPromptModal'
 
 export const WalletModals = () => (
   <>
-    
     {/* This may need the Web3AuthPromptModal to confirm, so this must be before that. */}
     <MergeProfilesModal />
 

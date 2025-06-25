@@ -2,12 +2,11 @@
 
 ## HEADSTASH TODO
 
-
 ## DDNAS TODO
+
 - using dnas: improve file upload response ux
 - handle custom mint msgs (snails contract) in form for new collection
 - scrt-dnas: implmement new client side logic to support TEE stored private keys
-
 
 <!-- - make use of existing logic to form and use form with file blobs (NextApiRequest?) -->
 <!-- - never save used values to form for reuse, in order to prevent keeping api key values in local memory. -->
@@ -52,18 +51,20 @@ window.addEventListener('message', (event) => {
 ``` -->
 
 # goals
+
 1. upload dnas key thorugh ui
 2. display upload keys in ui
 3. update dnas keys in ui
 
-
 ## INFUSIONS TODO
+
 - create: select infusion bundle type and its parameters
 - indexer formulae
 
 <!-- - infusion action: include approval msg for each nft in bundle that does not have infusion minter approved. -->
 
 ## SHITSTRAP TODO
+
 - indexer formulae
 - check if entity has ibc version of expected token if none exist on shitstraps chain
 - ibc deposit modal (check if balance of token on another chain,find best route)
@@ -76,12 +77,15 @@ window.addEventListener('message', (event) => {
   - create proposal if dao or otherwise immediately fund from connected wallet otherwise
   - Display if funded or not
 
-___
-___
-___
-___
-___
+---
 
+---
+
+---
+
+---
+
+---
 
 This project creates a web UI for the [DAO DAO smart
 contracts](https://github.com/DA0-DA0/dao-contracts), enabling users to:

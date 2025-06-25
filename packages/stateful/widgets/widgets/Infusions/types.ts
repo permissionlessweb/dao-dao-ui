@@ -1,7 +1,7 @@
 export type InfusionWidgetData = {
   // chain infusion is on
   chainId: string
-  // form field name 
+  // form field name
   fieldNamePrefix: string
   // Smart contract address of the infusion collection.
   infusionMinter: string
