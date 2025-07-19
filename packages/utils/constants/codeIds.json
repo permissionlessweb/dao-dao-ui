@@ -686,7 +686,9 @@
       "DaoVotingCw20Staked": 2463,
       "DaoVotingCw4": 2464,
       "DaoVotingCw721Staked": 2465,
-      "DaoVotingNativeStaked": 2466
+      "DaoVotingNativeStaked": 2466,
+      "CwAve": 4940,
+      "CwAveFactory": 4938
     },
     "2.3.0": {
       "Cw4Group": 1992,
@@ -702,7 +704,9 @@
       "DaoProposalSingle": 3831,
       "DaoVotingCw4": 3832,
       "DaoVotingCw721Staked": 3833,
-      "DaoVotingTokenStaked": 3834
+      "DaoVotingTokenStaked": 3834,
+      "CwAve": 4940,
+      "CwAveFactory": 4938
     },
     "2.4.0": {
       "Cw1Whitelist": 3914,
@@ -723,7 +727,9 @@
       "DaoVotingCw20Staked": 4059,
       "DaoVotingCw4": 4055,
       "DaoVotingCw721Staked": 4056,
-      "DaoVotingTokenStaked": 4057
+      "DaoVotingTokenStaked": 4057,
+      "CwAve": 4940,
+      "CwAveFactory": 4938
     },
     "2.5.0": {
       "Cw1Whitelist": 3914,
@@ -746,7 +752,9 @@
       "DaoVotingCw20Staked": 4514,
       "DaoVotingCw4": 4515,
       "DaoVotingCw721Staked": 4516,
-      "DaoVotingTokenStaked": 4517
+      "DaoVotingTokenStaked": 4517,
+      "CwAve": 4940,
+      "CwAveFactory": 4938
     },
     "2.6.0": {
       "Cw1Whitelist": 3914,
@@ -772,7 +780,9 @@
       "DaoVotingCw20Staked": 4592,
       "DaoVotingCw4": 4588,
       "DaoVotingCw721Staked": 4593,
-      "DaoVotingTokenStaked": 4595
+      "DaoVotingTokenStaked": 4595,
+      "CwAve": 4940,
+      "CwAveFactory": 4938
     },
     "2.7.0": {
       "Cw1Whitelist": 3914,
@@ -799,7 +809,9 @@
       "DaoVotingCw20Staked": 4876,
       "DaoVotingCw4": 4872,
       "DaoVotingCw721Staked": 4877,
-      "DaoVotingTokenStaked": 4879
+      "DaoVotingTokenStaked": 4879,
+      "CwAve": 4940,
+      "CwAveFactory": 4938
     }
   },
   "kaiyo-1": {
@@ -1697,7 +1709,8 @@
       "DaoPreProposeSingle": 90,
       "DaoProposalMultiple": 91,
       "DaoProposalSingle": 92,
-      "DaoVotingCw4": 93
+      "DaoVotingCw4": 93,
+      "CwInfuser": 680
     },
     "2.3.0": {
       "Cw4Group": 83,
@@ -1712,7 +1725,8 @@
       "DaoProposalSingle": 132,
       "DaoVotingCw4": 133,
       "DaoVotingCw721Staked": 120,
-      "DaoVotingTokenStaked": 121
+      "DaoVotingTokenStaked": 121,
+      "CwInfuser": 680
     },
     "2.4.0": {
       "Cw1Whitelist": 152,
@@ -1730,7 +1744,8 @@
       "DaoProposalSingle": 159,
       "DaoVotingCw4": 160,
       "DaoVotingCw721Staked": 161,
-      "DaoVotingTokenStaked": 162
+      "DaoVotingTokenStaked": 162,
+      "CwInfuser": 680
     },
     "2.5.0": {
       "Cw1Whitelist": 152,
@@ -1750,7 +1765,8 @@
       "DaoRewardsDistributor": 348,
       "DaoVotingCw4": 349,
       "DaoVotingCw721Staked": 350,
-      "DaoVotingTokenStaked": 351
+      "DaoVotingTokenStaked": 351,
+      "CwInfuser": 680
     },
     "2.6.0": {
       "Cw1Whitelist": 152,
@@ -1771,7 +1787,8 @@
       "DaoRewardsDistributor": 438,
       "DaoVotingCw4": 439,
       "DaoVotingCw721Staked": 441,
-      "DaoVotingTokenStaked": 443
+      "DaoVotingTokenStaked": 443,
+      "CwInfuser": 680
     },
     "2.7.0": {
       "Cw1Whitelist": 152,
@@ -1793,7 +1810,8 @@
       "DaoVoteDelegation": 636,
       "DaoVotingCw4": 637,
       "DaoVotingCw721Staked": 639,
-      "DaoVotingTokenStaked": 641
+      "DaoVotingTokenStaked": 641,
+      "CwInfuser": 680
     }
   },
   "theta-testnet-001": {

@@ -30,6 +30,7 @@ export enum ActionCategoryKey {
   Press = 'press',
   Rewards = 'rewards',
   Advanced = 'advanced',
+  PermissionlessWeb = 'permissionlessWeb',
 }
 
 export enum ActionKey {
@@ -72,6 +73,8 @@ export enum ActionKey {
   ManageMembers = 'manageMembers',
   Mint = 'mint',
   ManageVesting = 'manageVesting',
+  ManageAvEvents = 'manageAvEvents',
+  InfuseNfts = 'infuseNfts',
   CreateCrossChainAccount = 'createCrossChainAccount',
   CrossChainExecute = 'crossChainExecute',
   UpdateStakingConfig = 'updateStakingConfig',

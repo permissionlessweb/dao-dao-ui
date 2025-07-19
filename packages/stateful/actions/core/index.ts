@@ -23,6 +23,7 @@ let _coreActionCategoryMakers: ActionCategoryMaker[] | null = null
 export const getCoreActionCategoryMakers = (): ActionCategoryMaker[] => {
   // Set order explicitly instead of relying on import order.
   _coreActionCategoryMakers ??= [
+    categories.makeManagePermissionlessActionCategory,
     categories.makeCommonlyUsedCategory,
     categories.makeTreasuryActionCategory,
     categories.makeValenceActionCategory,

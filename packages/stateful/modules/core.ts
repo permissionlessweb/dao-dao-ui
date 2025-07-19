@@ -12,7 +12,9 @@ import {
   RetroactiveCompensationModule,
   VestingPaymentsModule,
   VoteDelegationModule,
+  AvEventsModule,
 } from './modules'
+import { InfusionsModule } from './modules/Infusions'
 
 /**
  * Get active modules for the context.
@@ -24,6 +26,8 @@ export const getModules = (options?: ModuleFilterOptions): readonly Module[] =>
     RetroactiveCompensationModule,
     VoteDelegationModule,
     PressModule,
+    // AvEventsModule,
+    InfusionsModule,
     // Add modules here.
   ].filter(
     (module) =>

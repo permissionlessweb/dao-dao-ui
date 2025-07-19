@@ -27,8 +27,10 @@ import {
   OwnershipForString,
   TokensResponse,
 } from '@dao-dao/types/contracts/Cw721Base'
+import { CollectionInfoResponse } from '@dao-dao/types/contracts/Sg721Base'
 import { getCosmWasmClientForChainId } from '@dao-dao/utils'
 
+import { Sg721BaseQueryClient } from '../../../contracts'
 import { Cw721BaseQueryClient } from '../../../contracts/Cw721Base'
 
 export const cw721BaseQueryKeys = {
@@ -126,6 +128,18 @@ export const cw721BaseQueryKeys = {
       {
         ...cw721BaseQueryKeys.address(chainId, contractAddress)[0],
         method: 'contract_info',
+        args,
+      },
+    ] as const,
+  collectionInfo: (
+    chainId: string,
+    contractAddress: string,
+    args?: Record<string, unknown>
+  ) =>
+    [
+      {
+        ...cw721BaseQueryKeys.address(chainId, contractAddress)[0],
+        method: 'collection_info',
         args,
       },
     ] as const,
@@ -365,6 +379,24 @@ export const cw721BaseQueries = {
     },
     ...options,
   }),
+  collectionInfo: <TData = CollectionInfoResponse>({
+    chainId,
+    contractAddress,
+    options,
+  }: Cw721BaseCollectionInfoQuery<TData>): UseQueryOptions<
+    CollectionInfoResponse,
+    Error,
+    TData
+  > => ({
+    queryKey: cw721BaseQueryKeys.collectionInfo(chainId, contractAddress),
+    queryFn: async () => {
+      return new Sg721BaseQueryClient(
+        await getCosmWasmClientForChainId(chainId),
+        contractAddress
+      ).collectionInfo()
+    },
+    ...options,
+  }),
   nftInfo: <TData = NftInfoResponseForEmpty>({
     chainId,
     contractAddress,
@@ -557,6 +589,8 @@ export interface Cw721BaseNftInfoQuery<TData>
 }
 export interface Cw721BaseContractInfoQuery<TData>
   extends Cw721BaseReactQuery<ContractInfoResponse, TData> {}
+export interface Cw721BaseCollectionInfoQuery<TData>
+  extends Cw721BaseReactQuery<CollectionInfoResponse, TData> {}
 export interface Cw721BaseNumTokensQuery<TData>
   extends Cw721BaseReactQuery<NumTokensResponse, TData> {}
 export interface Cw721BaseAllOperatorsQuery<TData>

@@ -164,3 +164,6 @@ export {
   DaoVoteDelegationClient,
   DaoVoteDelegationQueryClient,
 } from './DaoVoteDelegation'
+export { CwAveClient, CwAveQueryClient } from './CwAve'
+export { CwAveFactoryClient, CwAveFactoryQueryClient } from './CwAveFactory'
+export { CwInfuserClient, CwInfuserQueryClient } from './CwInfuser'

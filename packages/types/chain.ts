@@ -313,6 +313,10 @@ export type CodeIdConfig = {
   DaoVotingCw4: number
   DaoVotingCw721Staked: number
   DaoVotingTokenStaked: number
+  
+  // https://github.com/permissionlessweb/cw-ave
+  CwAveFactory: number
+  CwAve: number
 
   // For Secret Network
   QueryAuth?: number

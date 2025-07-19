@@ -15,6 +15,8 @@ import { UnifiedCosmosMsg } from './contracts'
 import { ContractVersion } from './features'
 
 export enum ModuleId {
+  AvEvents = 'av_events',
+  Infusions = 'infusions',
   MintNft = 'mint_nft',
   Press = 'press',
   RetroactiveCompensation = 'retroactive',
@@ -74,22 +76,22 @@ export type ModuleEditorProps<
   Extra extends Record<string, unknown> = any,
 > = (
   | ({
-      type: 'action'
-      options: ActionOptions
-    } & ActionComponentProps<undefined, Variables & { extra: Extra }>)
+    type: 'action'
+    options: ActionOptions
+  } & ActionComponentProps<undefined, Variables & { extra: Extra }>)
   | {
-      type: 'daoCreation'
-      // To match action props.
-      isCreating: true
-      /**
-       * The field name path prefix for module variables stored in the DAO.
-       */
-      fieldNamePrefix: string
-      /**
-       * The errors for the module variables.
-       */
-      errors: FieldErrors
-    }
+    type: 'daoCreation'
+    // To match action props.
+    isCreating: true
+    /**
+     * The field name path prefix for module variables stored in the DAO.
+     */
+    fieldNamePrefix: string
+    /**
+     * The errors for the module variables.
+     */
+    errors: FieldErrors
+  }
 ) & {
   accounts: readonly Account[]
 

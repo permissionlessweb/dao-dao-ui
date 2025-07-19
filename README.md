@@ -101,8 +101,8 @@ docker-compose build sda --build-arg BUILDPLATFORM=linux/arm64 --build-arg TARGE
 **Note:** Set the `DAPP_IMAGE` and `SDA_IMAGE` environment variables to your desired image names, e.g.:
 
 ```bash
-DAPP_IMAGE=da0-da0/dao-app-dapp:v0.0.2
-SDA_IMAGE=da0-da0/dao-app-sda:v0.0.2
+DAPP_IMAGE=discoverdefiteam/dao-modules-dapp:v0.0.1
+SDA_IMAGE=discoverdefiteam/dao-modules-sda:v0.0.1
 ```
 
 These commands will build the images for the specified platforms. Just replace `linux/arm64` and `linux/amd64` with your machine's platform and the intended platform for the image, respectively.

@@ -1,0 +1,624 @@
+import { QueryClient, useQueries } from '@tanstack/react-query'
+import { ComponentType, useEffect } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
+
+import { HugeDecimal } from '@dao-dao/math'
+import { cw721BaseQueries, cwInfuserExtraQueries } from '@dao-dao/state/query'
+import {
+  ActionBase,
+  AddressInput,
+  BoxEmoji,
+  Loader,
+  SegmentedControls,
+  useActionOptions,
+} from '@dao-dao/stateless'
+import {
+  ActionComponent,
+  ActionComponentProps,
+  ActionContextType,
+  ActionKey,
+  ActionMatch,
+  ActionOptions,
+  InfusionActionMode,
+  ProcessedMessage,
+  SegmentedControlsProps,
+  TokenType,
+  TypedOption,
+  UnifiedCosmosMsg,
+
+} from '@dao-dao/types'
+
+import {
+  getChainAddressForActionOptions,
+  makeCombineQueryResultsIntoLoadingDataWithError,
+  makeExecuteSmartContractMessage,
+  maybeMakePolytoneExecuteMessages,
+  objectMatchesStructure,
+} from '@dao-dao/utils'
+
+import { NftSelectionModal, SuspenseLoader } from '../../../../components'
+import { useTokenBalances } from '../../../hooks'
+
+import { InfuseNftsComponent } from './InfuseNfts'
+import { NFT, InfusionParams } from '@dao-dao/types/contracts/CwInfuser'
+import { InfusionBundleType, ManageInfusionsData } from '../../../../modules/modules/Infusions/InfusionsRenderer'
+import { CreateInfusion } from './CreateInfusion'
+
+
+
+// init shitstrap json object
+const instantiateStructure = {
+  instantiate_msg: {
+    admin: {},
+    admin_fee: {},
+    min_creation_fee: {},
+    min_infusion_fee: {},
+    min_per_bundle: {},
+    max_per_bundle: {},
+    max_bundles: {},
+    max_infusions: {},
+    cw721_code_id: {},
+    //   sg: {},
+  },
+  label: {},
+}
+
+// create & infuse  new infusion structure
+const createInfusionStructure = { create_infusion: { infusions: {} } }
+const infuseBundlesStructure = { infuse: { id: {}, bundle: {} } }
+
+/**
+ * Get infusion config
+ */
+const getInfusionConfig = (
+  queryClient: QueryClient,
+  chainId: string,
+  infuserAddr: string
+) => {
+  const infusionConfig = cwInfuserExtraQueries.config(queryClient, {
+    chainId: chainId,
+    address: infuserAddr,
+  })
+  return infusionConfig
+}
+
+/**
+ * Get infusion info by infusion id
+ */
+const getInfusionById = (
+  queryClient: QueryClient,
+  chainId: string,
+  address: string,
+  id: number
+) => {
+  const infusionInfo = cwInfuserExtraQueries.infusionById(queryClient, {
+    chainId,
+    address,
+    id,
+  })
+  return infusionInfo
+}
+
+// Check if infuser is approved for this token id
+const getIsInfuserApproved = (
+  options: ActionOptions,
+  nftAddr: string,
+  spender: string,
+  tokenId: string
+) => {
+  const infusionInfo = cw721BaseQueries.approval({
+    chainId: options.chain.chainId,
+    contractAddress: nftAddr,
+    args: { spender, tokenId },
+  })
+  return infusionInfo
+}
+
+// grabs the infusion config from the infusion minter defined in form
+const useInfusionConfigFromForm = (
+  queryClient: QueryClient,
+  chainId: string,
+  infusionMinter: string
+) => {
+  return useQueries({
+    queries: [getInfusionConfig(queryClient, chainId, infusionMinter)],
+    combine: makeCombineQueryResultsIntoLoadingDataWithError({
+      transform: (infos) => infos.flat(),
+    }),
+  })
+}
+
+const useInfusionContractFromForm = (
+  queryClient: QueryClient,
+  chainId: string,
+  infusionMinter: string,
+  infusionId: string
+) => {
+  return useQueries({
+    queries: [
+      getInfusionById(
+        queryClient,
+        chainId,
+        infusionMinter,
+        parseInt(infusionId)
+      ),
+    ],
+    combine: makeCombineQueryResultsIntoLoadingDataWithError({
+      transform: (infos) => infos.flat(),
+    }),
+  })
+}
+
+const useAppendAnyBundleNftApproveMsgs = (
+  options: ActionOptions,
+  infusionMinter: string,
+  nfts: NFT[]
+) => {
+  const nftApprovalQueries = nfts.map((n) =>
+    getIsInfuserApproved(options, n.addr, infusionMinter, n.token_id.toString())
+  )
+  return useQueries({
+    queries: nftApprovalQueries,
+    combine: makeCombineQueryResultsIntoLoadingDataWithError({
+      transform: (infos) => infos.flat(),
+    }),
+  })
+}
+
+const Component: ComponentType<
+  ActionComponentProps<undefined, ManageInfusionsData>
+> = ({ ...props }) => {
+  const { t } = useTranslation()
+  const options = useActionOptions()
+  const { watch, setValue } = useFormContext<ManageInfusionsData>()
+
+  const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
+  const watchChainId =
+    mode === 'create'
+      ? watch((props.fieldNamePrefix + 'create.chainId') as 'create.chainId')
+      : watch((props.fieldNamePrefix + 'infuse.chainId') as 'infuse.chainId')
+  const watchInfusionMinter =
+    mode === 'create'
+      ? watch((props.fieldNamePrefix +
+        'create.infusionMinter') as 'create.infusionMinter'
+      ) : watch((props.fieldNamePrefix +
+        'infuse.infusionMinter') as 'infuse.infusionMinter'
+      )
+  const watchInfusionId = watch((props.fieldNamePrefix +
+    'infuse.infusionId') as 'infuse.infusionId'
+  )
+  const watchFunds = watch(
+    (props.fieldNamePrefix + 'infuse.funds') as 'infuse.funds'
+  )
+  const cw20 = false
+
+  const tabs: SegmentedControlsProps<ManageInfusionsData['mode']>['tabs'] = [
+    // Only allow beginning a vest if widget is setup. ([
+    {
+      label: t('title.createInfusion'),
+      value: InfusionActionMode.Create,
+    },
+    {
+      label: t('title.infuseNfts'),
+      value: InfusionActionMode.Infuse,
+    },
+  ] as TypedOption<ManageInfusionsData['mode']>[]
+  const selectedTab = tabs.find((tab) => tab.value === mode)
+
+  const tokens = useTokenBalances({
+    // Load selected tokens when not creating in case they are no longer
+    // returned in the list of all tokens for the given DAO/wallet after the
+    // proposal is made.
+    additionalTokens: props.isCreating
+      ? undefined
+      : watchFunds.map(({ denom }) => ({
+        chainId: watchChainId,
+        type: cw20 ? TokenType.Cw20 : TokenType.Native,
+        denomOrAddress: denom,
+      })),
+  })
+
+  const infusionConfig = useInfusionConfigFromForm(
+    options.queryClient,
+    watchChainId,
+    watchInfusionMinter
+  )
+  const infusionInfoLDWE = useInfusionContractFromForm(
+    options.queryClient,
+    watchChainId,
+    watchInfusionMinter,
+    watchInfusionId
+  )
+  const infusionInfo =
+    !infusionInfoLDWE.errored && !infusionInfoLDWE.loading
+      ? infusionInfoLDWE.data
+      : []
+
+  // useEffect(() => {
+  //   console.log('props.fieldNamePrefix: ', props.fieldNamePrefix)
+
+  //   const timer = setTimeout(() => {
+  //     console.log('props.fieldNamePrefix: ', props.fieldNamePrefix)
+  //   }, 0) // 500 milliseconds = 0.5 seconds
+  //   return () => clearTimeout(timer) // Clean up the timer
+  // }, [])
+
+  // useEffect(() => {
+  //   console.log('watchInfusionMinter: ', watchInfusionMinter)
+  //   console.log('watchInfusionId: ', watchInfusionId)
+  //   const timer = setTimeout(() => {
+  //     console.log('infusionInfo: ', infusionInfo)
+  //     console.log('infusionInfoLDWE: ', infusionInfoLDWE)
+  //   }, 500) // 500 milliseconds = 0.5 seconds
+
+  //   return () => clearTimeout(timer) // Clean up the timer
+  // }, [watchInfusionMinter, watchInfusionId])
+
+  // useEffect(() => {
+  //   console.log('watchFunds: ', watchFunds)
+
+
+  // }, [watchFunds])
+
+  return (
+    <SuspenseLoader fallback={<Loader />}>
+      {props.isCreating ? (
+        <SegmentedControls<ManageInfusionsData['mode']>
+          className="mb-2"
+          onSelect={(value) =>
+            setValue((props.fieldNamePrefix + 'mode') as 'mode', value)
+          }
+          selected={mode}
+          tabs={tabs}
+        />
+      ) : (
+        <p className="title-text mb-2">{selectedTab?.label}</p>
+      )}
+      {mode === InfusionActionMode.Create ? (
+        <CreateInfusion
+          {...props}
+          fieldNamePrefix={props.fieldNamePrefix + 'create.'}
+          options={{
+            infusion: infusionConfig,
+            tokens,
+            AddressInput,
+          }}
+        />
+      ) : null}
+      {mode === InfusionActionMode.Infuse ? (
+        <InfuseNftsComponent
+          {...props}
+          fieldNamePrefix={props.fieldNamePrefix + 'infuse.'}
+          options={{
+            infusionInfo: infusionInfoLDWE,
+            // ownedNfts: availableToInfuse,
+            tokens,
+            AddressInput,
+            NftSelectionModal,
+          }}
+        />
+      ) : null}
+    </SuspenseLoader>
+  )
+}
+
+// Only check if widget exists in DAOs.
+const DaoComponent: ActionComponent<undefined, ManageInfusionsData> = (
+  props
+) => {
+  return <Component {...props} />
+}
+
+const WalletComponent: ActionComponent<undefined, ManageInfusionsData> = (
+  props
+) => <Component {...props} />
+
+export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
+  public readonly key = ActionKey.InfuseNfts
+  public readonly Component: ActionComponent<undefined, ManageInfusionsData>
+
+  constructor(options: ActionOptions) {
+    super(options, {
+      Icon: BoxEmoji,
+      label: options.t('title.infuseNfts'),
+      description: options.t('info.infuseNftsDescription', {
+        context: options.context.type,
+      }),
+    })
+
+    this.Component =
+      options.context.type === ActionContextType.Dao
+        ? DaoComponent
+        : WalletComponent
+
+    // Fire async init immediately since we may hide this action.
+    this.init().catch(() => { })
+  }
+
+  async setup() {
+    this.defaults = {
+      module_msg: '',
+      chainId: 'stargaze-1',
+      mode: InfusionActionMode.Infuse,
+      create: {
+        chainId: 'stargaze-1',
+        infusionMinter: 'stars1zkdqlly53sdafh6dhcpuapxxc3llxyqw4v9ekk9x553mc4mv0xlqkyvg3l',
+        owner: '',
+        paymentRecipient: '',
+        description: '',
+        infusedCollection: {
+          name: '',
+          symbol: '',
+          description: '',
+          base_uri: '',
+          image: '',
+          num_tokens: 0,
+          sg: true,
+        },
+        mode: InfusionBundleType.AllOf,
+        collections: [],
+        infusionParams: {
+          bundle_type: { all_of: {} }, wavs_enabled: false, mint_fee: {
+            amount: '1000000000',
+            denom: 'ustars'
+          }
+
+        },
+        deposit: [],
+      },
+      infuse: {
+        feeSubEnabled: [],
+        chainId: 'stargaze-1',//this.options.chain.chainId,
+        infusionMinter:
+          'stars1zkdqlly53sdafh6dhcpuapxxc3llxyqw4v9ekk9x553mc4mv0xlqkyvg3l',
+        infusionId: '1',
+        infusionBundles: [{ nfts: [] }],
+        collection: '',
+        tokenId: '',
+        funds: [],
+      },
+    }
+  }
+
+  async encode({
+    mode,
+    create,
+    infuse,
+  }: ManageInfusionsData): Promise<UnifiedCosmosMsg[]> {
+    let chainId: string
+    let cosmosMsg: UnifiedCosmosMsg
+
+    if (mode === 'create') {
+      chainId = create.chainId
+      const sender = getChainAddressForActionOptions(this.options, chainId)
+      if (!sender) {
+        throw new Error('No sender found for chain.')
+      }
+      const infusion_params: InfusionParams = {
+        bundle_type: create.infusionParams.bundle_type,
+        mint_fee: create.infusionParams.mint_fee && create.infusionParams.mint_fee.amount != '0' ? HugeDecimal.fromHumanReadable(create.infusionParams.mint_fee.amount, 6).toCoin(create.infusionParams.mint_fee.denom) : null,
+        wavs_enabled: false,
+      }
+
+      const createInfusionMsg = makeExecuteSmartContractMessage({
+        chainId,
+        sender,
+        contractAddress: create.infusionMinter,
+        msg: {
+          create_infusion: {
+            infusions: [
+              {
+                owner: create.owner,
+                payment_recipient: create.paymentRecipient,
+                description: create.description,
+                collections: create.collections.map((coll) => {
+                  return {
+                    addr: coll.addr,
+                    min_req: coll.min_req,
+                    max_req: coll.max_req
+                      ? HugeDecimal.from(coll.max_req).toNumber()
+                      : HugeDecimal.from(coll.min_req).toNumber(),
+                    payment_substitute: coll.payment_substitute ? {
+                      denom: coll.payment_substitute?.denom,
+                      amount: HugeDecimal.fromHumanReadable(coll.payment_substitute?.amount, 6).toNumber(),
+                    } : null,
+                  }
+                }),
+                infused_collection: {
+                  sg: chainId == 'stargaze-1' ? true : false,
+                  admin: create.infusedCollection.admin,
+                  name: create.infusedCollection.name,
+                  description: create.infusedCollection.description,
+                  symbol: create.infusedCollection.symbol,
+                  base_uri: create.infusedCollection.base_uri,
+                  image: create.infusedCollection.image,
+                  num_tokens: HugeDecimal.from(
+                    create.infusedCollection.num_tokens
+                  ).toNumber(),
+                  royalty_info: {
+                    payment_address:
+                      create.infusedCollection.royalty_info?.payment_address,
+                    share: HugeDecimal.fromHumanReadable(
+                      create.infusedCollection.royalty_info?.share!,
+                      0
+                    ),
+                  },
+                },
+                infusion_params,
+              },
+            ],
+          },
+        },
+        funds: create.deposit
+          .map(({ denom, amount, decimal }) => HugeDecimal.from(amount).toCoin(denom))
+          // Neutron errors with `invalid coins` if the funds list is not
+          // alphabetized.
+          .sort((a, b) => a.denom.localeCompare(b.denom)),
+      })
+
+      return maybeMakePolytoneExecuteMessages(
+        this.options.chain.chainId,
+        chainId,
+        createInfusionMsg
+      )
+    } else if (mode === 'infuse') {
+      chainId = infuse.chainId
+      const sender = getChainAddressForActionOptions(this.options, chainId)
+      if (!sender) {
+        throw new Error('No sender found for chain.')
+      }
+
+      // for each nft in infusion Bundles, create the approve msgs
+      const approveNftsMsgs = infuse.infusionBundles.flatMap((ib) => {
+        return ib.nfts.map((bnfts) => {
+          return makeExecuteSmartContractMessage({
+            chainId,
+            sender,
+            contractAddress: bnfts.addr,
+            msg: {
+              approve: {
+                token_id: bnfts.token_id.toString(),
+                spender: infuse.infusionMinter,
+                // todo: add expiration
+              },
+            },
+          })
+        })
+      })
+
+      let funds = Array.from(
+        infuse.funds
+          .map(({ denom, amount }) =>
+            HugeDecimal.fromHumanReadable(amount, 0).toCoin(denom)
+          )
+          .reduce((map, coin) => {
+            const existing = map.get(coin.denom);
+            if (existing) {
+              map.set(coin.denom, {
+                ...existing,
+                amount: HugeDecimal.from(existing.amount).plus(coin.amount)
+              });
+            } else {
+              map.set(coin.denom, coin);
+            }
+            return map;
+          }, new Map())
+          .values()
+      ).sort((a, b) => a.denom.localeCompare(b.denom));
+
+      const infusionMsg = makeExecuteSmartContractMessage({
+        chainId,
+        sender,
+        contractAddress: infuse.infusionMinter,
+        msg: {
+          infuse: {
+            id: infuse.infusionId,
+            bundle:
+              infuse.infusionBundles.length == 0
+                ? [{ nfts: [] }]
+                : infuse.infusionBundles,
+          },
+        },
+        funds,
+      })
+      return maybeMakePolytoneExecuteMessages(
+        this.options.chain.chainId,
+        chainId,
+        approveNftsMsgs.concat([infusionMsg])
+      )
+    } else {
+      throw new Error(this.options.t('error.unexpectedError'))
+    }
+  }
+
+  // helper to be used in match and decode
+  breakDownMessage({ decodedMessage, account: { chainId } }: ProcessedMessage) {
+    const isNativeCreate = objectMatchesStructure(decodedMessage, {
+      wasm: {
+        execute: {
+          contract_addr: {},
+          funds: {},
+          msg: createInfusionStructure,
+        },
+      },
+    })
+    const isNativeInfuse = objectMatchesStructure(decodedMessage, {
+      wasm: {
+        execute: {
+          contract_addr: {},
+          funds: {},
+          msg: infuseBundlesStructure,
+        },
+      },
+    })
+
+    return {
+      chainId,
+      decodedMessage,
+      isNativeCreate,
+      isNativeInfuse,
+    }
+  }
+
+  match([message]: ProcessedMessage[]): ActionMatch {
+    const { isNativeCreate, isNativeInfuse } = this.breakDownMessage(message)
+
+    return isNativeCreate || isNativeInfuse
+  }
+
+  async decode([message]: ProcessedMessage[]): Promise<
+    Partial<ManageInfusionsData>
+  > {
+    const { chainId, decodedMessage, isNativeCreate, isNativeInfuse } =
+      this.breakDownMessage(message)
+
+
+    if (isNativeCreate) {
+      const bundleType = decodedMessage.wasm.execute.msg.create_infusion.infusion_params.bundle_type;
+      const genericMintFee = decodedMessage.wasm.execute.msg.create_infusion.infusion_params.mint_fee;
+      let bundleTypeMode: InfusionBundleType;
+      if ('all_of' in bundleType) {
+        bundleTypeMode = InfusionBundleType.AllOf;
+      } else if ('any_of' in bundleType) {
+        bundleTypeMode = InfusionBundleType.AnyOf;
+      } else if ('any_of_blend' in bundleType) {
+        bundleTypeMode = InfusionBundleType.AnyOfBlend;
+      } else {
+        // handle error
+        throw new Error('Unknown bundle type');
+      }
+
+      return {
+        mode: InfusionActionMode.Create,
+        create: {
+          chainId,
+          infusionMinter: decodedMessage.wasm.execute.contract_addr,
+          collections: decodedMessage.wasm.execute.msg.create_infusion.collections,
+          infusedCollection: decodedMessage.wasm.execute.msg.create_infusion.infused_collection,
+          infusionParams: decodedMessage.wasm.execute.msg.create_infusion.infusion_params,
+          paymentRecipient: decodedMessage.wasm.execute.msg.create_infusion.payment_recipient,
+          deposit: decodedMessage.wasm.execute.funds,
+          description: decodedMessage.wasm.execute.msg.create_infusion.description,
+          mode: bundleTypeMode,
+        }
+      }
+    } else if (isNativeInfuse) {
+      return {
+        mode: InfusionActionMode.Infuse,
+        infuse: {
+          feeSubEnabled: [],
+          chainId,
+          infusionMinter: decodedMessage.wasm.execute.contract_addr,
+          infusionId: decodedMessage.wasm.execute.msg.infuse.id,
+          infusionBundles: decodedMessage.wasm.execute.msg.infuse.bundle,
+          collection: '',
+          tokenId: '',
+          funds: decodedMessage.wasm.execute.funds,
+        },
+      }
+    }
+    // Should never happen.
+    throw new Error('Unexpected message')
+  }
+}
