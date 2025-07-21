@@ -6,7 +6,7 @@ import { useFieldArray, useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 
 import { HugeDecimal } from '@dao-dao/math'
-import { LazyNftCard, NftSelectionModal } from '@dao-dao/stateful'
+import { InfusionNFTSelectionModal, LazyNftCard, NftSelectionModal } from '@dao-dao/stateful'
 import {
   EligibleCollectionCardProps,
   LazyNftCardInfo,
@@ -15,7 +15,7 @@ import {
   StatefulEntityDisplayProps,
 
 } from '@dao-dao/types'
-import { BundleType, InfusionWithDetails } from '@dao-dao/types/contracts/CwInfuser'
+import { Bundle, BundleType, InfusionWithDetails } from '@dao-dao/types/contracts/CwInfuser'
 import {
   getFallbackImage,
   getImageUrlForChainId,
@@ -28,7 +28,7 @@ import { InfuseNftsData, InfusionBundleType } from '../../InfusionsRenderer'
 import { NftGalleryModal } from './BrowseInfusionNfts'
 import { CommonNftSelectors, lazyNftCardInfosForDaoSelector } from '@dao-dao/state/recoil'
 import { coin } from '@cosmjs/amino'
-
+import { useWallet } from '../../../../../hooks/useWallet'
 
 const NFTS_PER_PAGE = 30
 
@@ -43,6 +43,24 @@ export interface HorizontalInfusionCardProps extends InfusionWithDetails {
   isProposalAction: boolean
   isCreating: boolean
   onInfuseNft?: () => void
+}
+
+interface BundleDisplayProps {
+  usingAllFeePaymentSub: boolean;
+  watchInfuionBundles: any[];
+  infusion: any;
+}
+
+interface BundleNftsProps {
+  bundle: Bundle;
+
+}
+
+interface BundleProps {
+  bundle: Bundle;
+  bundleIndex: number;
+  totalBundles: number;
+
 }
 
 export const HorizontalInfusionCard = forwardRef<
@@ -87,7 +105,7 @@ export const HorizontalInfusionCard = forwardRef<
   })
   // funds
   const {
-    fields: coins,
+    fields: watchFunds,
     append: appendCoin,
     remove: removeCoin,
     update: updateCoin,
@@ -96,6 +114,11 @@ export const HorizontalInfusionCard = forwardRef<
     name: (fieldNamePrefix + 'funds') as 'funds',
   })
 
+  const { disconnect, connect, } = useWallet({ chainId: watchChainId })
+  const handleReconnect = () => {
+    disconnect()
+    connect()
+  }
 
   const showingImageUrl = infusion.infused_collection.image && !imageLoadErrored
   // const chainImage = getImageUrlForChainId(infusion.chainId)
@@ -137,6 +160,76 @@ export const HorizontalInfusionCard = forwardRef<
   const [usingAllFeePaymentSub, setUsingAllFeePaymentSub] = useState<boolean>(false)
 
 
+  const onUseSingleFeeSubstitute = (nftAddr: string, usingFeeSub: boolean) => {
+    let required = infusion.eligibleCollections.find((i) => i.addr == nftAddr)
+    if (!required || !required.payment_substitute) return;
+    if (!usingFeeSub) {
+      console.log("removeing fee substitute for collection:", nftAddr)
+      const denom = required.payment_substitute.token.denomOrAddress;
+      const subtractAmount = HugeDecimal.from(required.payment_substitute.balance);
+      const coinIndex = watchFunds.findIndex(c => c.denom === denom);
+
+      if (coinIndex >= 0) {
+        console.log("found coin at index:", coinIndex)
+        const currentAmount = HugeDecimal.from(watchFunds[coinIndex].amount);
+        let newAmount = currentAmount.minus(subtractAmount);
+        console.log("newAmount:", newAmount)
+
+        if (newAmount.gt(0)) {
+          updateCoin(coinIndex, {
+            ...watchFunds[coinIndex],
+            amount: newAmount.toString()
+          });
+        } else {
+          removeCoin(coinIndex);
+          // ensure we stil have the static mint fee
+          if (infusion.infusionParamsGeneric.mintFeeGeneric && infusion.infusionParamsGeneric.mintFeeGeneric.token.denomOrAddress == denom) {
+            appendCoin({
+              denom: infusion.infusionParamsGeneric.mintFeeGeneric.token.denomOrAddress,
+              amount: infusion.infusionParamsGeneric.mintFeeGeneric.balance,
+              decimals: required.payment_substitute.token.decimals,
+
+            });
+          }
+
+
+        }
+      }
+
+      // console.log("watchCoins after removing:", watchCoins)
+    } else {
+      console.log("enabling abling fee substitute")
+      const newBundles = watchInfuionBundles.map(bundle => ({
+        ...bundle,
+        nfts: bundle.nfts.filter(nft => nft.addr !== nftAddr)
+      })).filter(bundle => bundle.nfts.length > 0);
+
+      console.log("newBundles", newBundles)
+      setValue(`${fieldNamePrefix}infusionBundles` as 'infusionBundles', newBundles);
+
+      const denom = required.payment_substitute.token.denomOrAddress;
+      const addAmount = HugeDecimal.from(required.payment_substitute.balance);
+      const coinIndex = watchFunds.findIndex(c => c.denom === denom);
+      console.log("coinIndex", coinIndex)
+      if (coinIndex >= 0) {
+        const currentAmount = HugeDecimal.from(watchFunds[coinIndex].amount);
+        const newAmount = currentAmount.plus(addAmount);
+        updateCoin(coinIndex, {
+          ...watchFunds[coinIndex],
+          amount: newAmount.toString()
+        });
+      } else {
+        appendCoin({
+          denom,
+          amount: addAmount.toString(),
+          decimals: required.payment_substitute.token.decimals,
+
+        });
+      }
+    }
+  };
+
+
   const onUseAllFeePaymentSubstitute = () => {
     if (!usingAllFeePaymentSub) {
       setUsingAllFeePaymentSub(true);
@@ -153,7 +246,7 @@ export const HorizontalInfusionCard = forwardRef<
 
 
       // Preserve existing coins (merge with generic fee if same denom)
-      coins.forEach(coin => {
+      watchFunds.forEach(coin => {
         const current = existingCoins.get(coin.denom);
         if (current) {
           // If coin already exists, add to it
@@ -354,7 +447,7 @@ export const HorizontalInfusionCard = forwardRef<
         bundleType: infusion.infusionParamsGeneric.bundle_type,
         paymentSub: eligible.payment_substitute,
         globalPaymentSub: usingAllFeePaymentSub,
-        // onUseSingleFeeSubstitute
+        onUseSingleFeeSubstitute
       }
 
       // Debug each prop to see if any are objects being rendered
@@ -373,15 +466,85 @@ export const HorizontalInfusionCard = forwardRef<
     // Reset bundles and coins when infusion ID or contract changes
     setValue((fieldNamePrefix + 'infusionBundles') as 'infusionBundles', [])
     setValue((fieldNamePrefix + 'funds') as 'funds', [])
-    setValue((fieldNamePrefix + 'feeSubEnabled') as 'feeSubEnabled', [])
-    // infusion.infusionParamsGeneric.mintFeeGeneric && appendCoin({ amount: infusion.infusionParamsGeneric.mintFeeGeneric.balance, denom: infusion.infusionParamsGeneric.mintFeeGeneric.token.denomOrAddress })
+    infusion.infusionParamsGeneric.mintFeeGeneric && appendCoin({ amount: infusion.infusionParamsGeneric.mintFeeGeneric.balance, denom: infusion.infusionParamsGeneric.mintFeeGeneric.token.denomOrAddress })
   }, [watchInfusionId, watchInfusionMinter, infusion.infusionParamsGeneric.mintFeeGeneric])
+
   useEffect(() => {
     console.log("infusion:", infusion)
-    console.log("HORIZONTALINFUSION FORM COINS:", coins)
+    console.log("HORIZONTALINFUSION FORM COINS:", watchFunds)
     console.log("fieldNamePrefix:", fieldNamePrefix)
-  }, [infusion, coins, setDisplayGallery])
+  }, [infusion, watchFunds, setDisplayGallery])
 
+
+  const BundleDisplay = () => {
+    if (usingAllFeePaymentSub || watchInfuionBundles.length === 0) return null;
+
+    return (
+      <div className="mb-4">
+        <p className="primary-text text-sm font-medium mb-2">
+          {t('title.selectedBundles')} ({watchInfuionBundles.length})
+        </p>
+
+        {watchInfuionBundles.map((bundle, bundleIndex) => (
+          <Bundle key={bundleIndex} bundle={bundle} bundleIndex={bundleIndex} totalBundles={watchInfuionBundles.length} />
+        ))}
+      </div>
+    );
+  };
+
+  const Bundle = ({ bundle, bundleIndex, totalBundles, }: BundleProps) => (
+    <div
+      className={clsx(
+        'mb-3 p-3 rounded-lg border border-border-secondary',
+        bundleIndex === totalBundles - 1 && 'mb-0'
+      )}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
+          {t('title.bundle')} {bundleIndex + 1}
+        </p>
+
+        <p className="secondary-text text-xs">
+          {bundle.nfts.length} {t('title.nfts')}
+        </p>
+      </div>
+
+      <BundleNfts bundle={bundle} />
+    </div>
+  );
+
+  const BundleNfts = ({ bundle }: BundleNftsProps) => (
+    <div className="space-y-1">
+      {bundle.nfts.map((nft, nftIndex) => {
+        const matchingNft = infusion.selectedNfts.loading || infusion.selectedNfts.errored
+          ? null
+          : infusion.selectedNfts.data.find(selected =>
+            selected.collectionAddress === nft.addr &&
+            selected.tokenId === nft.token_id.toString()
+          );
+
+        return (
+          <div key={nftIndex} className="flex items-center gap-2 p-2 rounded bg-background-tertiary">
+            {matchingNft ? (
+              <HorizontalNftCard {...matchingNft} />
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded bg-background-secondary" />
+                <div className="flex-1 min-w-0">
+                  <p className="primary-text text-xs truncate">
+                    {nft.addr}
+                  </p>
+                  <p className="secondary-text text-xs">
+                    #{nft.token_id}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div
@@ -506,7 +669,8 @@ export const HorizontalInfusionCard = forwardRef<
                 {t('button.selectNfts')}
               </Button> </> : undefined}
 
-            {infusion.eligibleCollections.find((i) => i.payment_substitute) ? <>
+
+            {'all_of' in infusion.infusionParamsGeneric.bundle_type && infusion.eligibleCollections.find((i) => i.payment_substitute) ? <>
               <SwitchCard
                 containerClassName="self-start mt-2"
                 label={t('form.useFeeSubstitute')}
@@ -516,7 +680,6 @@ export const HorizontalInfusionCard = forwardRef<
                 tooltip={usingAllFeePaymentSub ? t('button.useNftInfusions') : t('button.useAllFeeSubstitutes')}
                 tooltipIconSize="sm"
               />
-
             </> : null}
           </div>
 
@@ -555,11 +718,11 @@ export const HorizontalInfusionCard = forwardRef<
                   {t('info.staticFeeExplination')}
                 </p>
 
-                {infusion.infusionParamsGeneric && infusion.infusionParamsGeneric.mintFeeGeneric ?
+                {/* {infusion.infusionParamsGeneric && infusion.infusionParamsGeneric.mintFeeGeneric ?
                   <div className="mb-4 p-3 rounded-lg bg-background-interactive-disabled">
                     {
                       infusion.infusionParamsGeneric.mintFeeGeneric ? <>
-                        <Tooltip title={t('info.statiifFeeToolTip')}>
+                        <Tooltip title={t('info.staticFeeToolTip')}>
                           <TokenAmountDisplay
                             amount={HugeDecimal.from(infusion.infusionParamsGeneric.mintFeeGeneric.balance)}
                             className="text-text-body"
@@ -587,59 +750,14 @@ export const HorizontalInfusionCard = forwardRef<
                     }
 
                   </div> : undefined
-                }
-                {/* <p className="secondary-text text-xs">
-                  {t('info.feeSubstituteExplanation')}
-                </p> */}
-                {/* {usingAllFeePaymentSub ? infusion.eligibleCollections.find((ec, indx) => ec.payment_substitute && (<>
-                  < div
-                    key={ec.payment_substitute?.token.denomOrAddress}
-                    className={
-                      clsx(
-                        'flex flex-row pl-4 items-stretch border-border-secondary border-l-2',
-                        // padding between above item's bottom border
-                        indx > 0 && 'pt-2',
-                        // padding above first and below last items within
-                        // container
-                        indx === 0 && 'pt-1',
-                      )}
-                  >
-                    <div
-                      className={clsx(
-                        'flex flex-row grow items-center justify-between min-w-0 gap-8',
-                        // bottom border between items, with padding that
-                        // matches top padding in the item below it
-                        // index !== rewards.data.length - 1 &&
-                        // 'border-dashed border-b border-border-secondary pb-2'
-                      )}
-                    >
-                      <TokenAmountDisplay
-                        amount={HugeDecimal.from(ec.payment_substitute!.balance)}
-                        className="text-text-body"
-                        decimals={ec.payment_substitute!.token.decimals}
-                        hideSymbol
-                        iconUrl={
-                          ec.payment_substitute!.token.imageUrl ||
-                          getFallbackImage(ec.payment_substitute!.token.denomOrAddress)
-                        }
-                        showAllDecimals
-                        showFullAmount
-                        suffix={'  $' + ec.payment_substitute!.token.symbol}
-                        suffixClassName="whitespace-pre text-text-tertiary"
-                      />
-                    </div>
-                  </div>
-
-                </>)) : undefined
                 } */}
                 <p className="secondary-text text-xs">
                   {t('info.totalBreakdownInfo')}
                 </p>
 
-                {coins.map((c) => {
+                {watchFunds.map((c) => {
                   let paysub = infusion.eligibleCollections.find((ec) => ec.payment_substitute?.token.denomOrAddress == c.denom)?.payment_substitute;
                   let token = infusion.infusionParamsGeneric.mintFeeGeneric && c.denom == infusion.infusionParamsGeneric.mintFeeGeneric.token.denomOrAddress ? infusion.infusionParamsGeneric.mintFeeGeneric : paysub;
-
                   return <>
                     <div className="mb-4 p-3 rounded-lg bg-background-interactive-disabled">
                       <div
@@ -665,72 +783,31 @@ export const HorizontalInfusionCard = forwardRef<
                     </div>
                   </>
                 })}
+                {/* reset bundle form */}
+                {infusion.infusionParamsGeneric.mintFeeGeneric && <Button
+                  className="self-start "
+                  onClick={() => {
+                    setValue((fieldNamePrefix + 'infusionBundles') as 'infusionBundles', [])
+                    setValue((fieldNamePrefix + 'funds') as 'funds', [])
+                    if (infusion.infusionParamsGeneric.mintFeeGeneric) {
+                      appendCoin({ denom: infusion.infusionParamsGeneric.mintFeeGeneric.token.denomOrAddress, amount: infusion.infusionParamsGeneric.mintFeeGeneric.balance, decimals: infusion.infusionParamsGeneric.mintFeeGeneric.token.decimals, })
+                    }
 
+                  }}
+                  size="sm"
+                  variant="brand"
+                >
+                  {t('button.resetBundles')}
+                </Button>}
               </div>
 
 
               {/* Bundle Display */}
               {!usingAllFeePaymentSub && watchInfuionBundles.length > 0 && (
                 <div className="mb-4">
-                  <p className="primary-text text-sm font-medium mb-2">
-                    {t('title.selectedBundles')} ({watchInfuionBundles.length})
-                  </p>
-
-                  {watchInfuionBundles.map((bundle, bundleIndex) => (
-                    <div
-                      key={bundleIndex}
-                      className={clsx(
-                        'mb-3 p-3 rounded-lg border border-border-secondary',
-                        bundleIndex === watchInfuionBundles.length - 1 && 'mb-0'
-                      )}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
-                          {t('title.bundle')} {bundleIndex + 1}
-                        </p>
-
-                        <p className="secondary-text text-xs">
-                          {bundle.nfts.length} {t('title.nfts')}
-                        </p>
-                      </div>
-
-                      {/* Bundle NFTs */}
-                      <div className="space-y-1">
-                        {bundle.nfts.map((nft, nftIndex) => {
-                          // Find the matching NFT from selectedNfts for display
-                          const matchingNft = infusion.selectedNfts.loading || infusion.selectedNfts.errored
-                            ? null
-                            : infusion.selectedNfts.data.find(selected =>
-                              selected.collectionAddress === nft.addr &&
-                              selected.tokenId === nft.token_id.toString()
-                            );
-
-                          return (
-                            <div key={nftIndex} className="flex items-center gap-2 p-2 rounded bg-background-tertiary">
-                              {matchingNft ? (
-                                <HorizontalNftCard {...matchingNft} />
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 rounded bg-background-secondary" />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="primary-text text-xs truncate">
-                                      {nft.addr}
-                                    </p>
-                                    <p className="secondary-text text-xs">
-                                      #{nft.token_id}
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
+                  <BundleDisplay />
                 </div>
               )}
-
 
             </Collapsible>
           </div>
@@ -771,22 +848,7 @@ export const HorizontalInfusionCard = forwardRef<
               ) : null}
             </div>
 
-            {infusion.infusionParamsGeneric.mintFeeGeneric && <Button
-              className="self-start "
-              onClick={() => {
-                setValue((fieldNamePrefix + 'infusionBundles') as 'infusionBundles', [])
-                setValue((fieldNamePrefix + 'funds') as 'funds', [])
-                setValue((fieldNamePrefix + 'feeSubEnabled') as 'feeSubEnabled', [])
-                if (infusion.infusionParamsGeneric.mintFeeGeneric) {
-                  appendCoin({ denom: infusion.infusionParamsGeneric.mintFeeGeneric.token.denomOrAddress, amount: infusion.infusionParamsGeneric.mintFeeGeneric.balance, decimals: infusion.infusionParamsGeneric.mintFeeGeneric.token.decimals, })
-                }
 
-              }}
-              size="sm"
-              variant="brand"
-            >
-              {t('button.resetBundles')}
-            </Button>}
           </div>
 
           <div className="flex flex-col gap-6 p-4 rounded-lg bg-background-tertiary overflow-x-auto">
@@ -837,7 +899,7 @@ export const HorizontalInfusionCard = forwardRef<
       {/* NFT Selection Modal */}
       {
         infusion.isCreating && (
-          <NftSelectionModal
+          <InfusionNFTSelectionModal
             action={{
               loading: false,
               label: t('button.save'),
@@ -846,6 +908,60 @@ export const HorizontalInfusionCard = forwardRef<
               },
             }}
             header={{ title: t('title.selectNftsToInfuse') }}
+            headerContent={
+              <Button
+                variant="secondary"
+                size="sm"
+                className="self-start mt-2"
+                onClick={handleReconnect}
+              >
+                {t('button.reconnectWalletToRefreshNFTs')}
+              </Button>
+            }
+            footerContent={<>
+
+              <div
+                className={clsx(
+                  'flex flex-row items-center gap-6',
+                  // If selectedDisplay is null, it will be hidden, so align button at
+                  // the end.
+                  // selectedDisplay === null ? 'justify-end' : 'justify-between'
+                  'justify-end'
+                )}
+              >
+                {/* {selectedDisplay !== undefined ? (
+                  selectedDisplay
+                ) : ( */}
+                <p>{t('info.numNftsSelected', { count: selectedKeys.length })}</p>
+                {/* )} */}
+
+                <div className="flex flex-row items-stretch gap-2">
+                  {/* {secondaryAction && (
+                    <Button
+                      loading={secondaryAction.loading}
+                      onClick={secondaryAction.onClick}
+                      variant="secondary"
+                    >
+                      {secondaryAction.label}
+                    </Button>
+                  )} */}
+
+                  <Button
+                    disabled={selectedKeys.length === 0}
+                    loading={false}
+                    onClick={() => {
+                      setShowModal(false)
+                    }}
+                    variant="primary"
+                  >
+                    {t('button.save')}
+                  </Button>
+                </div>
+              </div>
+              <BundleDisplay />
+            </>
+
+            }
             nfts={infusion.entityEligibleNFTs}
             onClose={() => setShowModal(false)}
             onNftClick={(nft) => {

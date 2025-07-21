@@ -98,8 +98,6 @@ export type CreateInfusionData = {
 
 export type InfuseNftsData = {
   chainId: string
-  // list of eligilbe fee sub adds with enabledfeesubs
-  feeSubEnabled: { addr: string }[]
   infusionMinter: string
   infusionId: string
   // the bundle of nfts being infused
@@ -290,11 +288,6 @@ export const InfusionsRenderer =
       status,
     } = useWallet({ chainId: watchChainId })
 
-    const handleReconnect = () => {
-      disconnect()
-      connect()
-    }
-
 
     // gets the nfts owned by wallet or dao
     // Only query NFTs when wallet is fully connected and address is available
@@ -355,14 +348,21 @@ export const InfusionsRenderer =
       combine: makeCombineQueryResultsIntoLoadingDataWithError(),
     })
 
-    useEffect(() => {
-      console.log('walletAddress:', walletAddress)
-      console.log('isWalletConnected:', isWalletConnected)
-      console.log('address:', address)
-      console.log('nftOptions:', nftOptions)
-      console.log('allChainOptions:', allChainOptions)
-      console.log('selectedNftInfos:', selectedNftInfos)
-    }, [selectedNftInfos, allChainOptions])
+    // useEffect(() => {
+    //   console.log('walletAddress:', walletAddress)
+    //   console.log('isWalletConnected:', isWalletConnected)
+    //   console.log('address:', address)
+    //   console.log('nftOptions:', nftOptions)
+    //   console.log('allChainOptions:', allChainOptions)
+    //   console.log('selectedNftInfos:', selectedNftInfos)
+    // }, [selectedNftInfos, allChainOptions])
+
+
+    // useEffect(() => {
+    //   infusionInfo[0].infusionParamsGeneric.mintFeeGeneric
+    //   // if static mint fee, set it any time we render new infusion
+    //   // if bundle type 
+    // }, [infusionInfo, infusionInfo[0].infusionParamsGeneric.mintFeeGeneric])
 
 
     // call infusion contract
@@ -514,7 +514,7 @@ export const InfusionsRenderer =
     return (
       <FormProvider {...formMethods}>
         <ChainProvider chainId={watchChainId}>
-          <div className="flex grow flex-col gap-4">
+          <div className="flex grow flex-col gap-2">
             <DaoSupportedChainPickerInput
               fieldName={'infuse.chainId'}
               onlyDaoChainIds={true}
@@ -538,12 +538,12 @@ export const InfusionsRenderer =
 
               </div>
               {isValidBech32Address(watchInfusionMinter) && infusionConfig && (
-                <div className="relative my-6">
+                <div className="relative my-2">
                   <p className="primary-text mb-3 text-center">
                     {t('form.selectInfusionId')}
                   </p>
 
-                  <div className="flex items-center justify-center space-x-2 mb-4">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
                     {/* First/Previous Buttons */}
                     <div className="flex space-x-1">
                       <Button
@@ -575,11 +575,6 @@ export const InfusionsRenderer =
                         step={1}
                         validation={[validateRequired, validatePositive]}
                       />
-                      <p className="primary-text mb-3">
-                        {t('form.selectInfusionId')}
-                      </p>
-
-
                     </div>
 
                     {/* Next/Last Buttons */}
@@ -627,14 +622,6 @@ export const InfusionsRenderer =
                     : null}
                 </>
               )}
-              <Button
-                variant="secondary"
-                size="sm"
-                className="self-start mt-2"
-                onClick={handleReconnect}
-              >
-                {t('button.reconnectWalletToRefreshNFTs')}
-              </Button>
             </div>
           </div>
         </ChainProvider>

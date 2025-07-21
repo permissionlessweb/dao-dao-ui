@@ -6,8 +6,8 @@ import { useTranslation } from 'react-i18next'
 
 import { HugeDecimal } from '@dao-dao/math'
 import { EligibleCollectionCardProps } from '@dao-dao/types'
-import { toAccessibleImageUrl } from '@dao-dao/utils'
-import { Button, LinkWrapper, ProfileImage, TokenAmountDisplay, TooltipLikeDisplay, useDaoNavHelpers } from '@dao-dao/stateless'
+import { toAccessibleImageUrl, validatePositive } from '@dao-dao/utils'
+import { Button, InputLabel, LinkWrapper, NumericInput, ProfileImage, TokenAmountDisplay, TooltipLikeDisplay, useDaoNavHelpers } from '@dao-dao/stateless'
 import { InfuseNftsData } from '../../InfusionsRenderer'
 
 
@@ -19,7 +19,9 @@ export const EligibleCollectionCard = ({
   index,
   nftInfo,
   contractInfo,
+  bundleType,
   globalPaymentSub,
+  onUseSingleFeeSubstitute,
 }: EligibleCollectionCardProps) => {
   const { t } = useTranslation()
 
@@ -28,9 +30,10 @@ export const EligibleCollectionCard = ({
   const [imageLoadErrored, setImageLoadErrored] = useState(false)
   const [loadedImageSrc, setLoadedImgSrc] = useState<string>()
 
-  const { control, setValue, watch } = useFormContext<InfuseNftsData>()
+  const { control, setValue, watch, getValues, register } = useFormContext<InfuseNftsData>()
 
   const watchInfuionBundles = watch((fieldNamePrefix + 'infusionBundles') as 'infusionBundles')
+
   // funds
   const {
     fields: watchCoins,
@@ -53,82 +56,14 @@ export const EligibleCollectionCard = ({
   //   name: (fieldNamePrefix + 'feeSubEnabled') as 'feeSubEnabled',
   // })
 
-  const onUseSingleFeeSubstitute = () => {
+  const onSetFeeSub = () => {
+    console.log("usingFeeSub", usingFeeSub)
     if (usingFeeSub) {
-      // console.log("disabling fee substitute")
-      if (!requiredParams.payment_substitute) return;
-      // // find in feesubmap to display in parent
-      // let feeSubIndex = feeSubMap.findIndex((fsi => fsi.addr == nftAddr))
-      // if (feeSubIndex >= 0) {
-      //   removeFeeSubMap(feeSubIndex)
-      // }
-
-      // console.log("watchCoins prior to removing:", watchCoins)
-      const denom = requiredParams.payment_substitute.token.denomOrAddress;
-      const subtractAmount = HugeDecimal.from(requiredParams.payment_substitute.balance);
-
-      const coinIndex = watchCoins.findIndex(c => c.denom === denom);
-
-      if (coinIndex >= 0) {
-        console.log("found coin at index:", coinIndex)
-        const currentAmount = HugeDecimal.from(watchCoins[coinIndex].amount);
-        const newAmount = currentAmount.minus(subtractAmount);
-
-        if (newAmount.gt(0)) {
-          updateCoin(coinIndex, {
-            ...watchCoins[coinIndex],
-            amount: newAmount.toString()
-          });
-        } else {
-          removeCoin(coinIndex);
-        }
-      }
-      setUsingFeeSub(false)
-      // console.log("watchCoins after removing:", watchCoins)
+      setUsingFeeSub(!usingFeeSub)
+      onUseSingleFeeSubstitute(nftAddr, !usingFeeSub)
     } else {
-      // console.log("enabling abling fee substitute")
-      // console.log("watchCoins", watchCoins)
-      const newBundles = watchInfuionBundles.map(bundle => ({
-        ...bundle,
-        nfts: bundle.nfts.filter(nft => nft.addr !== nftAddr)
-      })).filter(bundle => bundle.nfts.length > 0);
-
-      console.log("newBundles", newBundles)
-      setValue(`${fieldNamePrefix}infusionBundles` as 'infusionBundles', newBundles);
-
-      if (!requiredParams.payment_substitute) return;
-
-      const denom = requiredParams.payment_substitute.token.denomOrAddress;
-      const addAmount = HugeDecimal.from(requiredParams.payment_substitute.balance);
-      const coinIndex = watchCoins.findIndex(c => c.denom === denom);
-
-      if (coinIndex >= 0) {
-        const currentAmount = HugeDecimal.from(watchCoins[coinIndex].amount);
-        const newAmount = currentAmount.plus(addAmount);
-
-        updateCoin(coinIndex, {
-          ...watchCoins[coinIndex],
-          amount: newAmount.toString()
-        });
-      } else {
-        appendCoin({
-          denom,
-          amount: addAmount.toString(),
-          decimals: requiredParams.payment_substitute.token.decimals,
-
-        });
-      }
-
       setUsingFeeSub(true)
-
-      // // find in feesubmap to display in parent
-      // let feeSubIndex = feeSubMap.findIndex((fsi => fsi.addr == nftAddr))
-      // if (feeSubIndex >= 0) {
-
-      //   console.log("found fee sub index", newBundles)
-      // } else {
-      //   appendFeeSubMap({ addr: nftAddr })
-      // }
+      onUseSingleFeeSubstitute(nftAddr, true)
     }
   };
 
@@ -234,7 +169,7 @@ export const EligibleCollectionCard = ({
               {paymentSub && !globalPaymentSub && (
                 <div className="pt-2">
                   <Button
-                    onClick={onUseSingleFeeSubstitute}
+                    onClick={onSetFeeSub}
                     variant="secondary"
                     size="sm"
                   >
@@ -244,6 +179,43 @@ export const EligibleCollectionCard = ({
                   </Button>
                 </div>
               )}
+
+
+              <div className="mt-auto">
+                {'any_of' in bundleType && usingFeeSub ? (
+                  <>
+                    {/* AnyOf only: select how many nfts to mint (adds token substitute to form) */}
+                    {/* <div className="flex shrink-0 flex-col gap-1">
+                      <div className="flex flex-row items-end justify-between gap-2">
+                        <InputLabel name={'...' + t('form.mintQuantity')} />
+                      </div>
+
+                      <div className="flex flex-row gap-1">
+                        <NumericInput
+                          // disabled={!isCreating}
+                          // error={errors?.steps?.[index]?.delay?.value}
+                          // fieldName={
+                          //   (fieldNamePrefix +
+                          //     `steps.${index}.delay.value`) as `steps.${number}.delay.value`
+                          // }
+                          getValues={getValues}
+                          min={1}
+                          numericValue
+                          register={register}
+                          setValue={() => {
+
+
+                          }}
+                          sizing="md"
+                          step={1}
+                        // validation={[validatePositive]}
+                        />
+
+                      </div>
+                    </div>  */}
+                  </>
+                ) : null}
+              </div>
             </div>
           )}
         </div>

@@ -1710,7 +1710,7 @@
       "DaoProposalMultiple": 91,
       "DaoProposalSingle": 92,
       "DaoVotingCw4": 93,
-      "CwInfuser": 680
+      "CwInfuser": 682
     },
     "2.3.0": {
       "Cw4Group": 83,
@@ -1726,7 +1726,7 @@
       "DaoVotingCw4": 133,
       "DaoVotingCw721Staked": 120,
       "DaoVotingTokenStaked": 121,
-      "CwInfuser": 680
+      "CwInfuser": 682
     },
     "2.4.0": {
       "Cw1Whitelist": 152,
@@ -1745,7 +1745,7 @@
       "DaoVotingCw4": 160,
       "DaoVotingCw721Staked": 161,
       "DaoVotingTokenStaked": 162,
-      "CwInfuser": 680
+      "CwInfuser": 682
     },
     "2.5.0": {
       "Cw1Whitelist": 152,
@@ -1766,7 +1766,7 @@
       "DaoVotingCw4": 349,
       "DaoVotingCw721Staked": 350,
       "DaoVotingTokenStaked": 351,
-      "CwInfuser": 680
+      "CwInfuser": 682
     },
     "2.6.0": {
       "Cw1Whitelist": 152,
@@ -1788,7 +1788,7 @@
       "DaoVotingCw4": 439,
       "DaoVotingCw721Staked": 441,
       "DaoVotingTokenStaked": 443,
-      "CwInfuser": 680
+      "CwInfuser": 682
     },
     "2.7.0": {
       "Cw1Whitelist": 152,
@@ -1811,7 +1811,7 @@
       "DaoVotingCw4": 637,
       "DaoVotingCw721Staked": 639,
       "DaoVotingTokenStaked": 641,
-      "CwInfuser": 680
+      "CwInfuser": 682
     }
   },
   "theta-testnet-001": {

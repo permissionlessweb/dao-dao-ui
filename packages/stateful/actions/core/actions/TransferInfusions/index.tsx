@@ -168,31 +168,31 @@ const useAppendAnyBundleNftApproveMsgs = (
 
 const Component: ComponentType<
   ActionComponentProps<undefined, ManageInfusionsData>
-> = ({ ...props }) => {
+> = ({ fieldNamePrefix, ...props }) => {
   const { t } = useTranslation()
   const options = useActionOptions()
   const { watch, setValue } = useFormContext<ManageInfusionsData>()
 
-  const mode = watch((props.fieldNamePrefix + 'mode') as 'mode')
+  const mode = watch((fieldNamePrefix + 'mode') as 'mode')
   const watchChainId =
     mode === 'create'
-      ? watch((props.fieldNamePrefix + 'create.chainId') as 'create.chainId')
-      : watch((props.fieldNamePrefix + 'infuse.chainId') as 'infuse.chainId')
+      ? watch((fieldNamePrefix + 'create.chainId') as 'create.chainId')
+      : watch((fieldNamePrefix + 'infuse.chainId') as 'infuse.chainId')
   const watchInfusionMinter =
     mode === 'create'
-      ? watch((props.fieldNamePrefix +
+      ? watch((fieldNamePrefix +
         'create.infusionMinter') as 'create.infusionMinter'
-      ) : watch((props.fieldNamePrefix +
+      ) : watch((fieldNamePrefix +
         'infuse.infusionMinter') as 'infuse.infusionMinter'
       )
-  const watchInfusionId = watch((props.fieldNamePrefix +
+  const watchInfusionId = watch((fieldNamePrefix +
     'infuse.infusionId') as 'infuse.infusionId'
   )
   const watchFunds = watch(
-    (props.fieldNamePrefix + 'infuse.funds') as 'infuse.funds'
+    (fieldNamePrefix + 'infuse.funds') as 'infuse.funds'
   )
   const cw20 = false
-
+  const watchInfuionBundles = watch((fieldNamePrefix + 'infuse.infusionBundles') as 'infuse.infusionBundles')
   const tabs: SegmentedControlsProps<ManageInfusionsData['mode']>['tabs'] = [
     // Only allow beginning a vest if widget is setup. ([
     {
@@ -236,10 +236,10 @@ const Component: ComponentType<
       : []
 
   // useEffect(() => {
-  //   console.log('props.fieldNamePrefix: ', props.fieldNamePrefix)
+  //   console.log('fieldNamePrefix: ', fieldNamePrefix)
 
   //   const timer = setTimeout(() => {
-  //     console.log('props.fieldNamePrefix: ', props.fieldNamePrefix)
+  //     console.log('fieldNamePrefix: ', fieldNamePrefix)
   //   }, 0) // 500 milliseconds = 0.5 seconds
   //   return () => clearTimeout(timer) // Clean up the timer
   // }, [])
@@ -267,7 +267,7 @@ const Component: ComponentType<
         <SegmentedControls<ManageInfusionsData['mode']>
           className="mb-2"
           onSelect={(value) =>
-            setValue((props.fieldNamePrefix + 'mode') as 'mode', value)
+            setValue((fieldNamePrefix + 'mode') as 'mode', value)
           }
           selected={mode}
           tabs={tabs}
@@ -278,7 +278,7 @@ const Component: ComponentType<
       {mode === InfusionActionMode.Create ? (
         <CreateInfusion
           {...props}
-          fieldNamePrefix={props.fieldNamePrefix + 'create.'}
+          fieldNamePrefix={fieldNamePrefix + 'create.'}
           options={{
             infusion: infusionConfig,
             tokens,
@@ -289,7 +289,7 @@ const Component: ComponentType<
       {mode === InfusionActionMode.Infuse ? (
         <InfuseNftsComponent
           {...props}
-          fieldNamePrefix={props.fieldNamePrefix + 'infuse.'}
+          fieldNamePrefix={fieldNamePrefix + 'infuse.'}
           options={{
             infusionInfo: infusionInfoLDWE,
             // ownedNfts: availableToInfuse,
@@ -360,7 +360,7 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
         collections: [],
         infusionParams: {
           bundle_type: { all_of: {} }, wavs_enabled: false, mint_fee: {
-            amount: '1000000000',
+            amount: '100',
             denom: 'ustars'
           }
 
@@ -368,7 +368,6 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
         deposit: [],
       },
       infuse: {
-        feeSubEnabled: [],
         chainId: 'stargaze-1',//this.options.chain.chainId,
         infusionMinter:
           'stars1zkdqlly53sdafh6dhcpuapxxc3llxyqw4v9ekk9x553mc4mv0xlqkyvg3l',
@@ -421,7 +420,7 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                       : HugeDecimal.from(coll.min_req).toNumber(),
                     payment_substitute: coll.payment_substitute ? {
                       denom: coll.payment_substitute?.denom,
-                      amount: HugeDecimal.fromHumanReadable(coll.payment_substitute?.amount, 6).toNumber(),
+                      amount: HugeDecimal.fromHumanReadable(coll.payment_substitute?.amount, 6).toString(),
                     } : null,
                   }
                 }),
@@ -607,7 +606,6 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
       return {
         mode: InfusionActionMode.Infuse,
         infuse: {
-          feeSubEnabled: [],
           chainId,
           infusionMinter: decodedMessage.wasm.execute.contract_addr,
           infusionId: decodedMessage.wasm.execute.msg.infuse.id,

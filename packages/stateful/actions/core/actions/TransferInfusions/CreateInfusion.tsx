@@ -261,6 +261,7 @@ export const CreateInfusion: ComponentType<
             }}
             globalPaymentSub={true}
             paymentSub={null}
+            onUseSingleFeeSubstitute={() => { }}
             nftInfo={{ creator: '', description: '', image: '' }} contractInfo={{ name: '', symbol: '' }} bundleType={{
               all_of: {}
             } as BundleType}
@@ -708,7 +709,7 @@ export const CreateInfusion: ComponentType<
                 <>
                   {/* if selected already, display in button, and on select if it already exist in the form we are removing it from the form  */}
                   <div className="grid grid-cols-3 gap-4 my-4">
-                    {watchEligibleCollections.map((eligible, idx) => {
+                    {isCreating ? watchEligibleCollections.map((eligible, idx) => {
                       // Extract current bundle type value
                       const bundleType = watchInfusedParams?.bundle_type;
 
@@ -746,7 +747,7 @@ export const CreateInfusion: ComponentType<
                         </Button>
 
                       )
-                    })}
+                    }) : undefined}
                     {/* Control Buttons */}
                     <div className="col-span-3 flex justify-between mt-4">
                       <Button
