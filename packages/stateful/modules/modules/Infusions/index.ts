@@ -22,7 +22,7 @@ export const InfusionsModule: Module<InfusionWidgetData> = {
   defaultValues: {
     chainId: 'stargaze-1',
     infusionId: '1',
-    infusionMinter: 'stars1zkdqlly53sdafh6dhcpuapxxc3llxyqw4v9ekk9x553mc4mv0xlqkyvg3l',
+    infusionMinter: 'stars16k2ewvfapjdsnncdk2snv9wj3f8vg3j82sfq962906rdx3n67kns22fsvh',
     fieldNamePrefix: 'infusion.',
     // selectedInfusionIndex: '0',
     // description: '',

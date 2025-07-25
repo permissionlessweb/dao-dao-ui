@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { HugeDecimal } from '@dao-dao/math'
 import { EligibleCollectionCardProps } from '@dao-dao/types'
 import { toAccessibleImageUrl, validatePositive } from '@dao-dao/utils'
-import { Button, InputLabel, LinkWrapper, NumericInput, ProfileImage, TokenAmountDisplay, TooltipLikeDisplay, useDaoNavHelpers } from '@dao-dao/stateless'
+import { Button, InputLabel, LinkWrapper, NumericInput, ProfileImage, TokenAmountDisplay, Tooltip, TooltipInfoIcon, TooltipLikeDisplay, useDaoNavHelpers } from '@dao-dao/stateless'
 import { InfuseNftsData } from '../../InfusionsRenderer'
 
 
@@ -142,21 +142,34 @@ export const EligibleCollectionCard = ({
 
         <div className="px-6 py-4 space-y-3 w-full">
           <div className="flex flex-col items-center space-y-1">
-            <span className="secondary-text text-xs font-medium uppercase tracking-wide">
-              {t('info.minRequired')}
-            </span>
+            <div className="flex items-center">
+              <span className="secondary-text text-xs font-medium uppercase tracking-wide">
+                {t('info.minRequired')}
+              </span>
+              <TooltipInfoIcon
+                className="ml-1" // Add some margin for spacing
+                size="xs"
+                title={t('info.minRequiredTooltip')}
+              />
+            </div>
             <span className="primary-text text-base font-semibold">
               {requiredParams.min_req}
             </span>
           </div>
 
 
-
           {requiredParams.payment_substitute && (
             <div className="flex flex-col items-center space-y-3 pt-2">
-              <span className="secondary-text text-xs font-medium uppercase tracking-wide">
-                {t('info.paymentSubstitute')}
-              </span>
+              <div className="flex items-center">
+                <span className="secondary-text text-xs font-medium uppercase tracking-wide">
+                  {t('info.paymentSubstitute')}
+                </span>
+                <TooltipInfoIcon
+                  className="ml-1" // Add some margin for spacing
+                  size="xs"
+                  title={t('info.paymentSubstituteTooltip')}
+                />
+              </div>
               <TokenAmountDisplay
                 amount={HugeDecimal.from(
                   requiredParams.payment_substitute.balance

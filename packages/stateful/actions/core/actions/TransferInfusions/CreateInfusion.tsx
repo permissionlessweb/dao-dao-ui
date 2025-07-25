@@ -12,20 +12,24 @@ import {
   Sg721BaseSelectors,
 } from '@dao-dao/state/recoil'
 import {
-  AddressInput,
+  AddressInput as StatelessAddressInput,
   Button,
   ChainProvider,
   DaoSupportedChainPickerInput,
+  FormSwitchCard,
   IconButton,
   InputLabel,
   MarkdownRenderer,
   NumericInput,
   SegmentedControls,
   SelectInput,
+  Switch,
+  SwitchCard,
   TextAreaInput,
   TextInput,
   TokenAmountDisplay,
   TokenInput,
+  TooltipInfoIcon,
   useActionOptions,
   useCachedLoading,
   useCachedLoadingWithError,
@@ -71,6 +75,7 @@ import { useTokenBalances } from '../../../hooks'
 import { CreateInfusionData, InfusionBundleType } from '../../../../modules/modules/Infusions/InfusionsRenderer'
 import clsx from 'clsx'
 import { EligibleCollectionCard } from '../../../../modules/modules/Infusions/components/stateless/EligibleCollectionCard'
+import { AddressInput } from '../../../../components'
 
 
 export type CreateInfusionOptions = {
@@ -146,6 +151,7 @@ export const CreateInfusion: ComponentType<
     fields: eligibleCollectionField,
     append: appendEligibleCollection,
     remove: removeEligibleCollection,
+    update: updateEligibleCollection,
   } = useFieldArray({
     control,
     name: (fieldNamePrefix + 'collections') as 'collections',
@@ -387,46 +393,57 @@ export const CreateInfusion: ComponentType<
   return (
     <>
       <div className="flex flex-col gap-4">
-        {context.type === ActionContextType.Dao && (
-          <DaoSupportedChainPickerInput
-            disabled={!isCreating}
-            fieldName={fieldNamePrefix + 'chainId'}
-            onChange={(chainId) => {
-              // Reset when switching chain.
-              setValue((fieldNamePrefix + 'chainId') as 'chainId', chainId)
-              setValue((fieldNamePrefix + 'collections') as 'collections', [])
-              setValue(
-                (fieldNamePrefix + 'infusionParams') as 'infusionParams',
-                { bundle_type: { all_of: {} }, wavs_enabled: false }
-              )
-              setValue(
-                (fieldNamePrefix + 'owner') as 'owner',
-                chainAddressOwner ? chainAddressOwner : ''
-              )
-              setValue(
-                (fieldNamePrefix + 'paymentRecipient') as 'paymentRecipient',
-                chainAddressOwner ? chainAddressOwner : ''
-              )
-            }}
-          />
-        )}
         <div className="space-y-2">
-          <InputLabel name={t('form.infusionMinter')} />
-          <ChainProvider chainId={watchChainId}>
-            <AddressInput
-              containerClassName="grow"
-              disabled={!isCreating}
-              error={errors?.recipient}
-              fieldName={(fieldNamePrefix + 'infusionMinter') as 'infusionMinter'}
-              register={register}
-              validation={[makeValidateAddress(currentChain.bech32Prefix)]}
-            />
-          </ChainProvider>
+          <div className="flex flex-row items-center gap-x-4">
+            {context.type === ActionContextType.Dao && (
+              <DaoSupportedChainPickerInput
+                disabled={!isCreating}
+                fieldName={fieldNamePrefix + 'chainId'}
+                onChange={(chainId) => {
+                  // Reset when switching chain.
+                  setValue((fieldNamePrefix + 'chainId') as 'chainId', chainId)
+                  setValue((fieldNamePrefix + 'collections') as 'collections', [])
+                  setValue(
+                    (fieldNamePrefix + 'infusionParams') as 'infusionParams',
+                    { bundle_type: { all_of: {} }, wavs_enabled: false }
+                  )
+                  setValue(
+                    (fieldNamePrefix + 'owner') as 'owner',
+                    chainAddressOwner ? chainAddressOwner : ''
+                  )
+                  setValue(
+                    (fieldNamePrefix + 'paymentRecipient') as 'paymentRecipient',
+                    chainAddressOwner ? chainAddressOwner : ''
+                  )
+                }}
+              />
+            )}
+            <div className="flex flex-col gap-1">
+              <ChainProvider chainId={watchChainId}>
+                <InputLabel name={t('form.infusionMinter')} />
+                <AddressInput
+                  containerClassName=""
+                  disabled={!isCreating}
+                  error={errors?.recipient}
+                  fieldName={(fieldNamePrefix + 'infusionMinter') as 'infusionMinter'}
+                  register={register}
+                  validation={[makeValidateAddress(currentChain.bech32Prefix)]}
+                />
+              </ChainProvider>
+            </div>
+          </div>
           {validInfusionMinterAddr ? (
             <>
-              <p className="primary-text mb-3">
-                {t('form.infusedCollectionDetails')}
-              </p>
+              <div className="flex flex-row gap-3">
+                <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
+                  {t('form.infusedCollectionDetails')}
+                </p>
+                <TooltipInfoIcon
+                  className="relative mx-2 inline-block"
+                  size="xs"
+                  title={t('info.infusedCollectionDetailsTooltip')}
+                />
+              </div>
               <div className="flex flex-row gap-3">
                 <InputLabel name={t('form.infusedName')} />
                 <TextInput
@@ -522,11 +539,16 @@ export const CreateInfusion: ComponentType<
                   register={register}
                 />
               </div>
-              <p className="primary-text mb-3">
-                {t('form.royaltyRecipientAddress')}
-              </p>
-              <div className="flex flex-row gap-3">
 
+              <div className="flex flex-row gap-3">
+                <InputLabel name={t('form.royaltyRecipientAddress')} />
+                <TooltipInfoIcon
+                  className="relative mx-2 inline-block"
+                  size="xs"
+                  title={t('info.royaltyRecipientAddressTooltip')}
+                />
+              </div>
+              <div className="flex flex-row gap-3">
                 <AddressInput
                   containerClassName="grow"
                   disabled={!isCreating}
@@ -538,28 +560,38 @@ export const CreateInfusion: ComponentType<
                   register={register}
                   validation={[makeValidateAddress(currentChain.bech32Prefix)]}
                 />
-                <InputLabel name={t('form.royaltyPercentage')} />
-                <NumericInput
-                  disabled={!isCreating}
-                  error={errors?.title}
-                  fieldName={
-                    (fieldNamePrefix +
-                      'infusedCollection.royalty_info.share') as 'infusedCollection.royalty_info.share'
-                  }
-                  getValues={getValues}
-                  max={100}
-                  min={0.01}
-                  placeholder={t('form.infusionRoyaltyShares')}
-                  register={register}
-                  setValue={setValue}
-                  step={0.01}
-                />
+                <div className="flex flex-column gap-3">
+                  <InputLabel name={t('form.royaltyPercentage')} />
+                  <NumericInput
+                    disabled={!isCreating}
+                    error={errors?.title}
+                    fieldName={
+                      (fieldNamePrefix +
+                        'infusedCollection.royalty_info.share') as 'infusedCollection.royalty_info.share'
+                    }
+                    getValues={getValues}
+                    max={100}
+                    min={0.01}
+                    placeholder={t('form.infusionRoyaltyShares')}
+                    register={register}
+                    setValue={setValue}
+                    step={0.01}
+                  />
+                </div>
               </div>
               {/* input for eligible collections */}
               <div className="flex flex-col gap-3">
-                <p className="primary-text mb-3">
-                  {t('form.infusedEligibleCollections')}
-                </p>
+                <div className="flex flex-row gap-3">
+                  <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
+                    {t('form.infusedEligibleCollections')}
+                  </p>
+                  <TooltipInfoIcon
+                    className="relative mx-2 inline-block"
+                    size="xs"
+                    title={t('info.infusedEligibleCollectionsTooltip')}
+                  />
+                </div>
+
                 {eligibleCollectionField.map((props, index) => {
                   return (
                     <div
@@ -581,11 +613,11 @@ export const CreateInfusion: ComponentType<
 
                       <div className="flex shrink-0 flex-col gap-1">
                         <div className="flex flex-row gap-1">
-                          <div className="flex flex-col gap-4">
+                          <div className="flex flex-col gap-1">
                             <InputLabel
                               name={t('form.infusedEligibleCollectionAddr')}
                             />
-                            <AddressInput
+                            <StatelessAddressInput
                               containerClassName="grow"
                               disabled={!isCreating}
                               error={errors?.recipient}
@@ -599,7 +631,7 @@ export const CreateInfusion: ComponentType<
                               ]}
                             />
                           </div>
-                          <div className="flex flex-col gap-4">
+                          <div className="flex flex-col gap-1">
                             <InputLabel
                               name={t(
                                 'form.infusedEligibleCollectionMinRequired'
@@ -622,51 +654,77 @@ export const CreateInfusion: ComponentType<
                             />
                           </div>
                         </div>
+
                         {isCreating && (
-                          <div className="flex flex-col gap-4">
-                            <InputLabel name={t('form.paymmentSubtitute')} />
-                            <TokenInput
-                              allowCustomToken
-                              // disabled={!shitstrapOwnerAddrValid}
-                              amount={{
-                                watch,
-                                setValue,
-                                register,
-                                getValues,
-                                fieldName: (fieldNamePrefix +
-                                  `collections.${index}.payment_substitute.amount`) as `collections.${number}.payment_substitute.amount`,
-                                error: errors?.amount,
-                                min: HugeDecimal.one.toHumanReadableNumber(6),
-                                step: HugeDecimal.one.toHumanReadableNumber(6),
-                              }}
-                              onCustomTokenChange={(custom) => {
-                                setValue(
-                                  (fieldNamePrefix +
-                                    `collections.${index}.payment_substitute.denom`) as `collections.${number}.payment_substitute.denom`,
-                                  custom
-                                )
-                              }}
-                              onSelectToken={(token) => {
-                                setValue(
-                                  (fieldNamePrefix +
-                                    `collections.${index}.payment_substitute.denom`) as `collections.${number}.payment_substitute.denom`,
-                                  token?.denomOrAddress!
-                                )
-                              }}
+                          <div className="flex flex-col gap-1">
+                            <div className="flex flex-row gap-1">
+                              <InputLabel name={t('form.paymentSubstitute')} />
+                              <TooltipInfoIcon
+                                className="relative mx-2 inline-block"
+                                size="xs"
+                                title={t('form.paymentSubstituteDescription')}
+                              />
+                            </div>
+                            <SwitchCard
+                              onLabel={t('form.disablePaymentSubstitute')}
+                              offLabel={t('form.enablePaymentSubstitute')}
                               readOnly={!isCreating}
-                              selectedToken={{
-                                type: TokenType.Native,
-                                denomOrAddress: watchEligibleCollections.at(index)?.payment_substitute?.denom!,
-                                chainId: watchChainId,
+                              enabled={!!eligibleCollectionField.at(index)?.payment_substitute}
+                              onClick={() => {
+                                const eligible = eligibleCollectionField.at(index);
+                                const newPaymentSubstitute = eligible?.payment_substitute ? null : { amount: '0', denom: '' };
+                                updateEligibleCollection(index, { ...eligible, payment_substitute: newPaymentSubstitute });
                               }}
-                              showChainImage
-                              tokens={{
-                                loading: false,
-                                data: availableTokens,
-                              }}
+                              sizing="sm"
                             />
+
+                            {!!eligibleCollectionField.at(index)?.payment_substitute && (
+                              <>
+                                <TokenInput
+                                  allowCustomToken
+
+                                  amount={{
+                                    watch,
+                                    setValue,
+                                    register,
+                                    getValues,
+                                    fieldName: (fieldNamePrefix +
+                                      `collections.${index}.payment_substitute.amount`) as `collections.${number}.payment_substitute.amount`,
+                                    error: errors?.amount,
+                                    min: HugeDecimal.one.toHumanReadableNumber(6),
+                                    step: HugeDecimal.one.toHumanReadableNumber(6),
+                                  }}
+                                  onCustomTokenChange={(custom) => {
+                                    setValue(
+                                      (fieldNamePrefix +
+                                        `collections.${index}.payment_substitute.denom`) as `collections.${number}.payment_substitute.denom`,
+                                      custom
+                                    )
+                                  }}
+                                  onSelectToken={(token) => {
+                                    setValue(
+                                      (fieldNamePrefix +
+                                        `collections.${index}.payment_substitute.denom`) as `collections.${number}.payment_substitute.denom`,
+                                      token?.denomOrAddress!
+                                    )
+                                  }}
+                                  readOnly={!isCreating}
+                                  selectedToken={{
+                                    type: TokenType.Native,
+                                    denomOrAddress: watchEligibleCollections.at(index)?.payment_substitute?.denom!,
+                                    chainId: watchChainId,
+                                  }}
+                                  showChainImage
+                                  tokens={{
+                                    loading: false,
+                                    data: availableTokens,
+                                  }}
+                                />
+                              </>
+                            )}
                           </div>
                         )}
+
 
                       </div>
                     </div>
@@ -683,13 +741,21 @@ export const CreateInfusion: ComponentType<
                 </Button>
               )}
 
-              <p className="primary-text mb-3">
-                {t('form.infusionBundleType')}
-              </p>
-              <MarkdownRenderer
-                className="body-text text-text-secondary text-sm -mt-1"
-                markdown={t('form.InfusionBundleTypeDescription')}
-              />
+
+              <div className="flex flex-row gap-3">
+                <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
+                  {t('form.infusionBundleType')}
+                </p>
+
+                <TooltipInfoIcon
+                  className="relative mx-2 inline-block"
+                  size="xs"
+                  title={<MarkdownRenderer
+                    className="body-text text-text-secondary text-sm -mt-1"
+                    markdown={t('form.InfusionBundleTypeDescription')}
+                  />}
+                />
+              </div>
 
               <SegmentedControls<CreateInfusionData['mode']>
                 className="mb-2"
@@ -798,6 +864,18 @@ export const CreateInfusion: ComponentType<
                   ))
                 }
               </> : null}
+
+              <div className="flex flex-row gap-3">
+                <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
+                  {t('form.infusionParams')}
+                </p>
+                <TooltipInfoIcon
+                  className="relative mx-2 inline-block"
+                  size="xs"
+                  title={t('form.infusionMintFeeDescription')}
+                />
+              </div>
+
               <InputLabel name={t('form.infusedAdmin')} />
               <AddressInput
                 containerClassName="grow"
@@ -818,8 +896,18 @@ export const CreateInfusion: ComponentType<
                 register={register}
                 validation={[makeValidateAddress(currentChain.bech32Prefix)]}
               />
-              <InputLabel name={t('form.infusionParams')} />
-              <InputLabel name={t('form.infusionMintFee')} />
+
+
+
+              <div className="flex flex-row gap-3">
+                <InputLabel name={t('form.infusionMintFee')} />
+                <TooltipInfoIcon
+                  className="relative mx-2 inline-block"
+                  size="xs"
+                  title={t('form.infusionMintFeeDescription')}
+                />
+              </div>
+
               {isCreating && (
                 <>
                   <TokenInput

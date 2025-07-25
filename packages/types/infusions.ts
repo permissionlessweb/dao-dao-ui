@@ -12,7 +12,6 @@ export enum InfusionActionMode {
 
 export type EligibleCollectionCardProps = {
   fieldNamePrefix: string
-
   nftAddr: string
   index: number
   requiredParams: InfusionsEligibleCollection
@@ -22,7 +21,7 @@ export type EligibleCollectionCardProps = {
   // payment subsitute
   paymentSub: GenericTokenBalance | null | undefined
   globalPaymentSub: boolean,
-  // onUseSingleFeeSubstitute: (addr: string) => void
+  onUseSingleFeeSubstitute: (addr: string, setFeeSub: boolean) => void
   // ButtonLink: ComponentType<ButtonLinkProps>
 }
 

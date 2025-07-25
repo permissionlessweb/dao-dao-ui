@@ -145,7 +145,6 @@ export const InfuseNftsComponent: ActionComponent<InfuseNftsOptions> = ({
   // }, [watchInfusionBundles])
 
   useEffect(() => {
-
     if (
       infusion &&
       infusion.length > 0

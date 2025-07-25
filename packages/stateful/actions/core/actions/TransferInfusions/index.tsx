@@ -357,7 +357,10 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
           sg: true,
         },
         mode: InfusionBundleType.AllOf,
-        collections: [],
+        collections: [{
+          addr: '',
+          min_req: 0
+        }],
         infusionParams: {
           bundle_type: { all_of: {} }, wavs_enabled: false, mint_fee: {
             amount: '100',
@@ -400,6 +403,8 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
         wavs_enabled: false,
       }
 
+      const { royalty_info } = create.infusedCollection;
+
       const createInfusionMsg = makeExecuteSmartContractMessage({
         chainId,
         sender,
@@ -412,16 +417,17 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                 payment_recipient: create.paymentRecipient,
                 description: create.description,
                 collections: create.collections.map((coll) => {
+
                   return {
                     addr: coll.addr,
                     min_req: coll.min_req,
                     max_req: coll.max_req
                       ? HugeDecimal.from(coll.max_req).toNumber()
                       : HugeDecimal.from(coll.min_req).toNumber(),
-                    payment_substitute: coll.payment_substitute ? {
+                    payment_substitute: coll.payment_substitute && coll.payment_substitute.amount != undefined ? {
                       denom: coll.payment_substitute?.denom,
                       amount: HugeDecimal.fromHumanReadable(coll.payment_substitute?.amount, 6).toString(),
-                    } : null,
+                    } : undefined
                   }
                 }),
                 infused_collection: {
@@ -435,14 +441,10 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
                   num_tokens: HugeDecimal.from(
                     create.infusedCollection.num_tokens
                   ).toNumber(),
-                  royalty_info: {
-                    payment_address:
-                      create.infusedCollection.royalty_info?.payment_address,
-                    share: HugeDecimal.fromHumanReadable(
-                      create.infusedCollection.royalty_info?.share!,
-                      0
-                    ),
-                  },
+                  royalty_info: create.infusedCollection.royalty_info?.payment_address && create.infusedCollection.royalty_info?.share ? {
+                    payment_address: create.infusedCollection.royalty_info.payment_address,
+                    share: HugeDecimal.fromHumanReadable(create.infusedCollection.royalty_info.share, 0),
+                  } : undefined,
                 },
                 infusion_params,
               },

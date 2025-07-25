@@ -22,7 +22,7 @@ import {
   getNftKey,
   toAccessibleImageUrl,
 } from '@dao-dao/utils'
-import { Button, Collapsible, ErrorPage, HorizontalNftCard, HorizontalNftCardLoader, HorizontalScroller, LinkWrapper, NftsTab, PAGINATION_MIN_PAGE, Switch, SwitchCard, TokenAmountDisplay, Tooltip, TooltipLikeDisplay, useCachedLoading, useCachedLoadingWithError, useQuerySyncedState } from '@dao-dao/stateless'
+import { Button, Collapsible, ErrorPage, HorizontalNftCard, HorizontalNftCardLoader, HorizontalScroller, LinkWrapper, NftsTab, PAGINATION_MIN_PAGE, Switch, SwitchCard, TokenAmountDisplay, Tooltip, TooltipInfoIcon, TooltipLikeDisplay, useCachedLoading, useCachedLoadingWithError, useQuerySyncedState } from '@dao-dao/stateless'
 import { EligibleCollectionCard } from './EligibleCollectionCard'
 import { InfuseNftsData, InfusionBundleType } from '../../InfusionsRenderer'
 import { NftGalleryModal } from './BrowseInfusionNfts'
@@ -562,6 +562,9 @@ export const HorizontalInfusionCard = forwardRef<
 
           {/* Collection Details */}
           <div className="p-4 rounded-lg bg-background-tertiary">
+            <p className="title-text mb-2 truncate font-mono hover:opacity-80 transition-opacity">
+              {t('info.infusedCollectionInfo')}
+            </p>
             <div className="aspect-square w-full rounded-lg overflow-hidden bg-background-secondary mb-4">
               {showingImageUrl ? (
                 <div
@@ -645,6 +648,23 @@ export const HorizontalInfusionCard = forwardRef<
 
               </div>
 
+              {/* External Link */}
+              {infusion.infused_collection.external_link && (<>
+                <LinkWrapper
+                  href={infusion.infused_collection.external_link}
+                  // Don't click on anything else, such as the checkbox.
+                  onClick={(e) => e.stopPropagation()}
+                  openInNewTab
+                >
+                  <TooltipLikeDisplay
+                    className="group-hover/nft:opacity-100 absolute bottom-4 left-4 opacity-0 shadow-dp4 transition-opacity hover:!opacity-90"
+                    icon={<ArrowOutwardRounded className="!h-5 !w-5" />}
+                    label={t('button.openInDestination', {
+                      destination: infusion.infused_collection.external_link,
+                    })}
+                  />
+                </LinkWrapper>
+              </>)}
 
               <div className="flex justify-between items-center p-4 ">
               </div>
@@ -708,15 +728,6 @@ export const HorizontalInfusionCard = forwardRef<
 
               {/* Fee Substitution Status */}
               <div className="mb-4 p-3 rounded-lg bg-background-interactive-disabled">
-                <div className="flex items-center gap-2 mb-2">
-                  <PanoramaFishEye className="w-4 h-4 text-text-interactive-valid" />
-                  <p className="primary-text text-sm font-medium">
-                    {usingAllFeePaymentSub ? t('title.feeSubstitutionActive') : t('title.usingFeeSubstitute')}
-                  </p>
-                </div>
-                <p className="secondary-text text-xs">
-                  {t('info.staticFeeExplination')}
-                </p>
 
                 {/* {infusion.infusionParamsGeneric && infusion.infusionParamsGeneric.mintFeeGeneric ?
                   <div className="mb-4 p-3 rounded-lg bg-background-interactive-disabled">
@@ -751,9 +762,16 @@ export const HorizontalInfusionCard = forwardRef<
 
                   </div> : undefined
                 } */}
-                <p className="secondary-text text-xs">
-                  {t('info.totalBreakdownInfo')}
-                </p>
+                <div className="flex items-center">
+                  <p className="secondary-text text-xs">
+                    {t('info.totalBreakdownInfo')}
+                  </p>
+                  <TooltipInfoIcon
+                    className="ml-1" // Add some margin for spacing
+                    size="xs"
+                    title={t('info.totalBreakdownInfoTooltip')}
+                  />
+                </div>
 
                 {watchFunds.map((c) => {
                   let paysub = infusion.eligibleCollections.find((ec) => ec.payment_substitute?.token.denomOrAddress == c.denom)?.payment_substitute;
@@ -819,10 +837,15 @@ export const HorizontalInfusionCard = forwardRef<
 
             {/* Eligible Collections & Bundle TZ */}
             <div className="flex flex-col gap-3">
-              <div className="flex justify-between items-center">
+              <div className="flex  items-center">
                 <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
                   {t('title.eligibleCollections')}
                 </p>
+                <TooltipInfoIcon
+                  className="relative mx-2 inline-block"
+                  size="xs"
+                  title={t('info.eligibleCollectionTooltip')}
+                />
               </div>
               <HorizontalScroller
                 Component={EligibleCollectionCard}
@@ -832,20 +855,47 @@ export const HorizontalInfusionCard = forwardRef<
               />
             </div>
 
-            <div className="mt-auto">
-              {'all_of' in infusion.infusionParamsGeneric.bundle_type ? (
-                <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
-                  {t('title.allofBundle')}
-                </p>
-              ) : 'any_of' in infusion.infusionParamsGeneric.bundle_type ? (
-                <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
-                  {t('title.anyOfBundle')}
-                </p>
-              ) : 'any_of_blend' in infusion.infusionParamsGeneric.bundle_type ? (
-                <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
-                  {t('title.anyOfBlend')}
-                </p>
-              ) : null}
+            <div className=" flex mt-auto">
+              <>
+                {'all_of' in infusion.infusionParamsGeneric.bundle_type ? (
+                  <>
+                    <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
+                      {t('title.allofBundle')}
+                    </p>
+                    <TooltipInfoIcon
+                      className="mx-2 relative inline-block"
+                      size="xs"
+                      title={t('info.allofBundleTooltip')}
+                    />
+                  </>
+
+                ) : 'any_of' in infusion.infusionParamsGeneric.bundle_type ? (
+                  <>
+                    <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
+                      {t('title.anyOfBundle')}
+                    </p>
+                    <TooltipInfoIcon
+                      className="mx-2 relative inline-block"
+                      size="xs"
+                      title={t('info.anyOfBundleTooltip')}
+                    />
+                  </>
+
+                ) : 'any_of_blend' in infusion.infusionParamsGeneric.bundle_type ? (
+                  <>
+                    <p className="title-text truncate font-mono hover:opacity-80 transition-opacity">
+                      {t('title.anyOfBlend')}
+                    </p>
+                    <TooltipInfoIcon
+                      className="mx-2 relative inline-block"
+                      size="xs"
+                      title={t('info.anyOfBundleTooltip')}
+                    />
+                  </>
+
+                ) : null}
+
+              </>
             </div>
 
 
@@ -861,7 +911,7 @@ export const HorizontalInfusionCard = forwardRef<
               }}
 
               label={t('title.infusedCollectionGallery')}
-              labelClassName="!body-text !text-text-tertiary"
+              labelClassName="title-text truncate font-mono hover:opacity-80 transition-opacity"
               noContentIndent
               noHeaderIndent
             >
