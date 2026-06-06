@@ -17,9 +17,13 @@ import { ContractVersion } from './features'
 export enum ModuleId {
   AvEvents = 'av_events',
   Infusions = 'infusions',
+  Headstash = 'headstash',
   MintNft = 'mint_nft',
   Press = 'press',
   RetroactiveCompensation = 'retroactive',
+  DaoDnas = 'dnas',
+  Subscribe = 'subscribe',
+  ShitStrap = 'shitstrap',
   VestingPayments = 'vesting',
   VoteDelegation = 'vote_delegation',
 }

@@ -24,10 +24,10 @@ export const makeManagePermissionlessActionCategory: ActionCategoryMaker = ({
         }),
         actionKeys: [
           ActionKey.InfuseNfts,
+          ActionKey.ManageHeadstash,
           // ActionKey.ManageAvEvents,
           // ActionKey.ManageDnas,
           // ActionKey.ManageShitstrap,
-          // ActionKey.ManageHeadstash,
         ],
       }
     : null

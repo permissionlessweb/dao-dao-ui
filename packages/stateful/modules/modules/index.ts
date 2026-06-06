@@ -5,3 +5,5 @@ export * from './VestingPayments'
 export * from './VoteDelegation'
 export * from './AvEvents'
 export * from './Infusions'
+export * from './Shitstrap'
+

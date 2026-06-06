@@ -166,4 +166,5 @@ export {
 } from './DaoVoteDelegation'
 export { CwAveClient, CwAveQueryClient } from './CwAve'
 export { CwAveFactoryClient, CwAveFactoryQueryClient } from './CwAveFactory'
+export { ShitStrapClient, ShitStrapQueryClient } from './ShitStrap'
 export { CwInfuserClient, CwInfuserQueryClient } from './CwInfuser'

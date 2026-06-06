@@ -123,3 +123,32 @@ your use, inability to use, or your interaction with other users of DAO DAO
 tooling, including any direct, indirect, incidental, special, exemplary,
 punitive or consequential damages, or loss of profits, cryptocurrencies, tokens,
 or anything else of value.
+
+
+
+## DDNAS TODO
+
+- using dnas: improve file upload response ux
+- handle custom mint msgs (snails contract) in form for new collection
+- scrt-dnas: implmement new client side logic to support TEE stored private keys
+
+## INFUSIONS TODO
+
+- create: select infusion bundle type and its parameters
+- indexer formulae
+
+<!-- - infusion action: include approval msg for each nft in bundle that does not have infusion minter approved. -->
+
+## SHITSTRAP TODO
+- display if we are loading wallet balance, and if wallet does not hold any eligble tokesn for a shitstrap
+- indexer formulae
+- check if entity has ibc version of expected token if none exist on shitstraps chain
+- ibc deposit modal (check if balance of token on another chain,find best route)
+- improved conversion ratio view
+- filters:
+  - by chain
+  - by shitstrap recipient
+- validate minimum shit rates and cutoffs with each other
+- shitstrap-lines: complete fund shitstrap if does not have shit balance
+  - create proposal if dao or otherwise immediately fund from connected wallet otherwise
+  - Display if funded or not

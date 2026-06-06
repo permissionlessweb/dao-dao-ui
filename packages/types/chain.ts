@@ -104,6 +104,8 @@ export enum ChainId {
   ThorchainStagenet = 'thorchain-stagenet-2',
   IntergazeMainnet = 'intergaze-1',
   DaodiseoTestnet = 'ithaca-1',
+  TerpMainnet = 'morocco-1',
+  TerpTestnet = '120u-1',
   KopiMainnet = 'luwak-1',
 
   // Local testing chain powered by Starship.
@@ -313,10 +315,6 @@ export type CodeIdConfig = {
   DaoVotingCw4: number
   DaoVotingCw721Staked: number
   DaoVotingTokenStaked: number
-  
-  // https://github.com/permissionlessweb/cw-ave
-  CwAveFactory: number
-  CwAve: number
 
   // For Secret Network
   QueryAuth?: number
@@ -331,6 +329,16 @@ export type CodeIdConfig = {
 
   // Valence
   ValenceAccount?: number
+
+  // Shitstrap
+  ShitStrap?: number
+  ShitStrapFactory?: number
+  // Infusions
+  Infuser?: number
+  InfuserFactory?: number
+  // https://github.com/permissionlessweb/cw-ave
+  CwAveFactory: number
+  CwAve: number
 }
 
 export type CodeHashConfig = {

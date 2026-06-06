@@ -173,13 +173,15 @@ export const useCfWorkerAuthPostRequest = (
         offlineSignerAmino,
       })
 
+      const bodyDebug = JSON.stringify(body)
+      console.log('bodyDebug', bodyDebug)
       // Send request.
       const response = await fetch(apiBase + endpoint, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(body),
+        body: bodyDebug,
       })
 
       // If response not OK, throw error.
@@ -200,7 +202,64 @@ export const useCfWorkerAuthPostRequest = (
 
       // If response OK, return response body (unless 204 no content, in which
       // case return undefined).
-      return response.status === 204 ? undefined : await response.json()
+      return response.status === 204
+        ? (undefined as any)
+        : await response.json()
+    },
+    [
+      defaultSignatureType,
+      getHexPublicKey,
+      chain.chainId,
+      chainWallet,
+      getNonce,
+      apiBase,
+      t,
+    ]
+  )
+
+  const postDnasRequest = useCallback(
+    async <R = any>(
+      endpoint: string,
+      data: FormData,
+      signatureType = defaultSignatureType,
+      /**
+       * Override the current chain.
+       */
+      overrideChainId?: string,
+      /**
+       * Optionally override the request method. Defaults to POST.
+       */
+      method = 'POST'
+    ): Promise<R> => {
+      // removed second signOffchain auth for using dnas keys
+      const bodyDebug = JSON.stringify(data)
+      console.log('bodyDebug', bodyDebug)
+      // Send request.
+      const response = await fetch(apiBase + endpoint, {
+        method,
+        body: data as any,
+      })
+
+      // If response not OK, throw error.
+      if (!response.ok) {
+        const responseBody = await response.json().catch((err) => ({
+          error: err instanceof Error ? err.message : JSON.stringify(err),
+        }))
+        throw new Error(
+          responseBody && 'error' in responseBody && responseBody.error
+            ? responseBody.error
+            : `${t('error.unexpectedError')} ${responseBody}`
+        )
+      }
+
+      // If succeeded, store nonce.
+      // lastSuccessfulNonceForApiAndPublicKey[apiBase + ':' + hexPublicKey] =nonce
+
+      // If response OK, return response body (unless 204 no content, in which
+      // case return undefined).
+      return response.status === 204
+        ? (undefined as any)
+        : await response.json()
     },
     [
       defaultSignatureType,
@@ -216,6 +275,7 @@ export const useCfWorkerAuthPostRequest = (
   return {
     ready,
     postRequest,
+    postDnasRequest,
     getNonce,
   }
 }

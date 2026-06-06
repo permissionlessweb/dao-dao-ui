@@ -2,7 +2,7 @@ import {
   DelegateResponse,
   DelegationResponse,
 } from './contracts/DaoVoteDelegation'
-import { Entity } from './entity'
+import { Entity } from './components/EntityDisplay'
 
 export type VoteDelegationModuleData = {
   /**

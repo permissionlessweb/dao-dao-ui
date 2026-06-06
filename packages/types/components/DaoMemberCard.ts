@@ -2,7 +2,7 @@ import { ComponentType } from 'react'
 
 import { HugeDecimal } from '@dao-dao/math'
 
-import { Entity } from '../entity'
+import { Entity } from './EntityDisplay'
 import { LoadingData } from '../misc'
 import { GenericToken } from '../token'
 import { ButtonLinkProps } from './Buttonifier'

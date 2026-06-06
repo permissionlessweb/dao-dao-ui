@@ -1045,8 +1045,8 @@
     "totalBreakdownInfoTooltip": "Preview of all assets currently set to be sent, including NFT bundles, static fee tokens & any payment substitute tokens.",
     "infusedCollectionInfo": "Infused Collection Info",
     "eligibleCollectionTooltip": "All NFT collections eligible to be infused",
-    "allofBundleTooltip": "AllOf bundles requires each eligilbe collections minimum to be provided in order to satisfy a single infusion mint",
-    "anyOfBundleTooltip": "AnyOf bundles allows the minimum requirements for any of the eligilbe collections selected to satisfy an infusion mint. ",
+    "allofBundleTooltip": "AllOf bundles requires each eligible collections minimum to be provided in order to satisfy a single infusion mint",
+    "anyOfBundleTooltip": "AnyOf bundles allows the minimum requirements for any of the eligible collections selected to satisfy an infusion mint. ",
     "minRequiredTooltip": "Minimum required NFTs to provide for this eligible collection",
     "paymentSubstituteTooltip": "Provide this fungible token in subsitute of the minimum NFTs for this eligible collection",
     "feeSubstituteExplanation": "Fee Substitute Provided",
@@ -1827,6 +1827,7 @@
   },
   "title": {
     "infuseNfts": "Infuse NFTs",
+    "infusionFaq": "Infusions FAQ",
     "infusedCollection": "Infused Collection",
     "enableFeeSubstitute": "Use Fee Substitute",
     "infusedCollectionMintFee": "Static Mint Fee",
@@ -2362,5 +2363,8 @@
     "weeks_other": "Weeks",
     "years_one": "Year",
     "years_other": "Years"
+  },
+  "faq": {
+      "infusionsDescription": "# Infusions - Burn-to-Mint NFTS\n\n## What is an Infusion?\nInfusions are at their core **on-chain software that powers the creation & minting of new NFT collections.** \nInfusions are programmable, meaning infusion creators can customize various conditions to their liking.\n## What is an Infused Collection?\nAn Infused Collection is the new NFT collection that is being minted.\n## What is a Bundle?\nA Bundle is a 'bundle' of NFTs that are sent to the infusion contract when a user wants to infuse them to mint a token from the Infused Collection.\nJust like infusing a bundle of tea leaves in hot water to make a delicious batch of tea, we can infuse bundles of NFTs and tokens to recieve an infused collection NFT!\n## What are an Infusions Eligible Collections?\nAn Infusions Eligible Collections are the collections set by the infusion creator that are **accepted as an eligible form of payment to mint an infused collection token**. \nThere can be multiple eligible NFT collections for a single infusion, and each eligible collection can have a unique minimum requirement & payment substitute set.\n## Can I Create My Own Infusion?\nYes! Anyone can create their own infusion instance. Check below to find where infusions can be created, and what types of fees are required.\n## When NFTs Are Infused, What Happens To Them?\nALL NFTs sent in a bundle during an infusion are BURNT. We most likely will iterate this in the future to determine what happens to the infusion.\n\n## What are Bundle Types?\nBundle types are different ways infusion creators can program the infusion contract to either accept or reject them based on their contents. \n\n- **AllOf**: At least the minimum nft for all of the eligible collections must be present for bundles to be accepted.\n- **AnyOf**: Choose a list of the eliglibe collections to accept bundles that contains the minimum nfts for one of these collections.\n- **AnyOfBlend** Operates like AnyOf, but with support for adding combinations of new minimum requirements from eligible collections that deem a bundle acceptable.\n\n## What Is An Eligible Collections Fee-Substitute?\nFee-Substites for an infusion are tokens that may be sent in subsitute of an eligible collections minimum nfts. This is useful for collections with smaller supply than the infused collection, or if infusion creators are looking for additional streams of token accrual.\n## What Types Of Fees Are Involved In An Infusion?\nThere are two global fees that applies to every infusion: \n### Creation Fees\nThis is the fee required to create a new infusion instance.\n### Infusion Use Fee\nThis is a fee taken from any static mint fee or payment substitute sent, that goes to the infusion contract owner.\n\nAll other fees are set by the infusion creator, including: \n### Static Mint Fee\nThis is a fee that is always required to be included when infusing a bundle of NFT's (unless the infusion owner is infusing, then it is bypassed).\n\n### Payment Substitute\nDescribed above, these are tokens able to be accepted on behalf of the minimum nfts required for infusions eligible collection.\n## Where Are Infusions Available?\nCurrently Stargaze governance has authorized our team with deploying infusions on main-net. Or goal is to have infusions available on every permissionless CosmWasm chain, and as many permissioned CW Chains as required."
   }
 }

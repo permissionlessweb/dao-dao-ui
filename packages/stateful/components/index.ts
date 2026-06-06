@@ -5,6 +5,7 @@ export * from './inbox'
 export * from './nft'
 export * from './pages'
 export * from './profile'
+export * from './shitstrap'
 export * from './vesting'
 export * from './wallet'
 

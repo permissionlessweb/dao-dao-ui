@@ -34,6 +34,11 @@ export enum ActionCategoryKey {
 }
 
 export enum ActionKey {
+  ManageHeadstash = 'manageHeadstash',
+  ConfigureShitstrapPayments = 'configureShitstrapPayments',
+  ManageDnas = 'manageDnas',
+  ManageShitstrap = 'manageShitstrap',
+
   Spend = 'spend',
   CommunityPoolSpend = 'communityPoolSpend',
   CommunityPoolDeposit = 'communityPoolDeposit',
@@ -160,7 +165,7 @@ export type ActionComponentProps<O = undefined, D = any> = {
   index: number
   data: D
 } & (
-  | {
+    | {
       isCreating: true
       errors: FieldErrors
       // Adds a new action to the form.
@@ -172,13 +177,13 @@ export type ActionComponentProps<O = undefined, D = any> = {
       // Removes this action from the form.
       remove: () => void
     }
-  | {
+    | {
       isCreating: false
       errors?: undefined
       addAction?: undefined
       remove?: undefined
     }
-) &
+  ) &
   (O extends undefined ? {} : { options: O })
 
 // eslint-disable-next-line regex/invalid
@@ -357,7 +362,7 @@ export interface Action<
 export type ImplementedAction<
   Data extends Record<string, any> = Record<string, any>,
 > = {
-  new (options: ActionOptions): Action<Data>
+  new(options: ActionOptions): Action<Data>
 }
 
 export type ActionCategoryBase = {
@@ -385,17 +390,17 @@ export enum ActionContextType {
 
 export type ActionContext = (
   | {
-      type: ActionContextType.Dao
-      dao: IDaoBase
-    }
+    type: ActionContextType.Dao
+    dao: IDaoBase
+  }
   | {
-      type: ActionContextType.Wallet
-      profile: UnifiedProfile
-    }
+    type: ActionContextType.Wallet
+    profile: UnifiedProfile
+  }
   | {
-      type: ActionContextType.Gov
-      params: AllGovParams
-    }
+    type: ActionContextType.Gov
+    params: AllGovParams
+  }
 ) & {
   // All contexts should have a list of accounts.
   accounts: Account[] | readonly Account[]
@@ -406,22 +411,22 @@ export type ActionContext = (
  */
 export type ActionEncodeContext =
   | {
-      type: ActionContextType.Dao
-      dao: IDaoBase
-      /**
-       * Proposal module if being used in a DAO proposal. This is undefined, for
-       * example, when a wallet uses AuthzExec to execute something on behalf of
-       * a DAO.
-       */
-      proposalModule?: IProposalModuleBase
-    }
+    type: ActionContextType.Dao
+    dao: IDaoBase
+    /**
+     * Proposal module if being used in a DAO proposal. This is undefined, for
+     * example, when a wallet uses AuthzExec to execute something on behalf of
+     * a DAO.
+     */
+    proposalModule?: IProposalModuleBase
+  }
   | {
-      type: ActionContextType.Wallet
-    }
+    type: ActionContextType.Wallet
+  }
   | {
-      type: ActionContextType.Gov
-      params: AllGovParams
-    }
+    type: ActionContextType.Gov
+    params: AllGovParams
+  }
 
 /**
  * Additional context passed to the decode function.
@@ -454,14 +459,14 @@ export enum ActionChainContextType {
 
 export type ActionChainContext =
   | ({
-      type: ActionChainContextType.Any
-    } & IChainContext)
+    type: ActionChainContextType.Any
+  } & IChainContext)
   | ({
-      type: ActionChainContextType.Configured
-    } & ConfiguredChainContext)
+    type: ActionChainContextType.Configured
+  } & ConfiguredChainContext)
   | ({
-      type: ActionChainContextType.Supported
-    } & SupportedChainContext)
+    type: ActionChainContextType.Supported
+  } & SupportedChainContext)
 
 export type ActionOptions<ExtraOptions extends {} = {}> = ExtraOptions & {
   t: TFunction

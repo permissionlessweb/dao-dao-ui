@@ -1010,7 +1010,6 @@ export const HorizontalInfusionCard = forwardRef<
               </div>
               <BundleDisplay />
             </>
-
             }
             nfts={infusion.entityEligibleNFTs}
             onClose={() => setShowModal(false)}

@@ -14,7 +14,7 @@ import {
   Validate,
 } from 'react-hook-form'
 
-import { Entity } from '../entity'
+import { Entity } from './EntityDisplay'
 import { StatefulEntityDisplayProps } from './EntityDisplay'
 
 export interface AddressInputProps<

@@ -4,7 +4,7 @@ export type LineLoaderProps = {
   /**
    * The type of line loader.
    */
-  type: 'proposal' | 'token' | 'post' | 'retroactive' | 'vesting' | 'command'
+  type: 'proposal' | 'token' | 'post' | 'retroactive' | 'vesting' | 'command' | 'avEvent' | 'shitstrap'
   /**
    * Optional class name for the line.
    */
@@ -22,7 +22,7 @@ export const LineLoader = ({ type, className }: LineLoaderProps) => (
       {
         'h-28 md:h-12': type === 'proposal',
         'h-12 md:h-14':
-          type === 'token' || type === 'post' || type === 'vesting',
+          type === 'token' || type === 'post' || type === 'vesting' || type === 'avEvent',
         'h-20 sm:h-12': type === 'retroactive',
         'h-9': type === 'command',
       },

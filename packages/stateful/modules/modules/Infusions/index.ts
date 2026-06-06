@@ -9,9 +9,9 @@ import {
 
 import { InfusionsEditor as Editor } from './InfusionsEditor'
 import { InfusionsRenderer as Renderer } from './InfusionsRenderer'
-import { InfusionWidgetData } from './types'
+import { InfusionModuleData } from './types'
 
-export const InfusionsModule: Module<InfusionWidgetData> = {
+export const InfusionsModule: Module<InfusionModuleData> = {
   id: ModuleId.Infusions,
   Icon: ImageOutlined,
   title: 'Infuse NFTs',

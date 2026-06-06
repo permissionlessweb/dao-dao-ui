@@ -1,6 +1,6 @@
 import { toUtf8 } from '@cosmjs/encoding'
 import { QueryClient, useQueries, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -49,10 +49,10 @@ import {
   validateRequired,
 } from '@dao-dao/utils'
 
-import { EntityDisplay } from '../../../components'
+import { EntityDisplay, InfusionNFTSelectionModal } from '../../../components'
 import { useAwaitNextBlock } from '../../../hooks'
 import { useWallet } from '../../../hooks/useWallet'
-import { InfusionWidgetData } from './types'
+import { InfusionModuleData } from './types'
 import { HorizontalInfusionCard } from './components/stateless/HorizontalInfusionCard'
 import { Bundle, InfusedCollection, InfusionParams, NFTCollection } from '@dao-dao/types/contracts/CwInfuser'
 import { NewProposalPreview } from '../../../proposal-module-adapter/adapters/DaoProposalSingle/common/components/NewProposalPreview'
@@ -60,6 +60,7 @@ import { useActionEncodeContext } from '../../../actions'
 import json5 from 'json5'
 import { ArrowLeftOutlined, ArrowRightOutlined, KeyboardDoubleArrowLeft, KeyboardDoubleArrowRightOutlined } from '@mui/icons-material'
 import { WalletStatus } from '@cosmos-kit/core'
+import { InfusionsFAQModal } from './components/stateless/InfusionsFaqModal'
 // import { infusionsSelecta } from './components/state/infusionSelecta'
 
 
@@ -207,7 +208,7 @@ const getInfusionById = (
 
 
 export const InfusionsRenderer =
-  (props: ModuleRendererProps<InfusionWidgetData>) => {
+  (props: ModuleRendererProps<InfusionModuleData>) => {
     const { t } = useTranslation()
     const queryClient = useQueryClient()
 
@@ -242,6 +243,9 @@ export const InfusionsRenderer =
       handleSubmit,
       formState: { errors },
     } = formMethods
+
+
+    const [showFaqModal, setShowFaqModal] = useState<boolean>(false)
 
     const mode = watch('mode' as 'mode')
     const watchChainId = mode === 'create'
@@ -514,7 +518,21 @@ export const InfusionsRenderer =
     return (
       <FormProvider {...formMethods}>
         <ChainProvider chainId={watchChainId}>
-          <div className="flex grow flex-col gap-2">
+          <div className="flex items-start justify-start space-x-2 mb-2">
+            <Button
+              variant="primary"
+              size="lg"
+              className="self-start mt-2"
+              onClick={() => {
+                setShowFaqModal(!showFaqModal)
+              }}
+            >
+              {t('title.infusionFaq')}
+            </Button>
+
+          </div>
+
+          <div className="flex flex-row items-start justify-start gap-8">
             <DaoSupportedChainPickerInput
               fieldName={'infuse.chainId'}
               onlyDaoChainIds={true}
@@ -535,70 +553,76 @@ export const InfusionsRenderer =
                     makeValidateAddress(currentChain.bech32Prefix),
                   ]}
                 />
-
               </div>
-              {isValidBech32Address(watchInfusionMinter) && infusionConfig && (
-                <div className="relative my-2">
-                  <p className="primary-text mb-3 text-center">
-                    {t('form.selectInfusionId')}
-                  </p>
+            </div>
+          </div>
 
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    {/* First/Previous Buttons */}
-                    <div className="flex space-x-1">
-                      <Button
-                        onClick={() => setValue('infuse.infusionId', '1')}
-                        disabled={Number(watchInfusionId) <= 1}
-                        className="sacred-hexagon-button disabled:opacity-30"
-                      >
-                        <KeyboardDoubleArrowLeft className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        onClick={() => setValue('infuse.infusionId', (Number(watchInfusionId) - 1).toString())}
-                        disabled={Number(watchInfusionId) <= 1}
-                        className="sacred-hexagon-button disabled:opacity-30"
-                      >
-                        <ArrowLeftOutlined className="w-4 h-4" />
-                      </Button>
+
+          <div className="flex grow flex-col gap-2">
+            <div className="flex flex-col gap-1">
+              <div className="relative my-2">
+                {isValidBech32Address(watchInfusionMinter) && infusionConfig && (
+                  <>
+                    <p className="primary-text mb-3 text-center">
+                      {t('form.selectInfusionId')}
+                    </p>
+
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      {/* First/Previous Buttons */}
+                      <div className="flex space-x-1">
+                        <Button
+                          onClick={() => setValue('infuse.infusionId', '1')}
+                          disabled={Number(watchInfusionId) <= 1}
+                          className="sacred-hexagon-button disabled:opacity-30"
+                        >
+                          <KeyboardDoubleArrowLeft className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => setValue('infuse.infusionId', (Number(watchInfusionId) - 1).toString())}
+                          disabled={Number(watchInfusionId) <= 1}
+                          className="sacred-hexagon-button disabled:opacity-30"
+                        >
+                          <ArrowLeftOutlined className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      {/* Current ID Display */}
+                      <div className="relative sacred-geometric-container mx-2">
+                        <div className="sacred-geometric-pattern"></div>
+                        <NumericInput
+                          defaultValue={watchInfusionId}
+                          fieldName={'infuse.infusionId' as 'infuse.infusionId'}
+                          min={0}
+                          numericValue
+                          register={register}
+                          sizing="sm"
+                          step={1}
+                          validation={[validateRequired, validatePositive]}
+                        />
+                      </div>
+
+                      {/* Next/Last Buttons */}
+                      <div className="flex space-x-1">
+                        <Button
+                          onClick={() => setValue('infuse.infusionId', (Number(watchInfusionId) + 1).toString())}
+                          disabled={Number(watchInfusionId) >= infusionConfig[0].latest_infusion_id}
+                          className="sacred-hexagon-button disabled:opacity-30"
+                        >
+                          <ArrowRightOutlined className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => setValue('infuse.infusionId', infusionConfig[0].latest_infusion_id.toString())}
+                          disabled={Number(watchInfusionId) >= infusionConfig[0].latest_infusion_id}
+                          className="sacred-hexagon-button disabled:opacity-30"
+                        >
+                          <KeyboardDoubleArrowRightOutlined className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
+                  </>
+                )}
+              </div>
 
-                    {/* Current ID Display */}
-                    <div className="relative sacred-geometric-container mx-2">
-                      <div className="sacred-geometric-pattern"></div>
-                      <NumericInput
-                        defaultValue={watchInfusionId}
-                        fieldName={'infuse.infusionId' as 'infuse.infusionId'}
-                        min={0}
-                        numericValue
-                        register={register}
-                        sizing="sm"
-                        step={1}
-                        validation={[validateRequired, validatePositive]}
-                      />
-                    </div>
-
-                    {/* Next/Last Buttons */}
-                    <div className="flex space-x-1">
-                      <Button
-                        onClick={() => setValue('infuse.infusionId', (Number(watchInfusionId) + 1).toString())}
-                        disabled={Number(watchInfusionId) >= infusionConfig[0].latest_infusion_id}
-                        className="sacred-hexagon-button disabled:opacity-30"
-                      >
-                        <ArrowRightOutlined className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        onClick={() => setValue('infuse.infusionId', infusionConfig[0].latest_infusion_id.toString())}
-                        disabled={Number(watchInfusionId) >= infusionConfig[0].latest_infusion_id}
-                        className="sacred-hexagon-button disabled:opacity-30"
-                      >
-                        <KeyboardDoubleArrowRightOutlined className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-
-                </div>
-              )}
 
               {isValidBech32Address(watchInfusionMinter) && infusionConfig && (
                 <>
@@ -623,7 +647,21 @@ export const InfusionsRenderer =
                 </>
               )}
             </div>
+            <InfusionsFAQModal
+              action={{
+                loading: false,
+                label: t('button.save'),
+                onClick: () => {
+                  setShowFaqModal(false)
+                },
+              }}
+              header={{ title: t('title.infusionFaq') }}
+              onClose={() => setShowFaqModal(false)}
+              visible={showFaqModal}
+              containerClassName='no-scrollbar'
+            />
           </div>
+
         </ChainProvider>
       </FormProvider >
     )

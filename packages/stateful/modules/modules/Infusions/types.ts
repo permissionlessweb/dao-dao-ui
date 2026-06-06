@@ -1,4 +1,4 @@
-export type InfusionWidgetData = {
+export type InfusionModuleData = {
   // chain infusion is on
   chainId: string
   // form field name

@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 
-import { Entity } from '../entity'
+import { Entity } from './EntityDisplay'
 import { LoadingData } from '../misc'
 import { PfpkProfileUpdateFunction, UnifiedProfile } from '../profile'
 

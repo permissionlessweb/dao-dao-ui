@@ -12,6 +12,8 @@ import {
   RetroactiveCompensationModule,
   VestingPaymentsModule,
   VoteDelegationModule,
+  ShitstrapModule,
+
   AvEventsModule,
 } from './modules'
 import { InfusionsModule } from './modules/Infusions'
@@ -28,6 +30,7 @@ export const getModules = (options?: ModuleFilterOptions): readonly Module[] =>
     PressModule,
     // AvEventsModule,
     InfusionsModule,
+    ShitstrapModule,
     // Add modules here.
   ].filter(
     (module) =>

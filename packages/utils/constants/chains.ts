@@ -30,10 +30,10 @@ const ALL_CODE_HASHES = _ALL_CODE_HASHES as unknown as Partial<
 >
 const ALL_CODE_IDS = TEST_ENV
   ? // Fetched later in convertConfiguredChainToSupportedChain.
-    {}
+  {}
   : (_ALL_CODE_IDS as unknown as Partial<
-      Record<ChainId, Partial<Record<ContractVersion, CodeIdConfig>>>
-    >)
+    Record<ChainId, Partial<Record<ContractVersion, CodeIdConfig>>>
+  >)
 const ALL_POLYTONE = _ALL_POLYTONE as unknown as Partial<
   Record<ChainId, PolytoneConfig>
 >
@@ -89,35 +89,6 @@ const assets = [...chainRegistryAssets]
 //   // Copy assets from BitSong mainnet.
 //   assets: assets.find((a) => a.chain_name === 'bitsong')?.assets ?? [],
 // })
-
-// OmniFlix Hub Testnet
-const omniFlixHubTestnetChain = convertChainRegistryChainToAnyChain({
-  ...chains.find((c) => c.chainId === ChainId.OmniflixHubMainnet)!
-    .chainRegistry!,
-  chain_id: ChainId.OmniflixHubTestnet,
-  chain_name: 'omniflixhubtestnet',
-  status: 'live',
-  network_type: 'testnet',
-  pretty_name: 'OmniFlix Hub Testnet',
-  apis: {
-    rpc: [
-      {
-        address: 'https://rpc.testnet.omniflix.network',
-      },
-    ],
-    rest: [
-      {
-        address: 'https://api.testnet.omniflix.network',
-      },
-    ],
-  },
-})
-chains.push(omniFlixHubTestnetChain)
-assets.push({
-  chain_name: omniFlixHubTestnetChain.chainName,
-  // Copy assets from OmniFlix Hub mainnet.
-  assets: assets.find((a) => a.chain_name === 'omniflixhub')?.assets ?? [],
-})
 
 // Replace Juno testnet uni-6 with uni-7.
 const junoTestnetChain = chains.find((c) => c.chainId === 'uni-6')
@@ -203,192 +174,6 @@ assets.push({
   ],
 })
 
-// Intergaze (Stargaze + Initia)
-// https://github.com/initia-labs/initia-registry/blob/main/mainnets/intergaze/chain.json
-const intergazeChain = convertChainRegistryChainToAnyChain({
-  $schema: '../../chain.schema.json',
-  chain_name: 'intergaze',
-  pretty_name: 'Intergaze',
-  chain_id: ChainId.IntergazeMainnet,
-  bech32_prefix: 'init',
-  network_type: 'mainnet',
-  codebase: {
-    git_repo: 'https://github.com/public-awesome/intergaze',
-    recommended_version: 'v1.0.0-rc.5',
-    genesis: {
-      genesis_url: 'https://rpc.intergaze-apis.com/genesis',
-    },
-  },
-  peers: {
-    seeds: [],
-    persistent_peers: [],
-  },
-  apis: {
-    rpc: [
-      {
-        address: 'https://rpc.intergaze-apis.com',
-      },
-    ],
-    rest: [
-      {
-        address: 'https://rest.intergaze-apis.com',
-      },
-    ],
-    grpc: [
-      {
-        address: 'grpc.intergaze-apis.com:443',
-      },
-    ],
-  },
-  // @ts-ignore
-  key_algos: ['initia_ethsecp256k1', 'secp256k1'],
-  slip44: 60,
-  fees: {
-    fee_tokens: [
-      {
-        denom:
-          'l2/fb936ffef4eb4019d82941992cc09ae2788ce7197fcb08cb00c4fe6f5e79184e',
-        fixed_min_gas_price: 0.03,
-      },
-    ],
-  },
-  images: [
-    {
-      png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/intergaze.png',
-    },
-  ],
-  logo_URIs: {
-    png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/intergaze.png',
-  },
-  metadata: {
-    op_bridge_id: '31',
-    op_denoms: ['uinit'],
-    executor_uri: 'https://executor.intergaze-apis.com',
-    ibc_channels: [
-      {
-        chain_id: 'interwoven-1',
-        port_id:
-          'wasm.init1wug8sewp6cedgkmrmvhl3lf3tulagm9hnvy8p0rppz9yjw0g4wtq7947m6',
-        channel_id: 'channel-1',
-        version: 'ics721-1',
-      },
-      {
-        chain_id: 'interwoven-1',
-        port_id: 'transfer',
-        channel_id: 'channel-0',
-        version: 'ics20-1',
-      },
-    ],
-    assetlist:
-      'https://raw.githubusercontent.com/initia-labs/initia-registry/main/mainnets/intergaze/assetlist.json',
-    minitia: {
-      type: 'miniwasm',
-      version: 'v1.0.2',
-    },
-  },
-})
-chains.push(intergazeChain)
-// https://github.com/initia-labs/initia-registry/blob/main/mainnets/intergaze/assetlist.json
-assets.push({
-  chain_name: intergazeChain.chainName,
-  assets: [
-    {
-      description: 'The native token of Initia',
-      denom_units: [
-        {
-          denom:
-            'l2/fb936ffef4eb4019d82941992cc09ae2788ce7197fcb08cb00c4fe6f5e79184e',
-          exponent: 0,
-        },
-        {
-          denom: 'INIT',
-          exponent: 6,
-        },
-      ],
-      base: 'l2/fb936ffef4eb4019d82941992cc09ae2788ce7197fcb08cb00c4fe6f5e79184e',
-      display: 'INIT',
-      traces: [
-        {
-          // @ts-ignore
-          type: 'op',
-          counterparty: {
-            base_denom: 'uinit',
-            chain_name: 'initia',
-          },
-          chain: {
-            // @ts-ignore
-            bridge_id: '31',
-          },
-        },
-      ],
-      name: 'Initia Native Token',
-      symbol: 'INIT',
-      coingecko_id: '',
-      images: [
-        {
-          png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/INIT.png',
-        },
-      ],
-      logo_URIs: {
-        png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/INIT.png',
-      },
-    },
-    {
-      description: 'USDC on Initia',
-      denom_units: [
-        {
-          denom:
-            'l2/db147f1ded7ffcc336f5f8d1eff83c4feb95fcfff5c84f1b9c135444b816e48e',
-          exponent: 0,
-        },
-        {
-          denom: 'USDC',
-          exponent: 6,
-        },
-      ],
-      base: 'l2/db147f1ded7ffcc336f5f8d1eff83c4feb95fcfff5c84f1b9c135444b816e48e',
-      display: 'USDC',
-      name: 'USD Coin',
-      symbol: 'USDC',
-      coingecko_id: '',
-      traces: [
-        {
-          type: 'ibc',
-          counterparty: {
-            chain_name: 'noble',
-            base_denom: 'uusdc',
-            channel_id: 'channel-129',
-          },
-          chain: {
-            channel_id: 'channel-3',
-            path: 'transfer/channel-3/uusdc',
-          },
-        },
-        {
-          // @ts-ignore
-          type: 'op',
-          counterparty: {
-            base_denom:
-              'ibc/6490A7EAB61059BFC1CDDEB05917DD70BDF3A611654162A1A47DB930D40D8AF4',
-            chain_name: 'initia',
-          },
-          chain: {
-            // @ts-ignore
-            bridge_id: '31',
-          },
-        },
-      ],
-      images: [
-        {
-          png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/USDC.png',
-        },
-      ],
-      logo_URIs: {
-        png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/USDC.png',
-      },
-    },
-  ],
-})
 
 // DAODISEO testnet
 // https://github.com/daodiseomoney/chain-registry/blob/master/testnets/daodiseotestnet/chain.json
@@ -670,8 +455,8 @@ const BASE_SUPPORTED_CHAINS: Omit<
   SupportedChainConfig,
   'codeIds' | 'allCodeIds' | 'codeHashes' | 'allCodeHashes' | 'polytone'
 >[] = TEST_ENV
-  ? []
-  : [
+    ? []
+    : [
       {
         chainId: ChainId.CosmosHubMainnet,
         name: 'cosmos',
@@ -1124,6 +909,22 @@ const BASE_SUPPORTED_CHAINS: Omit<
         latestVersion: ContractVersion.V270,
         noIndexer: true,
       },
+      {
+        chainId: ChainId.TerpMainnet,
+        name: 'terp',
+        mainnet: true,
+        accentColor: '#b4e07c',
+        factoryContractAddress:
+          '',
+        explorerUrlTemplates: {
+          tx: 'https://explorer.terp.network/tx/REPLACE',
+          gov: 'https://explorer.terp.network/gov',
+          govProp: 'https://explorer.terp.network/gov/REPLACE',
+          wallet: 'https://explorer.terp.network/account/REPLACE',
+        },
+        latestVersion: ContractVersion.V270,
+        noIndexer: true,
+      },
     ]
 
 const convertConfiguredChainToSupportedChain = (
@@ -1133,19 +934,19 @@ const convertConfiguredChainToSupportedChain = (
   // since this will only run in a node environment.
   const allCodeIdsToUse = TEST_ENV
     ? JSON.parse(
+      // eslint-disable-next-line regex/invalid
+      // Use `eval('require')` instead of `require` so webpack doesn't attempt
+      // to bundle these node packages in the browser. The test environment is
+      // only used in tests run by node, so these will never be used in the
+      // browser.
+      //
+      // eslint-disable-next-line regex/invalid
+      eval('require')('fs').readFileSync(
         // eslint-disable-next-line regex/invalid
-        // Use `eval('require')` instead of `require` so webpack doesn't attempt
-        // to bundle these node packages in the browser. The test environment is
-        // only used in tests run by node, so these will never be used in the
-        // browser.
-        //
-        // eslint-disable-next-line regex/invalid
-        eval('require')('fs').readFileSync(
-          // eslint-disable-next-line regex/invalid
-          eval('require')('path').join(__dirname, './codeIds.test.json'),
-          'utf8'
-        )
+        eval('require')('path').join(__dirname, './codeIds.test.json'),
+        'utf8'
       )
+    )
     : ALL_CODE_IDS
 
   const allCodeIds = allCodeIdsToUse[chain.chainId as ChainId] || {}
@@ -1302,6 +1103,14 @@ export const CHAIN_ENDPOINTS: Partial<
     rpc: 'https://rpc.kopi.money',
     rest: 'https://rest.kopi.money',
   },
+  [ChainId.TerpMainnet]: {
+    rpc: 'https://rpc.terp.network',
+    rest: 'https://api.terp.network',
+  },
+  [ChainId.TerpTestnet]: {
+    rpc: 'https://rpc-testnet.terp.network',
+    rest: 'https://api-testnet.terp.network',
+  },
 }
 
 export const GAS_OVERRIDES: Partial<
@@ -1316,6 +1125,14 @@ export const GAS_OVERRIDES: Partial<
   [ChainId.KujiraTestnet]: {
     amount: 0.00125,
     denom: 'ukuji',
+  },
+  [ChainId.TerpTestnet]: {
+    amount: 0.5,
+    denom: 'uthiol',
+  },
+  [ChainId.TerpMainnet]: {
+    amount: 0.5,
+    denom: 'uthiol',
   },
 }
 
@@ -1457,8 +1274,8 @@ export let CONFIGURED_CHAINS: BaseChainConfig[] = [
   ...(TEST_ENV
     ? []
     : chains
-        .flatMap((chain) => convertChainToBaseChainConfig(chain) || [])
-        .sort((a, b) => a.name.localeCompare(b.name))),
+      .flatMap((chain) => convertChainToBaseChainConfig(chain) || [])
+      .sort((a, b) => a.name.localeCompare(b.name))),
 ]
 
 /**

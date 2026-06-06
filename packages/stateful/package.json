@@ -78,7 +78,10 @@
     "secretjs": "^1.12.5",
     "use-deep-compare-effect": "^1.8.1",
     "viem": "^2.22.8",
-    "wagmi": "^2.14.7"
+    "wagmi": "^2.14.7",
+    "qrcode": "^1.5.4",
+    "react-zxing": "2.1.0",
+    "@zxing/library": "^0.19.1"
   },
   "devDependencies": {
     "@chain-registry/types": "0.50.159",
@@ -97,6 +100,7 @@
     "@types/papaparse": "^5.3.7",
     "@types/remove-markdown": "^0.3.1",
     "cosmjs-types": "^0.9.0",
+    "@types/qrcode": "^1.5.5",
     "eslint": "^8.23.1",
     "next": "^13.3.0",
     "next-i18next": "^11.0.0",

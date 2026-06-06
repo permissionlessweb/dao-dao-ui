@@ -2,13 +2,13 @@ import { t } from 'i18next'
 
 import { ModuleEditorProps } from '@dao-dao/types'
 
-import { InfusionWidgetData } from './types'
+import { InfusionModuleData } from './types'
 
 export const InfusionsEditor = ({
   fieldNamePrefix,
   isCreating,
   errors,
-}: ModuleEditorProps<InfusionWidgetData>) => {
+}: ModuleEditorProps<InfusionModuleData>) => {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-row items-center justify-between gap-8">
