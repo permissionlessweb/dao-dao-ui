@@ -1,6 +1,6 @@
-import { QueryClient, queryOptions } from '@tanstack/react-query'
+import { queryOptions } from '@tanstack/react-query'
 
-import { TokenType } from '@dao-dao/types'
+import { IQueryClient, TokenType } from '@dao-dao/types'
 import { ShitstrapInfoGeneric } from '@dao-dao/types/contracts/ShitStrap'
 
 import { tokenQueries } from '../token'
@@ -10,7 +10,7 @@ import { shitStrapQueries } from './ShitStrap'
  * Fetch info for a shitstrap contract
  */
 export const fetchShitstrapInfo = async (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   {
     chainId,
     contractAddress,
@@ -33,7 +33,7 @@ export const fetchShitstrapInfo = async (
   ])
   const [shiit] = await Promise.all([
     queryClient.fetchQuery(
-      tokenQueries.info(queryClient, {
+      tokenQueries.info({
         chainId,
         type: config.shitmos_addr
           ? 'native' in config.shitmos_addr
@@ -55,7 +55,7 @@ export const fetchShitstrapInfo = async (
   const acceptedShiit = await Promise.all(
     config.accepted.map((ps) =>
       queryClient.fetchQuery(
-        tokenQueries.info(queryClient, {
+        tokenQueries.info({
           chainId,
           type:
             typeof ps.token === 'object'
@@ -110,7 +110,7 @@ export const cwShitstrapExtraQueries = {
    * Fetch info for a shitstrap contract.
    **/
   info: (
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     options: Parameters<typeof fetchShitstrapInfo>[1]
   ) =>
     queryOptions({

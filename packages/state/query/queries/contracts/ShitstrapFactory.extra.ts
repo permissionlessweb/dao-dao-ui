@@ -1,14 +1,15 @@
-import { QueryClient, queryOptions } from '@tanstack/react-query'
+import { queryOptions } from '@tanstack/react-query'
 
 import { ArrayOfShitstrapContract } from '@dao-dao/types/contracts/ShitstrapFactory'
 
 import { shitStrapFactoryQueries } from './ShitstrapFactory'
+import { IQueryClient } from '@dao-dao/types'
 
 /**
  * List all vesting contracts.
  **/
 export const listAllShitstrapContracts = async (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   {
     chainId,
     address,
@@ -74,7 +75,7 @@ export const listAllShitstrapContracts = async (
  * List all shistraps contracts by instanitater addr
  */
 export const listAllShitstrapContractsByInstantiator = async (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   {
     chainId,
     address,
@@ -151,7 +152,7 @@ export const cwShitstrapFactoriesExtraQuery = {
    * List all shitstrap contracts.
    */
   listAllShitstrapContracts: (
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     options: Parameters<typeof listAllShitstrapContracts>[1]
   ) =>
     queryOptions({
@@ -166,7 +167,7 @@ export const cwShitstrapFactoriesExtraQuery = {
    * List all shitstrap contracts by instantiator address.
    */
   listAllShitstrapContractsByInstantiator: (
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     options: Parameters<typeof listAllShitstrapContractsByInstantiator>[1]
   ) =>
     queryOptions({

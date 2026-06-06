@@ -3,7 +3,6 @@ import clsx from 'clsx'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { DnasPickerProps } from '@dao-dao/stateful/actions/core/actions/ManageDnas/types'
 import {
   Button,
   CopyToClipboard,
@@ -12,6 +11,7 @@ import {
 } from '@dao-dao/stateless'
 import { PopupTriggerCustomComponent } from '@dao-dao/types'
 import { getChainForChainId } from '@dao-dao/utils'
+import { DnasPickerProps } from '../types'
 
 export const DnasKeyPicker = ({
   dnasKeyOwners = {}, // Add default value

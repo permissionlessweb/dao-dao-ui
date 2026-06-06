@@ -6,7 +6,7 @@ import { useFieldArray, useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 
 import { HugeDecimal } from '@dao-dao/math'
-import { InfusionNFTSelectionModal, LazyNftCard, NftSelectionModal } from '@dao-dao/stateful'
+
 import {
   EligibleCollectionCardProps,
   LazyNftCardInfo,
@@ -29,6 +29,7 @@ import { NftGalleryModal } from './BrowseInfusionNfts'
 import { CommonNftSelectors, lazyNftCardInfosForDaoSelector } from '@dao-dao/state/recoil'
 import { coin } from '@cosmjs/amino'
 import { useWallet } from '../../../../../hooks/useWallet'
+import { InfusionNFTSelectionModal, LazyNftCard } from '../../../../../components'
 
 const NFTS_PER_PAGE = 30
 

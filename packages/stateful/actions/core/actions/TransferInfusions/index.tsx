@@ -1,4 +1,4 @@
-import { QueryClient, useQueries } from '@tanstack/react-query'
+import { useQueries } from '@tanstack/react-query'
 import { ComponentType, useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -26,6 +26,7 @@ import {
   TokenType,
   TypedOption,
   UnifiedCosmosMsg,
+  IQueryClient,
 
 } from '@dao-dao/types'
 
@@ -72,7 +73,7 @@ const infuseBundlesStructure = { infuse: { id: {}, bundle: {} } }
  * Get infusion config
  */
 const getInfusionConfig = (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   chainId: string,
   infuserAddr: string
 ) => {
@@ -87,7 +88,7 @@ const getInfusionConfig = (
  * Get infusion info by infusion id
  */
 const getInfusionById = (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   chainId: string,
   address: string,
   id: number
@@ -117,7 +118,7 @@ const getIsInfuserApproved = (
 
 // grabs the infusion config from the infusion minter defined in form
 const useInfusionConfigFromForm = (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   chainId: string,
   infusionMinter: string
 ) => {
@@ -130,7 +131,7 @@ const useInfusionConfigFromForm = (
 }
 
 const useInfusionContractFromForm = (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   chainId: string,
   infusionMinter: string,
   infusionId: string
@@ -348,6 +349,7 @@ export class ManageInfusionAction extends ActionBase<ManageInfusionsData> {
         paymentRecipient: '',
         description: '',
         infusedCollection: {
+          addr: '',
           name: '',
           symbol: '',
           description: '',

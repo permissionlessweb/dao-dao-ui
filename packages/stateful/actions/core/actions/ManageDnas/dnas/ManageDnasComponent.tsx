@@ -116,14 +116,14 @@ export const HandleDnasKeysRenderer: ActionComponent<ManageDnasActionData> = ({
     // CORRECT STRUCTURE (flattened properties)
     const daosToRegisterKeysTo: DnasKeyWithValueWithoutId[] = dnas
       ? dnas.map((data) => ({
-          daoAddr: data.daoAddr,
-          chainId: chainId,
-          keyOwner: data.keyOwner,
-          type: 'jackalPin',
-          keyMetadata: '{}',
-          uploadLimit: data.uploadLimit,
-          apiKeyValue: data.apiKeyValue ? data.apiKeyValue : '',
-        }))
+        daoAddr: data.daoAddr,
+        chainId: chainId,
+        keyOwner: data.keyOwner,
+        type: 'jackalPin',
+        keyMetadata: '{}',
+        uploadLimit: data.uploadLimit,
+        apiKeyValue: data.apiKeyValue ? data.apiKeyValue : '',
+      }))
       : []
 
     return (
@@ -229,7 +229,7 @@ export const HandleDnasKeysRenderer: ActionComponent<ManageDnasActionData> = ({
                           !profile.loading &&
                             unregisterDnasKey.go({
                               daoAddrs: [info.daoAddr],
-                              nonce: profile.data.nonce,
+                              nonce: 0 //profile.data.uuid, //TODO: fix for nonce
                             })
                         }}
                         onUpdate={() => {

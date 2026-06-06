@@ -1,4 +1,4 @@
-import { QueryClient, queryOptions } from '@tanstack/react-query'
+import { queryOptions } from '@tanstack/react-query'
 
 import {
   ChainId,
@@ -6,6 +6,7 @@ import {
   GenericTokenBalance,
   GenericTokenSource,
   GenericTokenWithUsdPrice,
+  IQueryClient,
   TokenType,
 } from '@dao-dao/types'
 import { FanToken } from '@dao-dao/types/protobuf/codegen/bitsong/fantoken/v1beta1/fantoken'
@@ -33,7 +34,7 @@ import { skipQueries } from './skip'
  * Fetch info for a token.
  */
 export const fetchTokenInfo = async (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   { chainId, type, denomOrAddress }: GenericTokenSource
 ): Promise<GenericToken> => {
   const [source, asset] = await Promise.all([
@@ -74,11 +75,11 @@ export const fetchTokenInfo = async (
       snip20CodeHash:
         isSecretNetwork(asset.chain_id) && asset.is_cw20 && asset.token_contract
           ? await queryClient.fetchQuery(
-              contractQueries.secretCodeHash({
-                chainId: asset.chain_id,
-                address: asset.token_contract,
-              })
-            )
+            contractQueries.secretCodeHash({
+              chainId: asset.chain_id,
+              address: asset.token_contract,
+            })
+          )
           : null,
     }
   } else if (source.chainId !== chainId) {
@@ -104,11 +105,11 @@ export const fetchTokenInfo = async (
         snip20CodeHash:
           isSecretNetwork(chainId) && type === TokenType.Cw20
             ? await queryClient.fetchQuery(
-                contractQueries.secretCodeHash({
-                  chainId,
-                  address: denomOrAddress,
-                })
-              )
+              contractQueries.secretCodeHash({
+                chainId,
+                address: denomOrAddress,
+              })
+            )
             : null,
       }
     }
@@ -140,11 +141,11 @@ export const fetchTokenInfo = async (
       source,
       snip20CodeHash: isSecretNetwork(chainId)
         ? await queryClient.fetchQuery(
-            contractQueries.secretCodeHash({
-              chainId,
-              address: denomOrAddress,
-            })
-          )
+          contractQueries.secretCodeHash({
+            chainId,
+            address: denomOrAddress,
+          })
+        )
         : null,
     }
   }
@@ -158,11 +159,11 @@ export const fetchTokenInfo = async (
       snip20CodeHash:
         isSecretNetwork(chainId) && token.type === TokenType.Cw20
           ? await queryClient.fetchQuery(
-              contractQueries.secretCodeHash({
-                chainId,
-                address: denomOrAddress,
-              })
-            )
+            contractQueries.secretCodeHash({
+              chainId,
+              address: denomOrAddress,
+            })
+          )
           : null,
     }
   } catch (err) {
@@ -290,7 +291,7 @@ export const fetchTokenInfo = async (
  * asset, reverse engineer IBC denom. Otherwise returns the inputs.
  */
 export const fetchTokenSource = async (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   { chainId, type, denomOrAddress }: GenericTokenSource
 ): Promise<GenericTokenSource> => {
   // Check if Skip API has the info.
@@ -375,7 +376,7 @@ export const fetchTokenSource = async (
  * Fetch the balance for any token.
  */
 export const fetchTokenBalance = (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   {
     chainId,
     type,
@@ -391,26 +392,26 @@ export const fetchTokenBalance = (
     ),
     type === TokenType.Native
       ? queryClient
-          .fetchQuery(
-            chainQueries.balance({
-              chainId,
-              address,
-              denom: denomOrAddress,
-            })
-          )
-          .then(({ amount }) => amount)
+        .fetchQuery(
+          chainQueries.balance({
+            chainId,
+            address,
+            denom: denomOrAddress,
+          })
+        )
+        .then(({ amount }) => amount)
       : type === TokenType.Cw20
         ? queryClient
-            .fetchQuery(
-              cw20BaseQueries.balance({
-                chainId,
-                contractAddress: denomOrAddress,
-                args: {
-                  address,
-                },
-              })
-            )
-            .then(({ balance }) => balance)
+          .fetchQuery(
+            cw20BaseQueries.balance({
+              chainId,
+              contractAddress: denomOrAddress,
+              args: {
+                address,
+              },
+            })
+          )
+          .then(({ balance }) => balance)
         : '0',
   ]).then(
     ([token, balance]): GenericTokenBalance => ({
@@ -423,7 +424,7 @@ export const fetchTokenBalance = (
  * Fetch the logo URL for a cw20 token if it exists. Returns null if not found.
  */
 export const fetchCw20LogoUrl = async (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   {
     chainId,
     address,
@@ -490,7 +491,7 @@ export const fetchBitSongFantoken = async ({
  * Fetch the USD price for a token from Snapper.
  */
 export const fetchUsdPrice = async (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   options: GenericTokenSource
 ): Promise<GenericTokenWithUsdPrice> => {
   if (!MAINNET) {

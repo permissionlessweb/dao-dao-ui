@@ -107,7 +107,7 @@ export const ShitstrapTabRenderer = ({
           type: ps.type,
           denomOrAddress: ps.denomOrAddress,
         }
-        return tokenQueries.info(queryClient, options)
+        return tokenQueries.info(options)
       })
     ),
     combine: makeCombineQueryResultsIntoLoadingDataWithError({

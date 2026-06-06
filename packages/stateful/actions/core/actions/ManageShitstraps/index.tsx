@@ -46,7 +46,7 @@ import {
   decodeJsonFromBase64,
   encodeJsonToBase64,
   getChainAddressForActionOptions,
-  getDaoModules,
+
   getDisplayNameForChainId,
   getNativeTokenForChainId,
   makeCombineQueryResultsIntoLoadingDataWithError,
@@ -56,7 +56,6 @@ import {
 } from '@dao-dao/utils'
 
 import { SuspenseLoader } from '../../../../components'
-import { useModule } from '../../../../widgets'
 import { ShitstrapPaymentModuleData } from '../../../../modules/modules/Shitstrap/types'
 import { useTokenBalances } from '../../../hooks'
 import { CreateShitstrap, CreateShitstrapData } from './CreateShitstrap'
@@ -69,6 +68,7 @@ import {
   RedeemShitstrapOverflow,
   ShitstrapOverFlowData,
 } from './ShitstrapOverFlow'
+import { getDaoModules, useModule } from '../../../../modules'
 
 // data coming from action tabs content
 export type ManageShitStrapData = {
@@ -368,9 +368,9 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
 
     this.widgetData =
       options.context.type === ActionContextType.Dao
-        ? getDaoModules(options.context.dao.info.items).find(({ id }) => {
-          return id === ModuleId.ShitStrap
-        })?.values
+        ? getDaoModules(options.context.dao).find(({ daoModule }) => {
+          return daoModule.id === ModuleId.ShitStrap
+        })?.daoModule.values
         : undefined
 
     // Fire async init immediately since we may hide this action.
@@ -730,7 +730,7 @@ export class ManageShitstrapAction extends ActionBase<ManageShitStrapData> {
 
       const [token] = await Promise.all([
         this.options.queryClient.fetchQuery(
-          tokenQueries.info(this.options.queryClient, {
+          tokenQueries.info({
             chainId,
             type: isNativeCreate ? TokenType.Native : TokenType.Cw20,
             denomOrAddress: isNativeCreate

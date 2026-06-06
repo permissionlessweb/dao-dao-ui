@@ -106,7 +106,7 @@ export enum ChainId {
   IntergazeMainnet = 'intergaze-1',
   DaodiseoTestnet = 'ithaca-1',
   TerpMainnet = 'morocco-1',
-  TerpTestnet = '120u-1',
+  // TerpTestnet = '120u-1',
   KopiMainnet = 'luwak-1',
   RegenMainnet = 'regen-1',
   RegenTestnet = 'regen-upgrade',

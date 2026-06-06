@@ -8,8 +8,9 @@ export const makeEmptyPfpkProfile = (): PfpkProfile => ({
   name: null,
   nft: null,
   chains: {},
-  createdAt: -1,
-  updatedAt: -1,
+  nonce: 0
+  // createdAt: -1,
+  // updatedAt: -1,
 })
 
 export const makeEmptyUnifiedProfile = (

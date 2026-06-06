@@ -672,8 +672,13 @@ export const CreateInfusion: ComponentType<
                               enabled={!!eligibleCollectionField.at(index)?.payment_substitute}
                               onClick={() => {
                                 const eligible = eligibleCollectionField.at(index);
-                                const newPaymentSubstitute = eligible?.payment_substitute ? null : { amount: '0', denom: '' };
-                                updateEligibleCollection(index, { ...eligible, payment_substitute: newPaymentSubstitute });
+                                const newPaymentSubstitute = eligible?.payment_substitute ? undefined : { amount: '0', denom: '' };
+
+
+                                updateEligibleCollection(index, {
+                                  addr: '',
+                                  min_req: 0
+                                });
                               }}
                               sizing="sm"
                             />
@@ -859,7 +864,7 @@ export const CreateInfusion: ComponentType<
                         }}
                         size="sm"
                         variant="ghost"
-                      > {es}</IconButton>
+                      > {es.addr}</IconButton>
                     </div>
                   ))
                 }

@@ -137,7 +137,7 @@ export const ShitstrapPaymentCard = ({
     freshInfo.loading || freshInfo.errored ? undefined : freshInfo.data
 
   const freshShitTokenQuery = useQueryLoadingDataWithError(
-    tokenQueries.info(queryClient, {
+    tokenQueries.info({
       chainId,
       type: shitstrapInfo ? shitstrapInfo?.shit.type : fallbackInfo.shit.type,
       denomOrAddress: shitstrapInfo

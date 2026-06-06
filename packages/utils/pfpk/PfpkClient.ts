@@ -21,7 +21,7 @@ import {
   getNativeTokenForChainId,
   getPublicKeyTypeForChain,
 } from '../chain'
-import { PFPK_API_HOSTNAME } from '../constants/env'
+import { KVPK_API_HOSTNAME } from '../constants/env'
 import {
   createTokens,
   fetchAuthenticated,
@@ -485,7 +485,7 @@ export class PfpkClient {
   async getAdminToken(chainId?: string): Promise<string> {
     return this.findOrCreateToken({
       chainId,
-      audience: PFPK_API_HOSTNAME,
+      audience: KVPK_API_HOSTNAME,
       role: PFPK_ADMIN_ROLE,
     })
   }
@@ -553,7 +553,7 @@ export class PfpkClient {
       ],
       // If no token is found, create an admin token as well, unless creating a
       // token for the PFPK service already.
-      withAdminIfNeeded: filter.audience !== PFPK_API_HOSTNAME,
+      withAdminIfNeeded: filter.audience !== KVPK_API_HOSTNAME,
     })
 
     return token
@@ -604,7 +604,7 @@ export class PfpkClient {
     if (withAdminIfNeeded) {
       const adminToken = await this.findValidToken({
         chainId,
-        audience: PFPK_API_HOSTNAME,
+        audience: KVPK_API_HOSTNAME,
         role: PFPK_ADMIN_ROLE,
       })
       // If no admin token exists, add it to the end of the tokens array so it
@@ -613,7 +613,7 @@ export class PfpkClient {
         tokens = [
           ...tokens,
           {
-            audience: [PFPK_API_HOSTNAME],
+            audience: [KVPK_API_HOSTNAME],
             role: PFPK_ADMIN_ROLE,
           },
         ]
@@ -622,7 +622,7 @@ export class PfpkClient {
 
     // If tokens includes PFPK service itself, use key signature auth.
     // Otherwise, use token auth.
-    if (tokens.some((token) => token.audience?.includes(PFPK_API_HOSTNAME))) {
+    if (tokens.some((token) => token.audience?.includes(KVPK_API_HOSTNAME))) {
       // Use key signature auth.
       requestBody = await this.signRequestBody({
         chainId,
@@ -1060,10 +1060,10 @@ export class PfpkClient {
     const options: SignAndSendOptions<Data> = isFirstFunction
       ? _endpointOrOptions || {}
       : {
-          endpoint: _endpointOrOptions,
-          data: _data,
-          ..._options,
-        }
+        endpoint: _endpointOrOptions,
+        data: _data,
+        ..._options,
+      }
 
     let {
       chainId,
@@ -1089,10 +1089,10 @@ export class PfpkClient {
         ? data
         : { data }
       : await this.signRequestBody({
-          chainId,
-          type,
-          data,
-        })
+        chainId,
+        type,
+        data,
+      })
 
     const response = await fetch(endpoint, {
       method,

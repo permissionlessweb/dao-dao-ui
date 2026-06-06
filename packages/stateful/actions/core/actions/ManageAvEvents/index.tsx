@@ -799,7 +799,7 @@ export class ManageAvEventsAction extends ActionBase<ManageAvEventsData> {
 
       const [token] = await Promise.all([
         this.options.queryClient.fetchQuery(
-          tokenQueries.info(this.options.queryClient, {
+          tokenQueries.info({
             chainId,
             type: isNativeCreateEvent ? TokenType.Native : TokenType.Cw20,
             denomOrAddress: isNativeCreateEvent

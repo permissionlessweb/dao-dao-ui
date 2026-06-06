@@ -10,7 +10,6 @@ export type AvEventInstance = {
     usherWeight: MemberResponse
     guestWeight?: MemberResponse
     eventGuestDetails: ArrayOfGenericTokenGuestDetails,
-    startDate: Date
     completed: boolean,
 }
 

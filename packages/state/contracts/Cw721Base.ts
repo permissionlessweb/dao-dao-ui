@@ -31,6 +31,7 @@ import {
   OwnershipForString,
   TokensResponse,
 } from '@dao-dao/types/contracts/Cw721Base'
+import { CollectionInfoResponse } from '@dao-dao/types/contracts/Sg721Base'
 import { CHAIN_GAS_MULTIPLIER } from '@dao-dao/utils'
 
 export interface Cw721BaseReadOnlyInterface {
@@ -109,6 +110,8 @@ export interface Cw721BaseReadOnlyInterface {
     startAfter?: string
   }) => Promise<TokensResponse>
   minter: () => Promise<MinterResponse>
+  collectionInfo: () => Promise<CollectionInfoResponse>
+
   extension: ({ msg }: { msg: Empty }) => Promise<Null>
   ownership: () => Promise<OwnershipForString>
 }
@@ -308,6 +311,11 @@ export class Cw721BaseQueryClient implements Cw721BaseReadOnlyInterface {
       ownership: {},
     })
   }
+  collectionInfo = async (): Promise<CollectionInfoResponse> => {
+    return this.client.queryContractSmart(this.contractAddress, {
+      collection_info: {},
+    })
+  }
 }
 export interface Cw721BaseInterface extends Cw721BaseReadOnlyInterface {
   contractAddress: string
@@ -421,8 +429,7 @@ export interface Cw721BaseInterface extends Cw721BaseReadOnlyInterface {
 }
 export class Cw721BaseClient
   extends Cw721BaseQueryClient
-  implements Cw721BaseInterface
-{
+  implements Cw721BaseInterface {
   client: SigningCosmWasmClient
   sender: string
   contractAddress: string

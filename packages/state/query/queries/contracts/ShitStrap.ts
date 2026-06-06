@@ -4,7 +4,7 @@
  * and run the @cosmwasm/ts-codegen generate command to regenerate this file.
  */
 
-import { QueryClient, UseQueryOptions } from '@tanstack/react-query'
+import { UseQueryOptions } from '@tanstack/react-query'
 
 import {
   Boolean,
@@ -16,6 +16,7 @@ import {
 import { getCosmWasmClientForChainId } from '@dao-dao/utils'
 
 import { ShitStrapQueryClient } from '../../../contracts/ShitStrap'
+import { IQueryClient } from '@dao-dao/types'
 export const shitStrapQueryKeys = {
   contract: [
     {
@@ -93,7 +94,7 @@ export const shitStrapQueryKeys = {
 
 export const shitStrapQueries = {
   config: <TData = Config>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     { chainId, contractAddress, options }: ShitStrapConfigQuery<TData>
   ): UseQueryOptions<Config, Error, TData> => ({
     queryKey: shitStrapQueryKeys.config(chainId, contractAddress),
@@ -123,7 +124,7 @@ export const shitStrapQueries = {
       (options?.enabled !== undefined ? options.enabled : true),
   }),
   hasShit: <TData = Uint128>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     { chainId, contractAddress, options }: ShitstrapHasShitQuery<TData>
   ): UseQueryOptions<Uint128, Error, TData> => ({
     queryKey: shitStrapQueryKeys.hasShit(chainId, contractAddress),
@@ -153,7 +154,7 @@ export const shitStrapQueries = {
       (options?.enabled !== undefined ? options.enabled : true),
   }),
   fullOfShit: <TData = Boolean>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     { chainId, contractAddress, options }: ShitStrapFullOfShitQuery<TData>
   ): UseQueryOptions<Boolean, Error, TData> => ({
     queryKey: shitStrapQueryKeys.fullOfShit(chainId, contractAddress),
@@ -183,7 +184,7 @@ export const shitStrapQueries = {
       (options?.enabled !== undefined ? options.enabled : true),
   }),
   shitRate: <TData = NullableUint128>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     { chainId, contractAddress, args, options }: ShitStrapShitRateQuery<TData>
   ): UseQueryOptions<NullableUint128, Error, TData> => ({
     queryKey: shitStrapQueryKeys.shitRate(chainId, contractAddress, args),
@@ -213,7 +214,7 @@ export const shitStrapQueries = {
       (options?.enabled !== undefined ? options.enabled : true),
   }),
   shitRates: <TData = NullableArrayOfPossibleShit>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     { chainId, contractAddress, options }: ShitStrapShitRatesQuery<TData>
   ): UseQueryOptions<NullableArrayOfPossibleShit, Error, TData> => ({
     queryKey: shitStrapQueryKeys.shitRates(chainId, contractAddress),
@@ -255,7 +256,7 @@ export interface ShitStrapReactQuery<TResponse, TData = TResponse> {
   }
 }
 export interface ShitStrapShitRatesQuery<TData>
-  extends ShitStrapReactQuery<NullableArrayOfPossibleShit, TData> {}
+  extends ShitStrapReactQuery<NullableArrayOfPossibleShit, TData> { }
 export interface ShitStrapShitRateQuery<TData>
   extends ShitStrapReactQuery<NullableUint128, TData> {
   args: {
@@ -264,11 +265,11 @@ export interface ShitStrapShitRateQuery<TData>
 }
 
 export interface ShitStrapFullOfShitQuery<TData>
-  extends ShitStrapReactQuery<Boolean, TData> {}
+  extends ShitStrapReactQuery<Boolean, TData> { }
 export interface ShitstrapHasShitQuery<TData>
-  extends ShitStrapReactQuery<Uint128, TData> {}
+  extends ShitStrapReactQuery<Uint128, TData> { }
 export interface ShitStrapConfigQuery<TData>
-  extends ShitStrapReactQuery<Config, TData> {}
+  extends ShitStrapReactQuery<Config, TData> { }
 // export interface ShitStrapRefundShitterMutation {
 //   client: ShitStrapClient;
 //   args?: {

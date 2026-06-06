@@ -1,4 +1,4 @@
-import { QueryClient, queryOptions } from '@tanstack/react-query'
+import { queryOptions } from '@tanstack/react-query'
 
 import { ArrayOfVestingContract } from '@dao-dao/types/contracts/CwPayrollFactory'
 
@@ -6,12 +6,13 @@ import { indexerQueries } from '../indexer'
 import { cwPayrollFactoryQueries } from './CwPayrollFactory'
 import { ArrayOfAvEventContract } from '@dao-dao/types/contracts/CwAveFactory'
 import { cwAveFactoryQueries } from './CwAveFactory'
+import { IQueryClient } from '@dao-dao/types'
 
 /**
  * List all vesting contracts.
  */
 export const listAllAveContracts = async (
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     {
         chainId,
         address,
@@ -25,7 +26,7 @@ export const listAllAveContracts = async (
 }> => {
     try {
         const list: ArrayOfAvEventContract = await queryClient.fetchQuery(
-            indexerQueries.queryContract(queryClient, {
+            indexerQueries.queryContract({
                 chainId,
                 contractAddress: address,
                 formula: 'cwAveFactory/listAveContracts',
@@ -46,7 +47,7 @@ export const listAllAveContracts = async (
     const limit = 30
     while (true) {
         const response = await queryClient.fetchQuery(
-            cwAveFactoryQueries.listAvEventContracts(queryClient, {
+            cwAveFactoryQueries.listAvEventContracts({
                 chainId,
                 contractAddress: address,
                 args: {
@@ -79,7 +80,7 @@ export const cwAveFactoryExtraQueries = {
      * List all vesting contracts.
      */
     listAllAveContracts: (
-        queryClient: QueryClient,
+        queryClient: IQueryClient,
         options: Parameters<typeof listAllAveContracts>[1]
     ) =>
         queryOptions({

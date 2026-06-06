@@ -82,12 +82,12 @@ export const InnerPfpkNftSelectionModal = ({
   const nfts = useCachedLoadingWithError(
     wasVisibleOnce.current && !chains.loading
       ? // Load NFTs for all DAO DAO-supported chains.
-        allWalletNftsSelector(
-          chains.data.map(({ chainId, address }) => ({
-            chainId,
-            walletAddress: address,
-          }))
-        )
+      allWalletNftsSelector(
+        chains.data.map(({ chainId, address }) => ({
+          chainId,
+          walletAddress: address,
+        }))
+      )
       : undefined
   )
 
@@ -99,10 +99,10 @@ export const InnerPfpkNftSelectionModal = ({
   const [selectedKey, setSelectedKey] = useState<string | undefined>(
     !profile.loading && profile.data.nft
       ? getNftKey(
-          profile.data.nft.chainId,
-          profile.data.nft.collectionAddress,
-          profile.data.nft.tokenId
-        )
+        profile.data.nft.chainId,
+        profile.data.nft.collectionAddress,
+        profile.data.nft.tokenId
+      )
       : undefined
   )
   const selectedNft =
@@ -110,14 +110,14 @@ export const InnerPfpkNftSelectionModal = ({
       ? nfts.data.find((nft) => selectedKey === nft.key)
       : undefined
   // If profile last updated changes, set selected NFT.
-  const [profileLastUpdated, setProfileLastUpdated] = useState(
-    profile.loading ? 0 : profile.data.updatedAt
-  )
+  // const [profileLastUpdated, setProfileLastUpdated] = useState(
+  //   profile.loading ? 0 : profile.data.updatedAt
+  // )
   useEffect(() => {
     if (
       !profile.loading &&
-      profile.data.nft &&
-      profile.data.updatedAt > profileLastUpdated
+      profile.data.nft
+      // profile.data.updatedAt > profileLastUpdated
     ) {
       setSelectedKey(
         getNftKey(
@@ -126,9 +126,9 @@ export const InnerPfpkNftSelectionModal = ({
           profile.data.nft.tokenId
         )
       )
-      setProfileLastUpdated(profile.data.updatedAt)
+      // setProfileLastUpdated(profile.data.updatedAt)
     }
-  }, [profileLastUpdated, profile])
+  }, [profile]) // profileLastUpdated,
 
   const onAction = useCallback(async () => {
     // Only give error about no NFTs if something should be selected. This
@@ -143,12 +143,12 @@ export const InnerPfpkNftSelectionModal = ({
       await updateProfile({
         nft: selectedNft
           ? {
-              chainId: selectedNft.chainId,
-              collectionAddress: selectedNft.collectionAddress,
-              tokenId: selectedNft.tokenId,
-            }
+            chainId: selectedNft.chainId,
+            collectionAddress: selectedNft.collectionAddress,
+            tokenId: selectedNft.tokenId,
+          }
           : // Clear NFT if nothing selected.
-            null,
+          null,
       })
       // Close on successful update.
       onClose()
@@ -177,7 +177,7 @@ export const InnerPfpkNftSelectionModal = ({
   const uploadWallet = useWallet({
     chainId:
       !isSecretNetwork(chain.chainId) &&
-      getSupportedChainConfig(chain.chainId)?.codeIds?.Cw721Base
+        getSupportedChainConfig(chain.chainId)?.codeIds?.Cw721Base
         ? chain.chainId
         : ChainId.JunoMainnet,
     // Attempt connection to upload wallet chain when image selector is visible.
@@ -188,7 +188,7 @@ export const InnerPfpkNftSelectionModal = ({
       uploadWallet.chain.chainId,
       // Should be defined since we chose a chain ID above with this set.
       getSupportedChainConfig(uploadWallet.chain.chainId)?.codeIds.Cw721Base ||
-        -1
+      -1
     )
 
   const uploadImage = useCallback(async () => {
@@ -310,10 +310,10 @@ export const InnerPfpkNftSelectionModal = ({
         nfts={
           isWalletError && walletErrorMessage
             ? {
-                loading: false,
-                errored: true,
-                error: new Error(walletErrorMessage),
-              }
+              loading: false,
+              errored: true,
+              error: new Error(walletErrorMessage),
+            }
             : nfts
         }
         noneDisplay={
@@ -335,9 +335,9 @@ export const InnerPfpkNftSelectionModal = ({
           // Only mainnet NFTs are supported in PFPK. No testnets.
           MAINNET
             ? {
-                label: t('button.uploadImage'),
-                onClick: () => setShowImageSelector(true),
-              }
+              label: t('button.uploadImage'),
+              onClick: () => setShowImageSelector(true),
+            }
             : undefined
         }
         selectedDisplay={
@@ -377,10 +377,10 @@ export const InnerPfpkNftSelectionModal = ({
             uploadWallet.isWalletConnected
               ? t('button.save')
               : t('button.connectToChain', {
-                  chainName: getDisplayNameForChainId(
-                    uploadWallet.chain.chainId
-                  ),
-                })
+                chainName: getDisplayNameForChainId(
+                  uploadWallet.chain.chainId
+                ),
+              })
           }
           fieldName="image"
           imageClassName="!rounded-2xl"

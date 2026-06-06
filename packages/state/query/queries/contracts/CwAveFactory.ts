@@ -50,31 +50,31 @@ export const cwAveFactoryQueryKeys = {
 };
 export const cwAveFactoryQueries = {
   listAvEventContracts: <TData = ArrayOfAvEventContract>(
-    queryClient: QueryClient,
+    // queryClient: QueryClient,
     { chainId, contractAddress, args, options }: CwAveFactoryListAvEventContractsQuery<TData>
   ): UseQueryOptions<ArrayOfAvEventContract, Error, TData> => ({
     queryKey: cwAveFactoryQueryKeys.listAvEventContracts(contractAddress, args),
     queryFn: async () => {
-      try {
-        return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
-            chainId,
-            contractAddress,
-            formula: 'cwaveFactory/listAvEventContracts',
-            args: {
-              limit: args.limit,
-              startAfter: args.startAfter
-            }
-          })
-        )
-      } catch (error) {
-        console.error('Indexer failed, falling back to contract query', error)
+      // try {
+      //   return await queryClient.fetchQuery(
+      //     indexerQueries.queryContract({
+      //       chainId,
+      //       contractAddress,
+      //       formula: 'cwaveFactory/listAvEventContracts',
+      //       args: {
+      //         limit: args.limit,
+      //         startAfter: args.startAfter
+      //       }
+      //     })
+      //   )
+      // } catch (error) {
+      //   console.error('Indexer failed, falling back to contract query', error)
         const cosmWasmClient = await getCosmWasmClientForChainId(chainId)
         return new CwAveFactoryQueryClient(cosmWasmClient, contractAddress).listAvEventContracts({
           limit: args.limit,
           startAfter: args.startAfter
         })
-      }
+      // }
     },
     ...options,
     enabled: !!contractAddress && (options?.enabled !== undefined ? options.enabled : true)
@@ -88,7 +88,7 @@ export const cwAveFactoryQueries = {
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwaveFactory/listAvEventContractsReverse',
@@ -119,7 +119,7 @@ export const cwAveFactoryQueries = {
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwaveFactory/listAvEventContractsByInstantiator',
@@ -152,7 +152,7 @@ export const cwAveFactoryQueries = {
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwaveFactory/listAvEventContractsByInstantiatorReverse',
@@ -185,7 +185,7 @@ export const cwAveFactoryQueries = {
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwaveFactory/ownership'
@@ -209,7 +209,7 @@ export const cwAveFactoryQueries = {
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwaveFactory/codeId'

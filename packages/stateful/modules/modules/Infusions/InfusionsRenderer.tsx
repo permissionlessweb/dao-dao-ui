@@ -341,7 +341,7 @@ export const InfusionsRenderer =
         watchChainId && watchInfusionMinter && watchInfusionId
           ? watchInfusionBundles.flatMap((infuse) =>
             infuse.nfts.map((nft) =>
-              nftQueries.cardInfo(queryClient, {
+              nftQueries.cardInfo({
                 chainId: watchChainId,
                 collection: nft.addr,
                 tokenId: nft.token_id.toString(),

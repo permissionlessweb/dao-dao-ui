@@ -6,7 +6,7 @@ import { useFieldArray, useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 
 import { HugeDecimal } from '@dao-dao/math'
-import { InfusionNFTSelectionModal, LazyNftCard, NftSelectionModal } from '@dao-dao/stateful'
+
 import {
   EligibleCollectionCardProps,
   LazyNftCardInfo,

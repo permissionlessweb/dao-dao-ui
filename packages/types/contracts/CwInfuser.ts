@@ -92,13 +92,13 @@ export interface Infusion {
   payment_recipient?: Addr | null
 }
 export interface NFTCollection {
-  addr: Addr
+  addr: string  
   min_req: number
   max_req?: number | null
   payment_substitute?: Coin | null
 }
 export interface InfusedCollection {
-  addr?: string | null
+  addr: string | null
   admin?: string | null
   name: string
   description: string

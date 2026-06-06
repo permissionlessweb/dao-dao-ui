@@ -5,7 +5,7 @@
 */
 
 import { QueryClient, UseQueryOptions, useQuery } from "@tanstack/react-query";
-import { Timestamp, Uint64, EventSegmentAccessType, Uint128, InstantiateMsg, EventSegments, GuestDetails, Coin, Member, ExecuteMsg, Binary, RegisteringGuest, CheckInDetails, QueryMsg, TicketPaymentOption, Addr, Config, ArrayOfEventSegments, Boolean, ArrayOfBoolean, ArrayOfTicketPaymentOption } from '@dao-dao/types/contracts/CwAve'
+import { Timestamp, Uint64, EventSegmentAccessType, Uint128, InstantiateMsg, EventSegments, GuestDetails, Coin, Member, ExecuteMsg, Binary, RegisteringGuest, CheckInDetails, QueryMsg, TicketPaymentOption, Addr, Config, ArrayOfEventSegments, Boolean, ArrayOfBoolean, ArrayOfTicketPaymentOption, ArrayOfGuestDetails, ArrayOfGenericTokenGuestDetails } from '@dao-dao/types/contracts/CwAve'
 import { CwAveQueryClient } from '../../../contracts/CwAve'
 import { indexerQueries } from "../indexer";
 import { getCosmWasmClientForChainId } from "@dao-dao/utils";
@@ -77,7 +77,7 @@ export const cwAveQueries = {
       try {
         // Attempt indexer query first
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwave/config'
@@ -92,90 +92,89 @@ export const cwAveQueries = {
     ...options,
     enabled: !!contractAddress && (options?.enabled !== undefined ? options.enabled : true)
   }),
+
   eventInstance: <TData = AvEventInstance>(
     queryClient: QueryClient,
     { chainId, contractAddress, connectedAddr, options }: CwAveEventInstanceQuery<TData>
   ): UseQueryOptions<AvEventInstance, Error, TData> => ({
     queryKey: cwAveQueryKeys.eventInstance(contractAddress),
     queryFn: async () => {
-      try {
-        // Attempt indexer query first
-        return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
-            chainId,
-            contractAddress,
-            formula: 'cwave/eventInstance'
-          })
-        )
-      } catch (error) {
-        console.error('Indexer failed, falling back to contract query', error)
-        const cosmWasmClient = await getCosmWasmClientForChainId(chainId)
-        const cwAveClient = new CwAveQueryClient(cosmWasmClient, contractAddress)
-        const config = await cwAveClient.config()
-        const eventSegments = await cwAveClient.eventSegments()
-        const guestDetails = await cwAveClient.guestTypeDetailsAll()
+      // try {
+      //   // Attempt indexer query first
+      //   return await queryClient.fetchQuery(
+      //     indexerQueries.queryContract({
+      //       chainId,
+      //       contractAddress,
+      //       formula: 'cwave/eventInstance'
+      //     })
+      //   )
+      // } catch (error) {
+      // console.error('Indexer failed, falling back to contract query', error)
+      const cosmWasmClient = await getCosmWasmClientForChainId(chainId)
+      const cwAveClient = new CwAveQueryClient(cosmWasmClient, contractAddress)
+      const config = await cwAveClient.config()
+      const eventSegments = await cwAveClient.eventSegments()
+      const guestDetails = await cwAveClient.guestTypeDetailsAll()
 
-        // get usher & guest info if wallet address is provided
+      // get usher & guest info if wallet address is provided
 
-        // query if we are admin
-        const usherWeight = await queryClient.fetchQuery(cw4GroupQueries.member(queryClient, {
-          chainId,
-          contractAddress: config.event_usher_contract,
-          args: {
-            addr: connectedAddr
-          }
-        }))
-
-        const guestWeight = !usherWeight.weight ? null : await queryClient.fetchQuery(cw4GroupQueries.member(queryClient, {
-          chainId,
-          contractAddress: config.event_guest_contract,
-          args: {
-            addr: connectedAddr
-          }
-        }))
-
-
-        const guestDetailsGeneric = await Promise.all(
-          guestDetails.map(async (gd) => {
-            // Process all ticket_costs in parallel
-            const updatedTicketCosts = await Promise.all(
-              gd.ticket_cost.map(async (tc) => {
-                const token = await queryClient.fetchQuery(
-                  tokenQueries.info(queryClient, {
-                    chainId,
-                    type: TokenType.Native,
-                    denomOrAddress: tc.denom,
-                  })
-                );
-                return {
-                  token: token,
-                  balance: tc.amount.toString()
-                } as GenericTokenBalance;
-              })
-            );
-
-            // Return updated guest detail with replaced ticket_costs
-            return {
-              ...gd,
-              ticket_cost: updatedTicketCosts,
-            };
-          })
-        );
-
-
-
-        return {
-          loading: false,
-          eventChainId: chainId,
-          eventContract: contractAddress,
-          config: config,
-          usherWeight,
-          guestWeight,
-          eventTimeline: eventSegments,
-          eventGuestDetails: guestDetailsGeneric,
-
+      // query if we are admin
+      const usherWeight = await queryClient.fetchQuery(cw4GroupQueries.member({
+        chainId,
+        contractAddress: config.event_usher_contract,
+        args: {
+          addr: connectedAddr
         }
+      }))
+
+      const guestWeight = !usherWeight.weight ? undefined : await queryClient.fetchQuery(cw4GroupQueries.member({
+        chainId,
+        contractAddress: config.event_guest_contract,
+        args: {
+          addr: connectedAddr
+        }
+      }))
+
+
+      const guestDetailsGeneric: ArrayOfGenericTokenGuestDetails = await Promise.all(
+        guestDetails.map(async (gd) => {
+          // Process all ticket_costs in parallel
+          const updatedTicketCosts = await Promise.all(
+            gd.ticket_cost.map(async (tc) => {
+              const token = await queryClient.fetchQuery(
+                tokenQueries.info({
+                  chainId,
+                  type: TokenType.Native,
+                  denomOrAddress: tc.denom,
+                })
+              );
+              return {
+                token: token,
+                balance: tc.amount.toString()
+              } as GenericTokenBalance;
+            })
+          );
+
+          // Return updated guest detail with replaced ticket_costs
+          return {
+            ...gd,
+            ticket_cost: updatedTicketCosts,
+          };
+        })
+      );
+
+      return {
+        loading: false,
+        eventChainId: chainId,
+        eventContract: contractAddress,
+        config: config,
+        usherWeight,
+        guestWeight,
+        eventTimeline: eventSegments,
+        eventGuestDetails: guestDetailsGeneric,
+        completed: false,
       }
+      // }
     },
     ...options,
     enabled: !!contractAddress && (options?.enabled !== undefined ? options.enabled : true)
@@ -189,7 +188,7 @@ export const cwAveQueries = {
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwave/eventSegments'
@@ -213,7 +212,7 @@ export const cwAveQueries = {
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwave/guestTypeDetails',
@@ -230,15 +229,15 @@ export const cwAveQueries = {
     enabled: !!contractAddress && (options?.enabled !== undefined ? options.enabled : true)
   }),
 
-  guestTypeDetailsAll: <TData = GuestDetails>(
+  guestTypeDetailsAll: <TData = ArrayOfGuestDetails>(
     queryClient: QueryClient,
     { chainId, contractAddress, options }: CwAveGuestTypeDetailsAllQuery<TData>
-  ): UseQueryOptions<GuestDetails, Error, TData> => ({
+  ): UseQueryOptions<ArrayOfGuestDetails, Error, TData> => ({
     queryKey: cwAveQueryKeys.guestTypeDetailsAll(contractAddress),
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwave/guestTypeDetailsAll'
@@ -261,7 +260,7 @@ export const cwAveQueries = {
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwave/guestAttendanceStatus',
@@ -292,7 +291,7 @@ export const cwAveQueries = {
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwave/guestAttendanceStatusAll',
@@ -319,7 +318,7 @@ export const cwAveQueries = {
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwave/ticketPaymentOptionsByGuestType',
@@ -346,7 +345,7 @@ export const cwAveQueries = {
     queryFn: async () => {
       try {
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwave/allTicketPaymentOptions'
@@ -395,7 +394,7 @@ export interface CwAveGuestAttendanceStatusQuery<TData> extends CwAveReactQuery<
 export interface CwAveEventSegmentsQuery<TData> extends CwAveReactQuery<ArrayOfEventSegments, TData> { }
 export interface CwAveConfigQuery<TData> extends CwAveReactQuery<Config, TData> { }
 export interface CwAveEventInstanceQuery<TData> extends CwAveReactQuery<AvEventInstance, TData> { }
-export interface CwAveGuestTypeDetailsAllQuery<TData> extends CwAveReactQuery<GuestDetails, TData> { }
+export interface CwAveGuestTypeDetailsAllQuery<TData> extends CwAveReactQuery<ArrayOfGuestDetails, TData> { }
 export interface CwAveGuestTypeDetailsQuery<TData> extends CwAveReactQuery<GuestDetails, TData> {
   args: {
     guestType: string;

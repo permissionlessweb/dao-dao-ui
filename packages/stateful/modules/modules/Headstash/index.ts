@@ -7,8 +7,8 @@ import {
   ModuleVisibilityContext,
 } from '@dao-dao/types'
 
-import { InfusionsEditor as Editor } from './InfusionsEditor'
 import { HeadstashRenderer as Renderer } from './HeadstashRenderer'
+import { HeadstashEditors as Editor } from './HeadstashEditors'
 import { HeadstashModuleData } from './types'
 
 export const HeadstashModule: Module<HeadstashModuleData> = {

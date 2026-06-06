@@ -1,10 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query'
 
 import { cwShitstrapExtraQueries } from '@dao-dao/state/query'
-import { EntityDisplay, useQueryLoadingDataWithError } from '@dao-dao/stateful'
+
 import { StatefulShitStrapPaymentLineProps } from '@dao-dao/types/shit'
 
 import { ShitstrapPaymentLine as StatelessShitstrapPaymentLine } from '../../modules/modules/Shitstrap/components/stateless'
+import { useQueryLoadingDataWithError } from '../../hooks'
+import { EntityDisplay } from '../EntityDisplay'
 
 export const ShitstrapPaymentLine = ({
   shitstrapInfo: fallbackInfo,

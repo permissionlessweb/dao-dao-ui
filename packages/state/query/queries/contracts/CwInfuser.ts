@@ -88,7 +88,7 @@ export const cwInfuserQueryKeys = {
 }
 export const cwInfuserQueries = {
   config: <TData = Config>(
-    queryClient: QueryClient,
+    // queryClient: QueryClient,
     { chainId, contractAddress, options }: CwInfuserConfigQuery<TData>
   ): UseQueryOptions<Config, Error, TData> => ({
     queryKey: cwInfuserQueryKeys.config(contractAddress),
@@ -154,7 +154,7 @@ export const cwInfuserQueries = {
   }),
 
   infusionById: <TData = Infusion>(
-    queryClient: QueryClient,
+    // queryClient: QueryClient,
     {
       chainId,
       contractAddress,

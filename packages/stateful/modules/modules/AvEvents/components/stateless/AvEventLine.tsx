@@ -29,7 +29,7 @@ export const AvEventInstanceLine = ({
         config,
         eventChainId,
         eventContract,
-        startDate,
+        // startDate,
         completed,
         eventGuestDetails,
         usherWeight,
@@ -90,7 +90,7 @@ export const AvEventInstanceLine = ({
                     <>
                         <div className="hidden md:block">
                             {/* Event start date */}
-                            {startDate ? (
+                            {/* {startDate ? (
                                 <Tooltip title={startDate && formatDateTimeTz(startDate)}>
                                     <div className="inline-block">
                                         <TimeAgo
@@ -101,7 +101,7 @@ export const AvEventInstanceLine = ({
                                 </Tooltip>
                             ) : (
                                 <p>{t('info.unknown')}</p>
-                            )}
+                            )} */}
                         </div>
 
                         <>

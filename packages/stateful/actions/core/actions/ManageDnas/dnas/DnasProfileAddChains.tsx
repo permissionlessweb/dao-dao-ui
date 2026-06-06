@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import {
   DnasProfileAddDnasKeyProps,
   ProfileAddDnasKeysForm,
-} from '@dao-dao/stateful/actions/core/actions/ManageDnas/types'
+} from '../types'
 import {
   Button,
   ChainLabel,
@@ -131,48 +131,48 @@ export const DnasProfileAddChains = ({
         trigger={
           chainsBeingAdded.length === 0
             ? {
-                type: 'button',
-                tooltip: promptTooltip,
-                props: {
-                  className: 'self-end',
-                  contentContainerClassName: clsx(
-                    textPrompt && '!secondary-text',
-                    promptClassName
-                  ),
-                  children: (
-                    <>
-                      {!!promptTooltip && (
-                        // Show info icon to indicate tooltip is available.
-                        <InfoOutlined
-                          className={clsx(
-                            '!h-4 !w-4',
-                            textPrompt && '!text-icon-secondary'
-                          )}
-                        />
-                      )}
+              type: 'button',
+              tooltip: promptTooltip,
+              props: {
+                className: 'self-end',
+                contentContainerClassName: clsx(
+                  textPrompt && '!secondary-text',
+                  promptClassName
+                ),
+                children: (
+                  <>
+                    {!!promptTooltip && (
+                      // Show info icon to indicate tooltip is available.
+                      <InfoOutlined
+                        className={clsx(
+                          '!h-4 !w-4',
+                          textPrompt && '!text-icon-secondary'
+                        )}
+                      />
+                    )}
 
-                      {prompt}
-                    </>
-                  ),
-                  variant: textPrompt ? 'none' : 'brand',
-                  size: 'lg',
-                  disabled,
-                },
-              }
+                    {prompt}
+                  </>
+                ),
+                variant: textPrompt ? 'none' : 'brand',
+                size: 'lg',
+                disabled,
+              },
+            }
             : {
-                type: 'icon_button',
-                props: {
-                  // Round to match checkbox.
-                  className: clsx('self-end !rounded', {
-                    '-mt-1': size === 'sm',
-                    '-mt-3': size === 'default',
-                  }),
-                  Icon: Add,
-                  variant: 'primary',
-                  size: 'xs',
-                  disabled: status !== 'idle',
-                },
-              }
+              type: 'icon_button',
+              props: {
+                // Round to match checkbox.
+                className: clsx('self-end !rounded', {
+                  '-mt-1': size === 'sm',
+                  '-mt-3': size === 'default',
+                }),
+                Icon: Add,
+                variant: 'primary',
+                size: 'xs',
+                disabled: status !== 'idle',
+              },
+            }
         }
       />
 

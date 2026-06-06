@@ -1,5 +1,5 @@
 import { Coin, StdFee } from '@cosmjs/amino'
-import { QueryClient, UseQueryOptions } from '@tanstack/react-query'
+import { UseQueryOptions } from '@tanstack/react-query'
 
 import {
   ArrayOfShitstrapContract,
@@ -14,6 +14,7 @@ import {
   ShitStrapFactoryQueryClient,
 } from '../../../contracts/ShitStrapFactory'
 import { indexerQueries } from '../indexer'
+import { IQueryClient } from '@dao-dao/types'
 
 export const shitStrapFactoryQueryKeys = {
   contract: [
@@ -113,7 +114,7 @@ export const shitStrapFactoryQueryKeys = {
 }
 export const shitStrapFactoryQueries = {
   listShitstrapContracts: <TData = ArrayOfShitstrapContract>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     {
       chainId,
       contractAddress,
@@ -129,7 +130,7 @@ export const shitStrapFactoryQueries = {
       try {
         // Attempt to fetch data from the indexer.
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwShitstrapFactory/listShitstrapContracts',
@@ -155,7 +156,7 @@ export const shitStrapFactoryQueries = {
       (options?.enabled !== undefined ? options.enabled : true),
   }),
   listShitstrapContractsReverse: <TData = ArrayOfShitstrapContract>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     {
       chainId,
       contractAddress,
@@ -171,7 +172,7 @@ export const shitStrapFactoryQueries = {
       try {
         // Attempt to fetch data from the indexer.
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwShitstrapFactory/listShitstrapContractsReverse',
@@ -197,7 +198,7 @@ export const shitStrapFactoryQueries = {
       (options?.enabled !== undefined ? options.enabled : true),
   }),
   listShitstrapContractsByInstantiator: <TData = ArrayOfShitstrapContract>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     {
       chainId,
       contractAddress,
@@ -213,7 +214,7 @@ export const shitStrapFactoryQueries = {
       // try {
       //   // Attempt to fetch data from the indexer.
       //   return await queryClient.fetchQuery(
-      //     indexerQueries.queryContract(queryClient, {
+      //     indexerQueries.queryContract( {
       //       chainId,
       //       contractAddress,
       //       formula: 'cwShitstrapFactory/listShitstrapContractsByInstantiator',
@@ -246,7 +247,7 @@ export const shitStrapFactoryQueries = {
   listShitstrapContractsByInstantiatorReverse: <
     TData = ArrayOfShitstrapContract,
   >(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     {
       chainId,
       contractAddress,
@@ -263,7 +264,7 @@ export const shitStrapFactoryQueries = {
       try {
         // Attempt to fetch data from the indexer.
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula:
@@ -291,7 +292,7 @@ export const shitStrapFactoryQueries = {
       (options?.enabled !== undefined ? options.enabled : true),
   }),
   listShitstrapContractsByToken: <TData = ArrayOfShitstrapContract>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     {
       chainId,
       contractAddress,
@@ -307,7 +308,7 @@ export const shitStrapFactoryQueries = {
       try {
         // Attempt to fetch data from the indexer.
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwShitstrapFactory/listShitstrapContractsByToken',
@@ -334,7 +335,7 @@ export const shitStrapFactoryQueries = {
       (options?.enabled !== undefined ? options.enabled : true),
   }),
   listShitstrapContractsByTokenReverse: <TData = ArrayOfShitstrapContract>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     {
       chainId,
       contractAddress,
@@ -350,7 +351,7 @@ export const shitStrapFactoryQueries = {
       try {
         // Attempt to fetch data from the indexer.
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwShitstrapFactory/listShitstrapContractsByTokenReverse',
@@ -377,7 +378,7 @@ export const shitStrapFactoryQueries = {
       (options?.enabled !== undefined ? options.enabled : true),
   }),
   ownership: <TData = OwnershipForAddr>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     { chainId, contractAddress, options }: ShitStrapFactoryOwnershipQuery<TData>
   ): UseQueryOptions<OwnershipForAddr, Error, TData> => ({
     queryKey: shitStrapFactoryQueryKeys.ownership(contractAddress),
@@ -385,7 +386,7 @@ export const shitStrapFactoryQueries = {
       try {
         // Attempt to fetch data from the indexer.
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwPayrollFactory/ownership',
@@ -407,7 +408,7 @@ export const shitStrapFactoryQueries = {
       (options?.enabled !== undefined ? options.enabled : true),
   }),
   codeId: <TData = Uint64>(
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     { chainId, contractAddress, options }: ShitStrapFactoryCodeIdQuery<TData>
   ): UseQueryOptions<Uint64, Error, TData> => ({
     queryKey: shitStrapFactoryQueryKeys.codeId(contractAddress),
@@ -415,7 +416,7 @@ export const shitStrapFactoryQueries = {
       try {
         // Attempt to fetch data from the indexer.
         return await queryClient.fetchQuery(
-          indexerQueries.queryContract(queryClient, {
+          indexerQueries.queryContract({
             chainId,
             contractAddress,
             formula: 'cwPayrollFactory/codeId',
@@ -448,9 +449,9 @@ export interface ShitStrapFactoryReactQuery<TResponse, TData = TResponse> {
   }
 }
 export interface ShitStrapFactoryCodeIdQuery<TData>
-  extends ShitStrapFactoryReactQuery<Uint64, TData> {}
+  extends ShitStrapFactoryReactQuery<Uint64, TData> { }
 export interface ShitStrapFactoryOwnershipQuery<TData>
-  extends ShitStrapFactoryReactQuery<OwnershipForAddr, TData> {}
+  extends ShitStrapFactoryReactQuery<OwnershipForAddr, TData> { }
 export interface ShitStrapFactoryListShitstrapContractsByTokenReverseQuery<
   TData,
 > extends ShitStrapFactoryReactQuery<ArrayOfShitstrapContract, TData> {

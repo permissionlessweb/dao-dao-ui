@@ -1,6 +1,6 @@
-import { QueryClient, queryOptions } from '@tanstack/react-query'
+import { queryOptions } from '@tanstack/react-query'
 
-import { TokenType } from '@dao-dao/types'
+import { IQueryClient, TokenType } from '@dao-dao/types'
 import {
   InfusionConfig,
   InfusionWithDetails,
@@ -15,7 +15,7 @@ import { cwInfuserQueries } from './CwInfuser'
  * Fetch a infusion instance via id
  */
 export const fetchInfusionConfig = async (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   {
     chainId,
     address,
@@ -26,7 +26,7 @@ export const fetchInfusionConfig = async (
 ): Promise<InfusionConfig> => {
   const config = await Promise.all([
     queryClient.fetchQuery(
-      cwInfuserQueries.config(queryClient, {
+      cwInfuserQueries.config({
         chainId,
         contractAddress: address,
       })
@@ -38,7 +38,7 @@ export const fetchInfusionConfig = async (
     // Always fetch min_creation_fee token info if it exists
     config[0].min_creation_fee?.denom
       ? queryClient.fetchQuery(
-        tokenQueries.info(queryClient, {
+        tokenQueries.info({
           chainId,
           type: TokenType.Native,
           denomOrAddress: config[0].min_creation_fee.denom,
@@ -49,7 +49,7 @@ export const fetchInfusionConfig = async (
     // Always fetch min_infusion_fee token info if it exists
     config[0].min_infusion_fee?.denom
       ? queryClient.fetchQuery(
-        tokenQueries.info(queryClient, {
+        tokenQueries.info({
           chainId,
           type: TokenType.Native,
           denomOrAddress: config[0].min_infusion_fee.denom,
@@ -87,7 +87,7 @@ export const fetchInfusionConfig = async (
  * Fetch a infusion instance via id
  */
 export const fetchInfusionById = async (
-  queryClient: QueryClient,
+  queryClient: IQueryClient,
   {
     chainId,
     address,
@@ -101,7 +101,7 @@ export const fetchInfusionById = async (
   // grab infusion
   const infusion = await Promise.all([
     queryClient.fetchQuery(
-      cwInfuserQueries.infusionById(queryClient, {
+      cwInfuserQueries.infusionById({
         chainId,
         contractAddress: address,
         args: { id },
@@ -144,7 +144,7 @@ export const fetchInfusionById = async (
     const paymentSub = cols.payment_substitute
       ? await Promise.all([
         queryClient.fetchQuery(
-          tokenQueries.info(queryClient, {
+          tokenQueries.info({
             chainId,
             type: TokenType.Native,
             denomOrAddress: cols.payment_substitute.denom,
@@ -176,7 +176,7 @@ export const fetchInfusionById = async (
   const mint_fee_generic = infusion[0].infusion_params.mint_fee
     ? await Promise.all([
       queryClient.fetchQuery(
-        tokenQueries.info(queryClient, {
+        tokenQueries.info({
           chainId,
           type: TokenType.Native,
           denomOrAddress: infusion[0].infusion_params.mint_fee.denom,
@@ -227,7 +227,7 @@ export const cwInfuserExtraQueries = {
    */
 
   infusionById: (
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     options: Parameters<typeof fetchInfusionById>[1]
   ) =>
     queryOptions({
@@ -236,7 +236,7 @@ export const cwInfuserExtraQueries = {
     }),
 
   config: (
-    queryClient: QueryClient,
+    queryClient: IQueryClient,
     options: Parameters<typeof fetchInfusionConfig>[1]
   ) =>
     queryOptions({

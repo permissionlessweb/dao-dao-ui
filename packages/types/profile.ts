@@ -29,6 +29,7 @@ export type PfpkProfile = {
    * Map chain ID to public key and address.
    */
   chains: PfpkChainRecord
+  nonce: number
 }
 
 export type PfpkChainRecord = Record<
@@ -145,15 +146,16 @@ export type UnifiedProfile = PfpkProfile & {
    * Backup image URL that will be used if no PFPK NFT is set.
    */
   backupImageUrl: string
+
 }
 
 export type KeplrWalletProfile = {
   profile:
-    | {}
-    | {
-        imageUrl: string
-        version: number
-      }
+  | {}
+  | {
+    imageUrl: string
+    version: number
+  }
 }
 
 export type ResolvedProfile = {

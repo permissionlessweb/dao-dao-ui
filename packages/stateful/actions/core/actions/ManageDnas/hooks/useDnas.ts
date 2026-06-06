@@ -27,7 +27,6 @@ import {
 } from '@dao-dao/utils'
 
 import {
-  useCfWorkerAuthPostRequest,
   useQueryLoadingData,
   useRefreshProfile,
   useWallet,
@@ -44,6 +43,7 @@ import {
   UseDnasKeysFunction,
   UsingDnasKeysStatus,
 } from '../types'
+import { useCfWorkerAuthPostRequest } from '../../../../../hooks/useCfWorkerAuthPostRequest'
 
 export type DnasKeyMap =
   | Map<string, any>
@@ -242,50 +242,50 @@ export const useDnas = ({
     (!address && !isWalletConnected) || dnasProfile.loading
       ? { loading: true }
       : {
-          loading: false,
-          data: Object.entries({
-            ...dnasProfile.data.chains,
-            // Add wallet-connected account if not already in the profile. This
-            // should only be the case if no profile exists yet and an empty
-            // profile with no chains is being returned.
-            ...(!dnasProfile.data.chains[walletChainId] &&
+        loading: false,
+        data: Object.entries({
+          ...dnasProfile.data.chains,
+          // Add wallet-connected account if not already in the profile. This
+          // should only be the case if no profile exists yet and an empty
+          // profile with no chains is being returned.
+          ...(!dnasProfile.data.chains[walletChainId] &&
             !currentHexPublicKey.loading &&
             profileAddress
-              ? {
-                  [walletChainId]: {
-                    publicKey: {
-                      type: getPublicKeyTypeForChain(walletChainId),
-                      hex: currentHexPublicKey.data,
-                    },
-                    address: profileAddress,
-                  },
-                }
-              : {}),
-          })
-            .flatMap(([chainId, { address, publicKey }]): ProfileChain | [] => {
-              const chain = maybeGetChainForChainId(chainId)
-              const supported = chain ? isSupportedChain(chainId) : false
+            ? {
+              [walletChainId]: {
+                publicKey: {
+                  type: getPublicKeyTypeForChain(walletChainId),
+                  hex: currentHexPublicKey.data,
+                },
+                address: profileAddress,
+              },
+            }
+            : {}),
+        })
+          .flatMap(([chainId, { address, publicKey }]): ProfileChain | [] => {
+            const chain = maybeGetChainForChainId(chainId)
+            const supported = chain ? isSupportedChain(chainId) : false
 
-              return chain &&
-                // Only include chains that are on the right network type.
-                (chain.chainRegistry?.network_type === 'mainnet') === MAINNET &&
-                // Filter by onlySupported filter.
-                (!onlySupported || supported)
-                ? {
-                    chainId,
-                    chain,
-                    supported,
-                    address,
-                    publicKey,
-                  }
-                : []
-            })
-            .sort((a, b) =>
-              getDisplayNameForChainId(a.chainId).localeCompare(
-                getDisplayNameForChainId(b.chainId)
-              )
-            ),
-        }
+            return chain &&
+              // Only include chains that are on the right network type.
+              (chain.chainRegistry?.network_type === 'mainnet') === MAINNET &&
+              // Filter by onlySupported filter.
+              (!onlySupported || supported)
+              ? {
+                chainId,
+                chain,
+                supported,
+                address,
+                publicKey,
+              }
+              : []
+          })
+          .sort((a, b) =>
+            getDisplayNameForChainId(a.chainId).localeCompare(
+              getDisplayNameForChainId(b.chainId)
+            )
+          ),
+      }
 
   const [addChainsStatus, setAddChainsStatus] = useState<AddDnasStatus>('idle')
   const [usingDnasKeysStatus, setUsingDnasKeysStatus] =
@@ -535,7 +535,7 @@ export const useDnas = ({
         try {
           const profileUpdate: PfpkProfileUpdate = {
             ...profileUpdates,
-            nonce: profileNonce,
+            // nonce: profileNonce,
           }
 
           await dnasApi.postRequest(
