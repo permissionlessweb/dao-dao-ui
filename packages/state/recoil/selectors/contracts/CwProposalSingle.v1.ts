@@ -1,6 +1,6 @@
 import { selectorFamily } from 'recoil'
 
-import { WithChainId } from '@dao-dao/types'
+import { SupportedChainIndexerMode, WithChainId } from '@dao-dao/types'
 import {
   ConfigResponse,
   ListProposalsResponse,
@@ -116,6 +116,10 @@ export const proposalSelector = selectorFamily<
             id: params[0].proposalId,
           },
           id,
+          allowedModes: [
+            SupportedChainIndexerMode.Tx,
+            SupportedChainIndexerMode.All,
+          ],
         })
       )
       if (proposalResponse) {
@@ -145,6 +149,10 @@ export const listProposalsSelector = selectorFamily<
           formula: 'daoProposalSingle/listProposals',
           args: params[0],
           id,
+          allowedModes: [
+            SupportedChainIndexerMode.Tx,
+            SupportedChainIndexerMode.All,
+          ],
         })
       )
       if (proposals) {
@@ -174,6 +182,10 @@ export const reverseProposalsSelector = selectorFamily<
           formula: 'daoProposalSingle/reverseProposals',
           args: params[0],
           id,
+          allowedModes: [
+            SupportedChainIndexerMode.Tx,
+            SupportedChainIndexerMode.All,
+          ],
         })
       )
       if (proposals) {
@@ -242,6 +254,10 @@ export const getVoteSelector = selectorFamily<
           formula: 'daoProposalSingle/vote',
           args: params[0],
           id,
+          allowedModes: [
+            SupportedChainIndexerMode.Tx,
+            SupportedChainIndexerMode.All,
+          ],
         })
       )
       // Null when indexer fails. Undefined when no vote exists.
@@ -279,6 +295,10 @@ export const listVotesSelector = selectorFamily<
           formula: 'daoProposalSingle/listVotes',
           args: params[0],
           id,
+          allowedModes: [
+            SupportedChainIndexerMode.Tx,
+            SupportedChainIndexerMode.All,
+          ],
         })
       )
       if (votes) {

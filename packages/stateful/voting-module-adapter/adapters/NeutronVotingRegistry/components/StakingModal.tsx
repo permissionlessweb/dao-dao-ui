@@ -10,7 +10,6 @@ import {
   genericTokenBalanceSelector,
   neutronVaultQueries,
   refreshDaoVotingPowerAtom,
-  refreshFollowingDaosAtom,
   refreshWalletBalancesIdAtom,
   stakingLoadingAtom,
 } from '@dao-dao/state'
@@ -28,6 +27,7 @@ import {
 } from '@dao-dao/types'
 import {
   CHAIN_GAS_MULTIPLIER,
+  MISCONFIGURED_DAOS,
   makeCombineQueryResultsIntoLoadingDataWithError,
   processError,
   tokensEqual,
@@ -143,10 +143,8 @@ const InnerStakingModal = ({
   const setRefreshDaoVotingPower = useSetRecoilState(
     refreshDaoVotingPowerAtom(votingModule.dao.coreAddress)
   )
-  const setRefreshFollowedDaos = useSetRecoilState(refreshFollowingDaosAtom)
   const refreshDaoVotingPower = () => {
     setRefreshDaoVotingPower((id) => id + 1)
-    setRefreshFollowedDaos((id) => id + 1)
   }
 
   const awaitNextBlock = useAwaitNextBlock()
@@ -167,6 +165,19 @@ const InnerStakingModal = ({
         setStakingLoading(true)
 
         try {
+          // Prevent staking to misconfigured DAOs.
+          if (
+            MISCONFIGURED_DAOS.some(
+              (misconfiguredDao) =>
+                misconfiguredDao.chainId === votingModule.dao.chainId &&
+                misconfiguredDao.coreAddress === votingModule.dao.coreAddress
+            )
+          ) {
+            throw new Error(
+              'This DAO is misconfigured and cannot be staked to. Please find and stake with the correct DAO.'
+            )
+          }
+
           await doStake(
             CHAIN_GAS_MULTIPLIER,
             undefined,

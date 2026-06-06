@@ -1,28 +1,23 @@
-import { wallets as coin98Wallets } from '@cosmos-kit/coin98'
 import { wallets as compassWallets } from '@cosmos-kit/compass'
 import { Endpoints } from '@cosmos-kit/core'
 import { wallets as cosmosExtensionMetamaskWallets } from '@cosmos-kit/cosmos-extension-metamask'
 import { wallets as cosmostationWallets } from '@cosmos-kit/cosmostation'
 import { wallets as exodusWallets } from '@cosmos-kit/exodus'
-import { wallets as frontierWallets } from '@cosmos-kit/frontier'
 import { wallets as galaxyStationWallets } from '@cosmos-kit/galaxy-station'
 import { wallets as keplrWallets } from '@cosmos-kit/keplr'
 import { wallets as keplrExtensionWallets } from '@cosmos-kit/keplr-extension'
 import { wallets as leapWallets } from '@cosmos-kit/leap'
 import { wallets as leapMetamaskWallets } from '@cosmos-kit/leap-metamask-cosmos-snap'
-import { wallets as ledgerWallets } from '@cosmos-kit/ledger'
-import { wallets as ninjiWallets } from '@cosmos-kit/ninji'
+// import { wallets as ledgerWallets } from '@cosmos-kit/ledger'
 import { wallets as okxWallets } from '@cosmos-kit/okxwallet'
 import { wallets as omniWallets } from '@cosmos-kit/omni'
 import { wallets as owalletWallets } from '@cosmos-kit/owallet'
 import { ChainProvider } from '@cosmos-kit/react-lite'
 import { wallets as shellWallets } from '@cosmos-kit/shell'
 import { wallets as stationWallets } from '@cosmos-kit/station'
-import { wallets as tailwindWallets } from '@cosmos-kit/tailwind'
 import { wallets as trustWallets } from '@cosmos-kit/trust'
-import { wallets as vectisWallets } from '@cosmos-kit/vectis'
+import { wallets as vultisigWallets } from '@cosmos-kit/vultisig'
 import { PromptSign, makeWeb3AuthWallets } from '@cosmos-kit/web3auth'
-import { wallets as xdefiWallets } from '@cosmos-kit/xdefi'
 import { useQueryClient } from '@tanstack/react-query'
 import { PropsWithChildren, ReactNode, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -121,7 +116,8 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     [setWeb3AuthPrompt]
   )
 
-  const getSigningOptions = makeGetSignerOptions(useQueryClient())
+  const queryClient = useQueryClient()
+  const getSigningOptions = makeGetSignerOptions(queryClient)
 
   // Auto-connect to Keplr mobile web if in that context.
   const mountedInBrowser = useRecoilValue(mountedInBrowserAtom)
@@ -149,22 +145,17 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
           ...leapWallets.filter((w) => !leapMetamaskWallets.includes(w)),
           ...galaxyStationWallets,
           ...stationWallets,
-          ...vectisWallets,
           ...trustWallets,
           ...cosmostationWallets,
-          ...coin98Wallets,
           ...omniWallets,
           ...shellWallets,
-          ...xdefiWallets,
           ...okxWallets,
           ...compassWallets,
-          ...frontierWallets,
           ...cosmosExtensionMetamaskWallets,
           ...exodusWallets,
-          ...ledgerWallets,
-          ...tailwindWallets,
-          ...ninjiWallets,
+          // ...ledgerWallets,
           ...owalletWallets,
+          ...vultisigWallets,
         ].sort((a, b) =>
           a.walletInfo.prettyName.localeCompare(b.walletInfo.prettyName)
         ),

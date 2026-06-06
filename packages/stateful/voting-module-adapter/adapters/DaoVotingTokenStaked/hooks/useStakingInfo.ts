@@ -1,17 +1,15 @@
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { constSelector, useSetRecoilState } from 'recoil'
 
 import { HugeDecimal } from '@dao-dao/math'
 import {
-  DaoVotingNativeStakedSelectors,
   DaoVotingTokenStakedSelectors,
   chainQueries,
   daoVotingTokenStakedQueries,
   refreshClaimsIdAtom,
   refreshWalletBalancesIdAtom,
 } from '@dao-dao/state'
-import { TokenStakedVotingModule } from '@dao-dao/state/clients'
 import { useCachedLoading, useVotingModule } from '@dao-dao/stateless'
 import { claimAvailable } from '@dao-dao/utils'
 
@@ -26,10 +24,9 @@ export const useStakingInfo = ({
 }: UseStakingInfoOptions = {}): UseStakingInfoResponse => {
   const votingModule = useVotingModule()
   const { address: walletAddress } = useWallet()
-  const queryClient = useQueryClient()
 
   const { data: config } = useSuspenseQuery(
-    daoVotingTokenStakedQueries.getConfig(queryClient, {
+    daoVotingTokenStakedQueries.getConfig({
       chainId: votingModule.chainId,
       contractAddress: votingModule.address,
     })
@@ -90,34 +87,16 @@ export const useStakingInfo = ({
   )
 
   // Total staked value
-  const loadingTotalStakedValue = useCachedLoading(
-    fetchTotalStakedValue
-      ? (votingModule instanceof TokenStakedVotingModule
-          ? DaoVotingTokenStakedSelectors
-          : DaoVotingNativeStakedSelectors
-        ).totalPowerAtHeightSelector({
-          chainId: votingModule.chainId,
-          contractAddress: votingModule.address,
-          params: [{}],
-        })
-      : constSelector(undefined),
-    undefined
-  )
+  const loadingTotalStakedValue = useQueryLoadingDataWithError({
+    ...votingModule.getTotalVotingPowerQuery(),
+    enabled: fetchTotalStakedValue,
+  })
 
   // Wallet staked value
-  const loadingWalletStakedValue = useCachedLoading(
-    fetchWalletStakedValue && walletAddress
-      ? (votingModule instanceof TokenStakedVotingModule
-          ? DaoVotingTokenStakedSelectors
-          : DaoVotingNativeStakedSelectors
-        ).votingPowerAtHeightSelector({
-          chainId: votingModule.chainId,
-          contractAddress: votingModule.address,
-          params: [{ address: walletAddress }],
-        })
-      : constSelector(undefined),
-    undefined
-  )
+  const loadingWalletStakedValue = useQueryLoadingDataWithError({
+    ...votingModule.getVotingPowerQuery(walletAddress),
+    enabled: fetchWalletStakedValue && !!walletAddress,
+  })
 
   return {
     stakingContractAddress: votingModule.address,
@@ -133,7 +112,7 @@ export const useStakingInfo = ({
     // Total staked value
     loadingTotalStakedValue: loadingTotalStakedValue.loading
       ? { loading: true }
-      : !loadingTotalStakedValue.data
+      : loadingTotalStakedValue.errored
         ? undefined
         : {
             loading: false,
@@ -142,7 +121,7 @@ export const useStakingInfo = ({
     // Wallet staked value
     loadingWalletStakedValue: loadingWalletStakedValue.loading
       ? { loading: true }
-      : !loadingWalletStakedValue.data
+      : loadingWalletStakedValue.errored
         ? undefined
         : {
             loading: false,

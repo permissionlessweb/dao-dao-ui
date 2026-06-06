@@ -101,12 +101,16 @@ export enum ChainId {
   SecretMainnet = 'secret-4',
   SecretTestnet = 'pulsar-3',
   BabylonTestnet = 'bbn-test-5',
+  ThorchainMainnet = 'thorchain-1',
   ThorchainStagenet = 'thorchain-stagenet-2',
   IntergazeMainnet = 'intergaze-1',
   DaodiseoTestnet = 'ithaca-1',
   TerpMainnet = 'morocco-1',
   TerpTestnet = '120u-1',
   KopiMainnet = 'luwak-1',
+  RegenMainnet = 'regen-1',
+  RegenTestnet = 'regen-upgrade',
+  PryzmMainnet = 'pryzm-1',
 
   // Local testing chain powered by Starship.
   StarshipTestChain = 'starship-chain',
@@ -161,6 +165,21 @@ export type ConfiguredChain = BaseChainConfig & {
    * Chain info.
    */
   chain: AnyChain
+}
+
+export enum SupportedChainIndexerMode {
+  /**
+   * No indexer.
+   */
+  None = 'none',
+  /**
+   * Just the TX indexer. This is the block-based indexer.
+   */
+  Tx = 'tx',
+  /**
+   * All indexer features. This is the state-based indexer.
+   */
+  All = 'all',
 }
 
 export type SupportedChainConfig = Omit<BaseChainConfig, 'chainId'> & {
@@ -240,14 +259,18 @@ export type SupportedChainConfig = Omit<BaseChainConfig, 'chainId'> & {
    */
   createViaGovernance?: boolean
   /**
+   * Whether or not to create a SubDAO through its parent DAO.
+   */
+  createSubDaoViaDao?: boolean
+  /**
    * Whether or not this chain supports instantiate2 for creating DAOs with
    * extensions setup.
    */
   noInstantiate2Create?: boolean
   /**
-   * Whether or not this chain has an indexer.
+   * Status of the indexer.
    */
-  noIndexer?: boolean
+  indexer: SupportedChainIndexerMode
   /**
    * If this chain uses a DAO as its chain governance instead of x/gov, set this
    * to the DAO's address.

@@ -1,8 +1,7 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { HugeDecimal } from '@dao-dao/math'
-import { indexerQueries } from '@dao-dao/state/query'
+import { daoVotingCw20StakedExtraQueries } from '@dao-dao/state/query'
 import {
   MembersTab as StatelessMembersTab,
   useVotingModule,
@@ -14,7 +13,7 @@ import {
   DaoMemberCard,
   EntityDisplay,
 } from '../../../../components'
-import { useQueryLoadingDataWithError } from '../../../../hooks'
+import { useEntityMap, useQueryLoadingDataWithError } from '../../../../hooks'
 import { useGovernanceTokenInfo } from '../hooks/useGovernanceTokenInfo'
 
 export const MembersTab = () => {
@@ -22,21 +21,18 @@ export const MembersTab = () => {
   const votingModule = useVotingModule()
   const { governanceToken } = useGovernanceTokenInfo()
 
-  const queryClient = useQueryClient()
   const members = useQueryLoadingDataWithError(
-    indexerQueries.queryContract(queryClient, {
+    daoVotingCw20StakedExtraQueries.topStakers({
       chainId: votingModule.chainId,
-      contractAddress: votingModule.address,
-      formula: 'daoVotingCw20Staked/topStakers',
-      noFallback: true,
+      address: votingModule.address,
     }),
     (data) =>
-      data?.map(
+      data.map(
         ({
           address,
           balance,
           votingPowerPercent,
-        }: any): StatefulDaoMemberCardProps => ({
+        }): StatefulDaoMemberCardProps => ({
           address,
           balanceLabel: t('title.staked'),
           balance: {
@@ -54,10 +50,18 @@ export const MembersTab = () => {
       ) ?? []
   )
 
+  const { map: entityMap } = useEntityMap({
+    addresses:
+      members.loading || members.errored
+        ? []
+        : members.data.map((member) => member.address),
+  })
+
   return (
     <StatelessMembersTab
       ButtonLink={ButtonLink}
       DaoMemberCard={DaoMemberCard}
+      entityMap={entityMap}
       members={members}
       topVoters={{
         show: true,

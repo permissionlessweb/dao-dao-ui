@@ -14,7 +14,7 @@ import {
 import { getDaoProposalSinglePrefill } from '@dao-dao/utils'
 
 import { ButtonLink, DaoMemberCard } from '../../../../components'
-import { useMembership } from '../../../../hooks'
+import { useEntityMap, useMembership } from '../../../../hooks'
 import { useLoadingVotingModuleInfo } from '../hooks/useLoadingVotingModuleInfo'
 
 export const MembersTab = () => {
@@ -58,6 +58,13 @@ export const MembersTab = () => {
               })) || [],
           }
 
+  const { map: entityMap } = useEntityMap({
+    addresses:
+      members.loading || members.errored
+        ? []
+        : members.data.map((member) => member.address),
+  })
+
   return (
     <StatelessMembersTab
       ButtonLink={ButtonLink}
@@ -79,6 +86,7 @@ export const MembersTab = () => {
           }),
         }
       )}
+      entityMap={entityMap}
       isMember={isMember}
       members={members}
       topVoters={{

@@ -2,13 +2,12 @@ import clsx from 'clsx'
 import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import {
-  ButtonLink,
-  CosmosMessageDisplay,
-  InfoLineCard,
-  InputLabel,
-} from '@dao-dao/stateless'
 import { ProposalExecutionMetadata } from '@dao-dao/types'
+
+import { ButtonLink } from '../buttons'
+import { InfoLineCard } from '../InfoLineCard'
+import { InputLabel } from '../inputs'
+import { RawJsonDisplay } from '../RawJsonDisplay'
 
 export type ProposalExecutionMetadataRendererProps = {
   /**
@@ -110,7 +109,7 @@ export const ProposalExecutionMetadataRenderer = ({
                         className="!rounded-none !bg-transparent flex-col items-stretch !pt-2"
                         label={t('form.data')}
                         value={
-                          <CosmosMessageDisplay
+                          <RawJsonDisplay
                             className="grow"
                             value={stringifiedData}
                           />

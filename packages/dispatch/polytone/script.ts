@@ -9,17 +9,23 @@ import chalk from 'chalk'
 import { Command } from 'commander'
 import toml from 'toml'
 
+import { chainQueries, makeGetSignerOptions, skipQueries } from '@dao-dao/state'
+import { MsgUpdateInstantiateConfig } from '@dao-dao/types/protobuf/codegen/cosmwasm/wasm/v1/tx'
+import { AccessType } from '@dao-dao/types/protobuf/codegen/cosmwasm/wasm/v1/types'
 import {
-  chainQueries,
-  makeGetSignerOptions,
-  makeReactQueryClient,
-  skipQueries,
-} from '@dao-dao/state'
-import { Order } from '@dao-dao/types/protobuf/codegen/ibc/core/channel/v1/channel'
+  Order,
+  State,
+  stateToJSON,
+} from '@dao-dao/types/protobuf/codegen/ibc/core/channel/v1/channel'
 import {
+  CHAIN_GAS_MULTIPLIER,
+  cosmwasmProtoRpcClientRouter,
+  getIbcTransferInfoBetweenChains,
   getNativeTokenForChainId,
   getRpcForChainId,
   ibcProtoRpcClientRouter,
+  isErrorWithSubstring,
+  makeDependencyTrackedQueryClient,
   maybeGetChainForChainId,
 } from '@dao-dao/utils'
 
@@ -66,6 +72,10 @@ program.option(
   'create a new IBC connection. you probably do not want to use this if a connection already exists. creating your own connection increases the risk that the IBC clients expire and need to be reset, since activity keeps connections alive. using an existing connection means there is a higher chance others will be using the connection, which is a good thing.'
 )
 program.option(
+  '-e, --existing-channel <channel ID>',
+  'existing source channel ID. if provided, will not create a new channel and instead attempt to fetch the existing channel pair.'
+)
+program.option(
   '--note <contract address>',
   'note contract to use, instead of creating a new one. you may use this if the script errored before.'
 )
@@ -84,6 +94,7 @@ const {
   dest: destChainId,
   existingConnection,
   newConnection,
+  existingChannel,
   note: _note,
   listener: _listener,
   voice: _voice,
@@ -97,7 +108,7 @@ if (!mnemonic) {
 }
 
 const main = async () => {
-  const queryClient = await makeReactQueryClient()
+  const queryClient = await makeDependencyTrackedQueryClient()
 
   const { noteCodeId, listenerCodeId } =
     chains[srcChainId as keyof typeof chains] || {}
@@ -124,14 +135,14 @@ const main = async () => {
     maybeGetChainForChainId(srcChainId) ||
       // Fetch from Skip API if doesn't exist locally.
       queryClient.fetchQuery(
-        skipQueries.chain(queryClient, {
+        skipQueries.chain({
           chainId: srcChainId,
         })
       ),
     maybeGetChainForChainId(destChainId) ||
       // Fetch from Skip API if doesn't exist locally.
       queryClient.fetchQuery(
-        skipQueries.chain(queryClient, {
+        skipQueries.chain({
           chainId: destChainId,
         })
       ),
@@ -248,13 +259,29 @@ const main = async () => {
    * engineering the transfer channel for the fee denom.
    */
   const getSrcConnectionId = async () => {
-    const { trace } = await queryClient.fetchQuery(
-      skipQueries.recommendedAsset(queryClient, {
-        fromChainId: destChainId,
-        denom: getNativeTokenForChainId(destChainId).denomOrAddress,
-        toChainId: srcChainId,
-      })
-    )
+    let trace: string | undefined
+    try {
+      trace = (
+        await queryClient.fetchQuery(
+          skipQueries.recommendedAsset({
+            fromChainId: destChainId,
+            denom: getNativeTokenForChainId(destChainId).denomOrAddress,
+            toChainId: srcChainId,
+          })
+        )
+      ).trace
+    } catch (error) {
+      if (isErrorWithSubstring(error, 'No Skip recommended asset found')) {
+        // If not found, try to get existing IBC transfer channel.
+        const { sourceChain } = getIbcTransferInfoBetweenChains(
+          srcChainId,
+          destChainId
+        )
+        return sourceChain.connection_id
+      } else {
+        throw error
+      }
+    }
 
     if (!trace) {
       throw new Error('No trace found')
@@ -422,6 +449,76 @@ const main = async () => {
     override: _voice,
   })
 
+  // Query existing proxy instantiate config, since the destination chain may
+  // restrict instantiation to specific addresses, and thus we need to update
+  // the proxy code ID instantiation permissions to allow the voice to
+  // instantiate new proxies.
+  const { codeInfo: existingProxyCodeInfo } = await (
+    await cosmwasmProtoRpcClientRouter.connect(destChainId)
+  ).wasm.v1.code({
+    codeId: BigInt(proxyCodeId),
+  })
+  if (!existingProxyCodeInfo) {
+    throw new Error(
+      `Proxy code ID ${proxyCodeId} info not found on destination chain ${destChainId}.`
+    )
+  }
+
+  if (existingProxyCodeInfo.instantiatePermission) {
+    switch (existingProxyCodeInfo.instantiatePermission.permission) {
+      case AccessType.Unspecified:
+        throw new Error(
+          `Proxy code ID ${proxyCodeId} has unspecified instantiate permission.`
+        )
+      case AccessType.Nobody:
+        throw new Error(
+          `Proxy code ID ${proxyCodeId} does not allow anybody to instantiate.`
+        )
+      case AccessType.Everybody:
+        break
+      case AccessType.AnyOfAddresses: {
+        if (
+          existingProxyCodeInfo.instantiatePermission.addresses.includes(voice)
+        ) {
+          log(
+            chalk.green(
+              `\nVoice ${voice} already has permission to instantiate proxy code ID ${proxyCodeId}.`
+            )
+          )
+        } else {
+          log(
+            chalk.yellow(
+              '\nAdding voice to proxy code ID instantiate permissions...'
+            )
+          )
+
+          await destClient.signAndBroadcast(
+            destSender,
+            [
+              {
+                typeUrl: MsgUpdateInstantiateConfig.typeUrl,
+                value: MsgUpdateInstantiateConfig.fromPartial({
+                  sender: destSender,
+                  codeId: BigInt(proxyCodeId),
+                  newInstantiatePermission: {
+                    permission: AccessType.AnyOfAddresses,
+                    addresses: [
+                      ...existingProxyCodeInfo.instantiatePermission.addresses,
+                      voice,
+                    ],
+                  },
+                }),
+              },
+            ],
+            CHAIN_GAS_MULTIPLIER
+          )
+
+          log(chalk.green('Voice now has permission to instantiate proxy.'))
+        }
+      }
+    }
+  }
+
   // Connect note and voice over IBC.
 
   log()
@@ -508,18 +605,76 @@ const main = async () => {
     )
   }
 
-  const channelPair = await link.createChannel(
-    'A',
-    `wasm.${note}`,
-    `wasm.${voice}`,
-    Order.ORDER_UNORDERED,
-    'polytone-1'
-  )
+  const srcPort = `wasm.${note}`
+  const destPort = `wasm.${voice}`
 
-  log()
-  log(chalk.green('Done! UI config entry:'))
+  let sourceChannelId: string | undefined
+  let destChannelId: string | undefined
+  if (existingChannel && typeof existingChannel === 'string') {
+    const { channel: sourceChannel } =
+      await link.endA.client.query.ibc.channel.channel(srcPort, existingChannel)
+    if (!sourceChannel) {
+      throw new Error(
+        `Existing channel ${existingChannel} (port ${srcPort}) not found`
+      )
+    }
+    sourceChannelId = existingChannel
+    destChannelId = sourceChannel.counterparty.channelId
 
-  await polytoneConfig.set({
+    if (
+      sourceChannel.connectionHops.length !== 1 ||
+      sourceChannel.connectionHops[0] !== srcConnectionId
+    ) {
+      throw new Error(
+        `Existing channel ${existingChannel} does not match source connection ID ${srcConnectionId}`
+      )
+    }
+    if (sourceChannel.counterparty.portId !== destPort) {
+      throw new Error(
+        `Existing channel ${existingChannel} (port ${srcPort})'s counterparty channel ID ${sourceChannel.counterparty.channelId} (port ${sourceChannel.counterparty.portId}) does not match destination port ${destPort}`
+      )
+    }
+    if (sourceChannel.state !== State.STATE_OPEN) {
+      throw new Error(
+        `Existing channel ${existingChannel} is not open: ${stateToJSON(sourceChannel.state)}`
+      )
+    }
+    const { channel: destChannel } =
+      await link.endB.client.query.ibc.channel.channel(destPort, destChannelId)
+    if (!destChannel) {
+      throw new Error(
+        `Existing destination channel ${existingChannel} (port ${destPort}) not found`
+      )
+    }
+    if (destChannel.state !== State.STATE_OPEN) {
+      throw new Error(
+        `Existing destination channel ${existingChannel} is not open: ${stateToJSON(destChannel.state)}`
+      )
+    }
+  } else {
+    try {
+      const channelPair = await link.createChannel(
+        'A',
+        srcPort,
+        destPort,
+        Order.ORDER_UNORDERED,
+        'polytone-1'
+      )
+      sourceChannelId = channelPair.src.channelId
+      destChannelId = channelPair.dest.channelId
+    } catch (err) {
+      log(
+        chalk.yellow(
+          `Failed to create channel. Run with ${chalk.bold(
+            `\`-s ${srcChainId} -d ${destChainId} --note ${note} --listener ${listener} --voice ${voice} --existing-channel EXISTING_CHANNEL_ID\``
+          )} to add it to the config anyway.`
+        )
+      )
+      throw err
+    }
+  }
+
+  const entry = await polytoneConfig.set({
     srcChainId,
     destChainId,
     entry: {
@@ -528,10 +683,14 @@ const main = async () => {
       voice,
       localConnection: srcConnectionId,
       remoteConnection: destConnectionId,
-      localChannel: channelPair.src.channelId,
-      remoteChannel: channelPair.dest.channelId,
+      localChannel: sourceChannelId,
+      remoteChannel: destChannelId,
     },
   })
+
+  log()
+  log(chalk.green('Done! UI config entry:'))
+  log(JSON.stringify(entry, null, 2))
 }
 
 main()
@@ -545,3 +704,8 @@ main()
     log()
     process.exit(1)
   })
+
+process.on('SIGINT', () => {
+  log(chalk.yellow('\nSIGINT received. Exiting...'))
+  process.exit(0)
+})

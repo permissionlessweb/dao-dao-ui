@@ -89,8 +89,8 @@ enum RelayStatus {
 
 const RELAYER_FUNDS_NEEDED: Partial<Record<ChainId | string, number>> = {
   [ChainId.CosmosHubMainnet]: 0.06 * 10 ** 6,
-  [ChainId.JunoMainnet]: 1 * 10 ** 6,
-  [ChainId.OsmosisMainnet]: 1 * 10 ** 6,
+  [ChainId.JunoMainnet]: 4 * 10 ** 6,
+  [ChainId.OsmosisMainnet]: 4 * 10 ** 6,
   [ChainId.StargazeMainnet]: 10 * 10 ** 6,
   [ChainId.NeutronMainnet]: 5 * 10 ** 6,
   [ChainId.TerraMainnet]: 0.1 * 10 ** 6,
@@ -102,8 +102,9 @@ const RELAYER_FUNDS_NEEDED: Partial<Record<ChainId | string, number>> = {
   [ChainId.InjectiveMainnet]: 0.03 * 10 ** 18,
   [ChainId.TerraClassicMainnet]: 1000 * 10 ** 6,
   [ChainId.OmniflixHubMainnet]: 1 * 10 ** 6,
-  [ChainId.BitsongMainnet]: 10 * 10 ** 6,
+  [ChainId.BitsongMainnet]: 50 * 10 ** 6,
   [ChainId.NobleMainnet]: 0.1 * 10 ** 6,
+  [ChainId.PryzmMainnet]: 1 * 10 ** 6,
 }
 
 type Relayer = {
@@ -355,7 +356,7 @@ export const SelfRelayExecuteModal = ({
           }
 
           const feeToken = await queryClient.fetchQuery(
-            tokenQueries.info(queryClient, {
+            tokenQueries.info({
               chainId: chain.chainId,
               type: TokenType.Native,
               denomOrAddress: feeDenom,
@@ -390,6 +391,8 @@ export const SelfRelayExecuteModal = ({
                 estimatedIndexerTime: 3000,
                 // Force ignore version type mismatch caused by dependencies.
                 gasPrice: new DynamicGasPrice(queryClient, chain) as any,
+                // Set default fee multiplier.
+                defaultFee: CHAIN_GAS_MULTIPLIER,
               }
             )
           )

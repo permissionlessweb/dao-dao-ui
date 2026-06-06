@@ -1,0 +1,34 @@
+diff --git a/build/modules/tx/queries.d.ts b/build/modules/tx/queries.d.ts
+index 804d654fecf857549a0600da263129cddb25f224..9423be6b46695886e2e1f5487cc422ad8adcc512 100644
+--- a/build/modules/tx/queries.d.ts
++++ b/build/modules/tx/queries.d.ts
+@@ -5,7 +5,7 @@ import { QueryClient } from "../../queryclient";
+ export interface TxExtension {
+     readonly tx: {
+         getTx: (txId: string) => Promise<GetTxResponse>;
+-        simulate: (messages: readonly Any[], memo: string | undefined, signer: Pubkey, sequence: number) => Promise<SimulateResponse>;
++        simulate: (messages: readonly Any[], memo: string | undefined, signer: Pubkey, sequence: number, nonCriticalExtensionOptions?: readonly Any[]) => Promise<SimulateResponse>;
+     };
+ }
+ export declare function setupTxExtension(base: QueryClient): TxExtension;
+diff --git a/build/modules/tx/queries.js b/build/modules/tx/queries.js
+index f905e43532c0125367c16c2984c1bb875aa7d400..1c0d92ba4c9fffcd8430fa7ed783d4cd81614508 100644
+--- a/build/modules/tx/queries.js
++++ b/build/modules/tx/queries.js
+@@ -20,7 +20,7 @@ function setupTxExtension(base) {
+                 const response = await queryService.GetTx(request);
+                 return response;
+             },
+-            simulate: async (messages, memo, signer, sequence) => {
++            simulate: async (messages, memo, signer, sequence, nonCriticalExtensionOptions) => {
+                 const tx = tx_1.Tx.fromPartial({
+                     authInfo: tx_1.AuthInfo.fromPartial({
+                         fee: tx_1.Fee.fromPartial({}),
+@@ -35,6 +35,7 @@ function setupTxExtension(base) {
+                     body: tx_1.TxBody.fromPartial({
+                         messages: Array.from(messages),
+                         memo: memo,
++                        nonCriticalExtensionOptions,
+                     }),
+                     signatures: [new Uint8Array()],
+                 });

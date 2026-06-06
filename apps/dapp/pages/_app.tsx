@@ -10,7 +10,7 @@ import PlausibleProvider from 'next-plausible'
 import { DefaultSeo } from 'next-seo'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { useRecoilState, useSetRecoilState } from 'recoil'
 
 import {
@@ -37,6 +37,8 @@ import {
   SITE_TITLE,
   SITE_URL,
 } from '@dao-dao/utils'
+
+import nextI18NextConfig from '../next-i18next.config'
 
 const InnerApp = ({ Component, pageProps }: AppProps) => {
   const router = useRouter()
@@ -169,10 +171,11 @@ const DApp = (props: AppProps) => (
       }}
     />
 
-    <StateProvider dehyratedState={props.pageProps.reactQueryDehydratedState}>
+    <StateProvider dehydratedState={props.pageProps.dehydratedQueryClientState}>
       <InnerApp {...props} />
     </StateProvider>
   </>
 )
 
-export default appWithTranslation(DApp)
+const App: FC<AppProps> = appWithTranslation(DApp, nextI18NextConfig)
+export default App

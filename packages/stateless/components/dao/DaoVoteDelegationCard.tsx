@@ -86,8 +86,10 @@ export const DaoVoteDelegationCard = ({
 
     // Smallest percent delegation is determined by the voting power unit.
     const smallestPercentDelegation =
-      !walletVotingPower.loading && !walletVotingPower.errored
-        ? HugeDecimal.from(100).div(walletVotingPower.data).toFormattedString({
+      !totalVotingPower.loading &&
+      !totalVotingPower.errored &&
+      !totalVotingPower.data.isZero()
+        ? HugeDecimal.from(100).div(totalVotingPower.data).toFormattedString({
             showFullAmount: true,
             maxNonZeroDecimals: DECIMAL_PLACES,
           })
@@ -101,7 +103,19 @@ export const DaoVoteDelegationCard = ({
       smallestPercentDelegation,
       smallestPercentDelegationDoesNotTerminate,
     }
-  }, [walletVotingPower, percent])
+  }, [walletVotingPower, percent, totalVotingPower])
+
+  const power =
+    registration.loading || registration.errored || totalVotingPower.loading
+      ? '...'
+      : totalVotingPower.errored
+        ? HugeDecimal.from(registration.data.power).toFormattedString()
+        : HugeDecimal.from(registration.data.power)
+            .div(totalVotingPower.data)
+            .times(100)
+            .toFormattedString({
+              maxNonZeroDecimals: 3,
+            }) + '%'
 
   return (
     <>
@@ -120,23 +134,15 @@ export const DaoVoteDelegationCard = ({
         ) : registration.data.registered ? (
           <>
             <p className="body-text text-text-secondary break-all -mt-2">
-              <Trans i18nKey="info.delegatedVotingPower">
+              <Trans
+                i18nKey="info.delegatedVotingPower"
+                values={{
+                  power,
+                }}
+              >
                 You have been delegated{' '}
                 <span className="text-text-brand-secondary font-mono">
-                  {{
-                    power: totalVotingPower.loading
-                      ? '...'
-                      : totalVotingPower.errored
-                        ? HugeDecimal.from(
-                            registration.data.power
-                          ).toFormattedString()
-                        : HugeDecimal.from(registration.data.power)
-                            .div(totalVotingPower.data)
-                            .times(100)
-                            .toFormattedString({
-                              maxNonZeroDecimals: 3,
-                            }) + '%',
-                  }}
+                  {power}
                 </span>{' '}
                 of the total voting power.
               </Trans>

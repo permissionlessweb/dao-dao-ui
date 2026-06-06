@@ -1,9 +1,12 @@
-import { RecoilValueReadOnly, selectorFamily } from 'recoil'
+import { selectorFamily } from 'recoil'
 
-import { ContractVersion, WithChainId } from '@dao-dao/types'
+import {
+  ContractVersion,
+  SupportedChainIndexerMode,
+  WithChainId,
+} from '@dao-dao/types'
 import {
   ConfigResponse as ConfigV1Response,
-  ProposalResponse as ProposalV1Response,
   ReverseProposalsResponse as ReverseProposalsV1Response,
 } from '@dao-dao/types/contracts/CwProposalSingle.v1'
 import {
@@ -13,7 +16,6 @@ import {
 } from '@dao-dao/types/contracts/DaoProposalSingle.common'
 import {
   Config as ConfigV2Response,
-  ProposalResponse as ProposalV2Response,
   ProposalListResponse as ReverseProposalsV2Response,
 } from '@dao-dao/types/contracts/DaoProposalSingle.v2'
 
@@ -29,7 +31,6 @@ import {
   getVoteSelector as getVoteV1Selector,
   listVotesSelector as listVotesV1Selector,
   proposalCountSelector as proposalCountV1Selector,
-  proposalSelector as proposalV1Selector,
   reverseProposalsSelector as reverseProposalsV1Selector,
 } from './CwProposalSingle.v1'
 import {
@@ -37,7 +38,6 @@ import {
   getVoteSelector as getVoteV2Selector,
   listVotesSelector as listVotesV2Selector,
   proposalCountSelector as proposalCountV2Selector,
-  proposalSelector as proposalV2Selector,
   reverseProposalsSelector as reverseProposalsV2Selector,
 } from './DaoProposalSingle.v2'
 
@@ -62,7 +62,7 @@ export const getVoteSelector = selectorFamily<
     async ({ get }) => {
       const queryClient = get(queryClientAtom)
       const proposalModuleVersion = await queryClient.fetchQuery(
-        contractQueries.version(queryClient, {
+        contractQueries.version({
           chainId: params.chainId,
           address: params.contractAddress,
         })
@@ -95,7 +95,7 @@ export const listVotesSelector = selectorFamily<
     async ({ get }) => {
       const queryClient = get(queryClientAtom)
       const proposalModuleVersion = await queryClient.fetchQuery(
-        contractQueries.version(queryClient, {
+        contractQueries.version({
           chainId: params.chainId,
           address: params.contractAddress,
         })
@@ -139,6 +139,10 @@ export const listAllVotesSelector = selectorFamily<
             proposalId,
           },
           id,
+          allowedModes: [
+            SupportedChainIndexerMode.Tx,
+            SupportedChainIndexerMode.All,
+          ],
         })
       )
       if (indexerVotes) {
@@ -174,92 +178,6 @@ export const listAllVotesSelector = selectorFamily<
     },
 })
 
-export const listPaginatedVotesSelector: (
-  param: QueryClientParams & {
-    proposalId: number
-    page: number
-    pageSize: number
-  }
-) => RecoilValueReadOnly<ListVotesResponse> = selectorFamily({
-  key: 'daoProposalSingleCommonListPaginatedVotes',
-  get:
-    ({ proposalId, page, pageSize, ...queryClientParams }) =>
-    async ({ get }) => {
-      const queryClient = get(queryClientAtom)
-      const proposalModuleVersion = await queryClient.fetchQuery(
-        contractQueries.version(queryClient, {
-          chainId: queryClientParams.chainId,
-          address: queryClientParams.contractAddress,
-        })
-      )
-
-      const selector =
-        proposalModuleVersion === ContractVersion.V1
-          ? listVotesV1Selector
-          : listVotesV2Selector
-
-      let startAfter: string | undefined
-      // Get last page so we can retrieve the last voter from it.
-      if (page > 1) {
-        const lastPage = get(
-          listPaginatedVotesSelector({
-            ...queryClientParams,
-            proposalId,
-            page: page - 1,
-            pageSize,
-          })
-        )
-        if (lastPage.votes.length > 0) {
-          startAfter = lastPage.votes[lastPage.votes.length - 1].voter
-        }
-      }
-
-      return get<ListVotesResponse>(
-        selector({
-          ...queryClientParams,
-          params: [
-            {
-              proposalId,
-              startAfter,
-              limit: pageSize,
-            },
-          ],
-        })
-      )
-    },
-})
-
-export const proposalSelector = selectorFamily<
-  ProposalV1Response | ProposalV2Response,
-  QueryClientParams & {
-    params: [
-      {
-        proposalId: number
-      },
-    ]
-  }
->({
-  key: 'daoProposalSingleCommonProposal',
-  get:
-    (params) =>
-    async ({ get }) => {
-      const queryClient = get(queryClientAtom)
-      const proposalModuleVersion = await queryClient.fetchQuery(
-        contractQueries.version(queryClient, {
-          chainId: params.chainId,
-          address: params.contractAddress,
-        })
-      )
-
-      const selector =
-        proposalModuleVersion === ContractVersion.V1
-          ? proposalV1Selector
-          : proposalV2Selector
-
-      return get<ProposalV1Response | ProposalV2Response>(selector(params))
-    },
-})
-
 export const configSelector = selectorFamily<
   ConfigV1Response | ConfigV2Response,
   QueryClientParams
@@ -270,7 +188,7 @@ export const configSelector = selectorFamily<
     async ({ get }) => {
       const queryClient = get(queryClientAtom)
       const proposalModuleVersion = await queryClient.fetchQuery(
-        contractQueries.version(queryClient, {
+        contractQueries.version({
           chainId: params.chainId,
           address: params.contractAddress,
         })
@@ -292,7 +210,7 @@ export const proposalCountSelector = selectorFamily<number, QueryClientParams>({
     async ({ get }) => {
       const queryClient = get(queryClientAtom)
       const proposalModuleVersion = await queryClient.fetchQuery(
-        contractQueries.version(queryClient, {
+        contractQueries.version({
           chainId: params.chainId,
           address: params.contractAddress,
         })
@@ -324,7 +242,7 @@ export const reverseProposalsSelector = selectorFamily<
     async ({ get }) => {
       const queryClient = get(queryClientAtom)
       const proposalModuleVersion = await queryClient.fetchQuery(
-        contractQueries.version(queryClient, {
+        contractQueries.version({
           chainId: params.chainId,
           address: params.contractAddress,
         })

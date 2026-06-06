@@ -98,7 +98,7 @@ export const reverseProposalInfosSelector: (
             ? new Date(response.createdAt)
             : queryClient
                 .fetchQuery(
-                  chainQueries.blockTimestampSafe(queryClient, {
+                  chainQueries.blockTimestampSafe({
                     chainId,
                     height: start_height,
                   })
@@ -108,11 +108,14 @@ export const reverseProposalInfosSelector: (
       )
 
       const proposalInfos: CommonProposalListInfo[] = proposalResponses.map(
-        ({ id, proposal: { status } }, index) => ({
+        ({ id, proposal: { status, veto } }, index) => ({
           id: `${proposalModulePrefix}${id}`,
           proposalNumber: id,
           timestamp: timestamps[index],
           status,
+          ...(veto?.early_execute && {
+            executableEarly: true,
+          }),
         })
       )
 
@@ -140,7 +143,7 @@ export const reversePreProposePendingProposalInfosSelector: (
     async ({ get }) => {
       const queryClient = get(queryClientAtom)
       const pendingProposals = (await queryClient.fetchQuery(
-        daoPreProposeApprovalMultipleQueries.queryExtension(queryClient, {
+        daoPreProposeApprovalMultipleQueries.queryExtension({
           contractAddress: proposalModuleAddress,
           chainId,
           args: {
@@ -187,7 +190,7 @@ export const reversePreProposeCompletedProposalInfosSelector: (
     async ({ get }) => {
       const queryClient = get(queryClientAtom)
       const completedProposals = (await queryClient.fetchQuery(
-        daoPreProposeApprovalMultipleQueries.queryExtension(queryClient, {
+        daoPreProposeApprovalMultipleQueries.queryExtension({
           contractAddress: proposalModuleAddress,
           chainId,
           args: {

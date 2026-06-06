@@ -36,12 +36,16 @@ const config = {
     largePageDataBytes: 1 * 1024 * 1024,
   },
   webpack: (config) => {
+    // Silence warning "the request of a dependency is an expression".
+    config.module.exprContextCritical = false
+
     // @cosmos-kit/web3auth uses eccrypto, which uses `stream`. This needs to be
     // polyfilled.
     config.resolve.alias['stream'] = 'stream-browserify'
     return config
   },
   i18n,
+  staticPageGenerationTimeout: 300,
   /*
     The reactStrictMode flag is set to false
     to allow for the proposal JSON editor to show.

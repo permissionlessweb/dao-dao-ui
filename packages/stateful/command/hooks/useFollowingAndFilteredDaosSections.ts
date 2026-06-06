@@ -11,6 +11,7 @@ import {
   CommandModalContextUseSectionsOptions,
   CommandModalDaoInfo,
   ContractVersion,
+  SupportedChainIndexerMode,
 } from '@dao-dao/types'
 import {
   getConfiguredChains,
@@ -34,7 +35,7 @@ export interface UseFilteredDaosSectionOptions {
   limit?: number
 }
 
-const DEFAULT_LIMIT = 5
+const DEFAULT_LIMIT = 10
 
 export const useFollowingAndFilteredDaosSections = ({
   options,
@@ -43,7 +44,9 @@ export const useFollowingAndFilteredDaosSections = ({
 }: UseFilteredDaosSectionOptions): CommandModalContextSection[] => {
   const { t } = useTranslation()
 
-  const chains = getSupportedChains({ hasIndexer: true })
+  const chains = getSupportedChains({
+    indexer: [SupportedChainIndexerMode.Tx, SupportedChainIndexerMode.All],
+  })
   const featuredDaosLoading = useLoadingFeaturedDaoCards()
   const followingDaosLoading = useLoadingFollowingDaos()
   const { getDaoPath } = useDaoNavHelpers()

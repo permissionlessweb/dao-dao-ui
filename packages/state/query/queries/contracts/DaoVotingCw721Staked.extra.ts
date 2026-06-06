@@ -1,5 +1,7 @@
 import { QueryClient, queryOptions } from '@tanstack/react-query'
 
+import { SupportedChainIndexerMode } from '@dao-dao/types'
+
 import { indexerQueries } from '../indexer'
 
 /**
@@ -24,12 +26,16 @@ export const fetchDaoVotingCw721StakedTopStakers = async (
   }[]
 > =>
   (await queryClient.fetchQuery(
-    indexerQueries.queryContract(queryClient, {
+    indexerQueries.queryContract({
       chainId,
       contractAddress: address,
       formula: 'daoVotingCw721Staked/topStakers',
       ...(limit && { args: { limit } }),
       noFallback: true,
+      allowedModes: [
+        SupportedChainIndexerMode.Tx,
+        SupportedChainIndexerMode.All,
+      ],
     })
   )) || []
 
@@ -50,7 +56,7 @@ export const fetchDaoVotingCw721StakedStaker = (
   }
 ): Promise<string | null> =>
   queryClient.fetchQuery(
-    indexerQueries.queryContract(queryClient, {
+    indexerQueries.queryContract({
       chainId,
       contractAddress: address,
       formula: 'daoVotingCw721Staked/staker',
@@ -58,6 +64,10 @@ export const fetchDaoVotingCw721StakedStaker = (
         tokenId,
       },
       noFallback: true,
+      allowedModes: [
+        SupportedChainIndexerMode.Tx,
+        SupportedChainIndexerMode.All,
+      ],
     })
   )
 
@@ -66,23 +76,20 @@ export const daoVotingCw721StakedExtraQueries = {
    * Fetch cw721-staked voting module top stakers.
    */
   topStakers: (
-    queryClient: QueryClient,
     options: Parameters<typeof fetchDaoVotingCw721StakedTopStakers>[1]
   ) =>
     queryOptions({
       queryKey: ['daoVotingCw721StakedExtra', 'topStakers', options],
-      queryFn: () => fetchDaoVotingCw721StakedTopStakers(queryClient, options),
+      queryFn: (ctx) =>
+        fetchDaoVotingCw721StakedTopStakers(ctx.client, options),
     }),
   /**
    * Fetch staker for given NFT in cw721-staked voting module. Returns null if
    * not staked.
    */
-  staker: (
-    queryClient: QueryClient,
-    options: Parameters<typeof fetchDaoVotingCw721StakedStaker>[1]
-  ) =>
+  staker: (options: Parameters<typeof fetchDaoVotingCw721StakedStaker>[1]) =>
     queryOptions({
       queryKey: ['daoVotingCw721StakedExtra', 'staker', options],
-      queryFn: () => fetchDaoVotingCw721StakedStaker(queryClient, options),
+      queryFn: (ctx) => fetchDaoVotingCw721StakedStaker(ctx.client, options),
     }),
 }

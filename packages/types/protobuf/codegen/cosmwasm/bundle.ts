@@ -10,16 +10,16 @@ import * as _101 from "./wasm/v1/proposal";
 import * as _102 from "./wasm/v1/query";
 import * as _103 from "./wasm/v1/tx";
 import * as _104 from "./wasm/v1/types";
-import * as _577 from "./tokenfactory/v1beta1/tx.amino";
-import * as _578 from "./wasm/v1/tx.amino";
-import * as _579 from "./tokenfactory/v1beta1/tx.registry";
-import * as _580 from "./wasm/v1/tx.registry";
-import * as _581 from "./tokenfactory/v1beta1/query.rpc.Query";
-import * as _582 from "./wasm/v1/query.rpc.Query";
-import * as _583 from "./tokenfactory/v1beta1/tx.rpc.msg";
-import * as _584 from "./wasm/v1/tx.rpc.msg";
-import * as _853 from "./rpc.query";
-import * as _854 from "./rpc.tx";
+import * as _602 from "./tokenfactory/v1beta1/tx.amino";
+import * as _603 from "./wasm/v1/tx.amino";
+import * as _604 from "./tokenfactory/v1beta1/tx.registry";
+import * as _605 from "./wasm/v1/tx.registry";
+import * as _606 from "./tokenfactory/v1beta1/query.rpc.Query";
+import * as _607 from "./wasm/v1/query.rpc.Query";
+import * as _608 from "./tokenfactory/v1beta1/tx.rpc.msg";
+import * as _609 from "./wasm/v1/tx.rpc.msg";
+import * as _890 from "./rpc.query";
+import * as _891 from "./rpc.tx";
 export namespace cosmwasm {
   export namespace tokenfactory {
     export const v1beta1 = {
@@ -28,10 +28,10 @@ export namespace cosmwasm {
       ..._95,
       ..._96,
       ..._97,
-      ..._577,
-      ..._579,
-      ..._581,
-      ..._583
+      ..._602,
+      ..._604,
+      ..._606,
+      ..._608
     };
   }
   export namespace wasm {
@@ -43,14 +43,14 @@ export namespace cosmwasm {
       ..._102,
       ..._103,
       ..._104,
-      ..._578,
-      ..._580,
-      ..._582,
-      ..._584
+      ..._603,
+      ..._605,
+      ..._607,
+      ..._609
     };
   }
   export const ClientFactory = {
-    ..._853,
-    ..._854
+    ..._890,
+    ..._891
   };
 }

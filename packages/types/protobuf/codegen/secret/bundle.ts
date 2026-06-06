@@ -1,78 +1,78 @@
-import * as _469 from "./compute/v1beta1/genesis";
-import * as _470 from "./compute/v1beta1/msg";
-import * as _471 from "./compute/v1beta1/query";
-import * as _472 from "./compute/v1beta1/types";
-import * as _473 from "./emergencybutton/v1beta1/genesis";
-import * as _474 from "./emergencybutton/v1beta1/params";
-import * as _475 from "./emergencybutton/v1beta1/query";
-import * as _476 from "./emergencybutton/v1beta1/tx";
-import * as _477 from "./intertx/v1beta1/query";
-import * as _478 from "./intertx/v1beta1/tx";
-import * as _479 from "./registration/v1beta1/genesis";
-import * as _480 from "./registration/v1beta1/msg";
-import * as _481 from "./registration/v1beta1/query";
-import * as _482 from "./registration/v1beta1/types";
-import * as _819 from "./compute/v1beta1/msg.amino";
-import * as _820 from "./emergencybutton/v1beta1/tx.amino";
-import * as _821 from "./intertx/v1beta1/tx.amino";
-import * as _822 from "./compute/v1beta1/msg.registry";
-import * as _823 from "./emergencybutton/v1beta1/tx.registry";
-import * as _824 from "./intertx/v1beta1/tx.registry";
-import * as _825 from "./compute/v1beta1/query.rpc.Query";
-import * as _826 from "./emergencybutton/v1beta1/query.rpc.Query";
-import * as _827 from "./intertx/v1beta1/query.rpc.Query";
-import * as _828 from "./registration/v1beta1/query.rpc.Query";
-import * as _829 from "./compute/v1beta1/msg.rpc.msg";
-import * as _830 from "./emergencybutton/v1beta1/tx.rpc.msg";
-import * as _831 from "./intertx/v1beta1/tx.rpc.msg";
-import * as _883 from "./rpc.query";
-import * as _884 from "./rpc.tx";
+import * as _489 from "./compute/v1beta1/genesis";
+import * as _490 from "./compute/v1beta1/msg";
+import * as _491 from "./compute/v1beta1/query";
+import * as _492 from "./compute/v1beta1/types";
+import * as _493 from "./emergencybutton/v1beta1/genesis";
+import * as _494 from "./emergencybutton/v1beta1/params";
+import * as _495 from "./emergencybutton/v1beta1/query";
+import * as _496 from "./emergencybutton/v1beta1/tx";
+import * as _497 from "./intertx/v1beta1/query";
+import * as _498 from "./intertx/v1beta1/tx";
+import * as _499 from "./registration/v1beta1/genesis";
+import * as _500 from "./registration/v1beta1/msg";
+import * as _501 from "./registration/v1beta1/query";
+import * as _502 from "./registration/v1beta1/types";
+import * as _852 from "./compute/v1beta1/msg.amino";
+import * as _853 from "./emergencybutton/v1beta1/tx.amino";
+import * as _854 from "./intertx/v1beta1/tx.amino";
+import * as _855 from "./compute/v1beta1/msg.registry";
+import * as _856 from "./emergencybutton/v1beta1/tx.registry";
+import * as _857 from "./intertx/v1beta1/tx.registry";
+import * as _858 from "./compute/v1beta1/query.rpc.Query";
+import * as _859 from "./emergencybutton/v1beta1/query.rpc.Query";
+import * as _860 from "./intertx/v1beta1/query.rpc.Query";
+import * as _861 from "./registration/v1beta1/query.rpc.Query";
+import * as _862 from "./compute/v1beta1/msg.rpc.msg";
+import * as _863 from "./emergencybutton/v1beta1/tx.rpc.msg";
+import * as _864 from "./intertx/v1beta1/tx.rpc.msg";
+import * as _920 from "./rpc.query";
+import * as _921 from "./rpc.tx";
 export namespace secret {
   export namespace compute {
     export const v1beta1 = {
-      ..._469,
-      ..._470,
-      ..._471,
-      ..._472,
-      ..._819,
-      ..._822,
-      ..._825,
-      ..._829
+      ..._489,
+      ..._490,
+      ..._491,
+      ..._492,
+      ..._852,
+      ..._855,
+      ..._858,
+      ..._862
     };
   }
   export namespace emergencybutton {
     export const v1beta1 = {
-      ..._473,
-      ..._474,
-      ..._475,
-      ..._476,
-      ..._820,
-      ..._823,
-      ..._826,
-      ..._830
+      ..._493,
+      ..._494,
+      ..._495,
+      ..._496,
+      ..._853,
+      ..._856,
+      ..._859,
+      ..._863
     };
   }
   export namespace intertx {
     export const v1beta1 = {
-      ..._477,
-      ..._478,
-      ..._821,
-      ..._824,
-      ..._827,
-      ..._831
+      ..._497,
+      ..._498,
+      ..._854,
+      ..._857,
+      ..._860,
+      ..._864
     };
   }
   export namespace registration {
     export const v1beta1 = {
-      ..._479,
-      ..._480,
-      ..._481,
-      ..._482,
-      ..._828
+      ..._499,
+      ..._500,
+      ..._501,
+      ..._502,
+      ..._861
     };
   }
   export const ClientFactory = {
-    ..._883,
-    ..._884
+    ..._920,
+    ..._921
   };
 }

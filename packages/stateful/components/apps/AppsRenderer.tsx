@@ -156,7 +156,7 @@ export const AppsRenderer = ({ mode, ...props }: AppsRendererProps) => {
   // This is the entity we will use for the app.
   const loadingAppEntity = useQueryLoadingDataWithError(
     appAddress
-      ? entityQueries.info(queryClient, {
+      ? entityQueries.info({
           chainId: appChainId,
           address: appAddress,
         })
@@ -473,13 +473,6 @@ export const AppsRenderer = ({ mode, ...props }: AppsRendererProps) => {
             )
           )
 
-          if (!pubkey) {
-            return {
-              type: 'error',
-              error: 'Pubkey not found.',
-            }
-          }
-
           return {
             type: 'success',
             value: {
@@ -620,13 +613,6 @@ export const AppsRenderer = ({ mode, ...props }: AppsRendererProps) => {
             )
           )
 
-          if (!pubkey) {
-            return {
-              type: 'error',
-              error: 'Pubkey not found.',
-            }
-          }
-
           return {
             type: 'success',
             value: {
@@ -735,13 +721,6 @@ export const AppsRenderer = ({ mode, ...props }: AppsRendererProps) => {
               })
             )
           )
-
-          if (!pubkey) {
-            return {
-              type: 'error',
-              error: 'Pubkey not found.',
-            }
-          }
 
           return {
             type: 'success',

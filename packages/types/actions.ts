@@ -1,5 +1,4 @@
 // eslint-disable-next-line regex/invalid
-import { QueryClient } from '@tanstack/react-query'
 import { ComponentType, ReactNode } from 'react'
 import { FieldErrors } from 'react-hook-form'
 import { TFunction } from 'react-i18next'
@@ -16,6 +15,7 @@ import { UnifiedCosmosMsg } from './contracts/common'
 import { DecodedIcaMsgMatch, DecodedPolytoneMsgMatch } from './cross-chain'
 import { AllGovParams } from './gov'
 import { UnifiedProfile } from './profile'
+import { IQueryClient } from './query'
 
 export enum ActionCategoryKey {
   CommonlyUsed = 'commonlyUsed',
@@ -55,6 +55,7 @@ export enum ActionKey {
   Instantiate2 = 'instantiate2',
   Execute = 'execute',
   Migrate = 'migrate',
+  Sudo = 'sudo',
   UpdateAdmin = 'updateAdmin',
   AuthzGrantRevoke = 'authzGrantRevoke',
   AuthzExec = 'authzExec',
@@ -478,7 +479,7 @@ export type ActionOptions<ExtraOptions extends {} = {}> = ExtraOptions & {
   // x/gov module address if context.type === Gov
   address: string
   context: ActionContext
-  queryClient: QueryClient
+  queryClient: IQueryClient
 }
 
 export type ActionMaker<
@@ -788,7 +789,7 @@ export type MessageProcessor = (options: {
   /**
    * The query client.
    */
-  queryClient: QueryClient
+  queryClient: IQueryClient
   /**
    * Whether or not to error if no remote (polytone or ICA) account is found.
    * This might be processing a message that is creating a Polytone or ICA

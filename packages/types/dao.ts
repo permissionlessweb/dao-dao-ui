@@ -225,6 +225,7 @@ export type ProposalDraft<FormData = any> = {
 export type CreateDaoCustomValidator = (setNewErrors: boolean) => void
 
 export interface CreateDaoContext<CreatorData extends FieldValues = any> {
+  newDao: NewDao<CreatorData>
   form: UseFormReturn<NewDao<CreatorData>>
   instantiateMsg:
     | DaoDaoCoreInstantiateMsg
@@ -540,6 +541,13 @@ export type App = {
    * App URL.
    */
   url: string
+  /**
+   * Chain ID filter to apply based on the DAO's home chain.
+   */
+  chainIdFilter?: {
+    include?: string[]
+    exclude?: string[]
+  }
 }
 
 export type IndexerDaoWithVetoableProposals = {

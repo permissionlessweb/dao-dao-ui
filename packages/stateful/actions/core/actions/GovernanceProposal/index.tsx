@@ -20,14 +20,12 @@ import {
   useCachedLoadingWithError,
 } from '@dao-dao/stateless'
 import {
-  AccountType,
   ActionComponent,
   ActionComponentProps,
   ActionContextType,
   ActionKey,
   ActionMatch,
   ActionOptions,
-  ChainId,
   GOVERNANCE_PROPOSAL_TYPES,
   GovProposalVersion,
   GovernanceProposalActionData,
@@ -281,19 +279,7 @@ export class GovernanceProposalAction extends ActionBase<GovernanceProposalActio
       description: options.t('info.submitGovernanceProposalDescription'),
     })
 
-    const defaultChainId =
-      // Neutron does not use the x/gov module. If this is a DAO on Neutron, see
-      // if it has polytone accounts on any other chain. If it does, default to
-      // one of them. Otherwise, hide the action since it cannot be used.
-      options.chain.chainId === ChainId.NeutronMainnet ||
-      options.chain.chainId === ChainId.NeutronTestnet
-        ? options.context.type === ActionContextType.Dao
-          ? options.context.dao.accounts.find(
-              (a) => a.type === AccountType.Polytone
-            )?.chainId
-          : undefined
-        : // If not on Neutron, default to current chain.
-          options.chain.chainId
+    const defaultChainId = options.chain.chainId
 
     if (!defaultChainId) {
       throw new Error('Could not find chain to vote on.')
@@ -305,7 +291,7 @@ export class GovernanceProposalAction extends ActionBase<GovernanceProposalActio
   async setup() {
     const { minDeposit, supportsV1 } =
       await this.options.queryClient.fetchQuery(
-        chainQueries.govParams(this.options.queryClient, {
+        chainQueries.govParams({
           chainId: this.defaultChainId,
         })
       )
@@ -313,7 +299,7 @@ export class GovernanceProposalAction extends ActionBase<GovernanceProposalActio
     const deposit = minDeposit[0]
 
     const depositToken = await this.options.queryClient.fetchQuery(
-      tokenQueries.info(this.options.queryClient, {
+      tokenQueries.info({
         chainId: this.defaultChainId,
         type: TokenType.Native,
         denomOrAddress: deposit.denom,
@@ -380,7 +366,7 @@ export class GovernanceProposalAction extends ActionBase<GovernanceProposalActio
         })
       ),
       this.options.queryClient.fetchQuery(
-        chainQueries.supportsV1GovModule(this.options.queryClient, {
+        chainQueries.supportsV1GovModule({
           chainId,
         })
       ),
@@ -495,7 +481,7 @@ export class GovernanceProposalAction extends ActionBase<GovernanceProposalActio
       const deposit = await Promise.all(
         proposal.initialDeposit.map(async ({ denom, amount }) => {
           const { decimals } = await this.options.queryClient.fetchQuery(
-            tokenQueries.info(this.options.queryClient, {
+            tokenQueries.info({
               chainId,
               type: TokenType.Native,
               denomOrAddress: denom,
@@ -517,7 +503,7 @@ export class GovernanceProposalAction extends ActionBase<GovernanceProposalActio
                 async ({ denom, amount }) => {
                   const { decimals } =
                     await this.options.queryClient.fetchQuery(
-                      tokenQueries.info(this.options.queryClient, {
+                      tokenQueries.info({
                         chainId,
                         type: TokenType.Native,
                         denomOrAddress: denom,
@@ -573,7 +559,7 @@ export class GovernanceProposalAction extends ActionBase<GovernanceProposalActio
       const deposit = await Promise.all(
         proposal.initialDeposit.map(async ({ denom, amount }) => {
           const { decimals } = await this.options.queryClient.fetchQuery(
-            tokenQueries.info(this.options.queryClient, {
+            tokenQueries.info({
               chainId,
               type: TokenType.Native,
               denomOrAddress: denom,

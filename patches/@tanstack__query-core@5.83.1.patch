@@ -1,0 +1,60 @@
+diff --git a/build/modern/query.cjs b/build/modern/query.cjs
+index 678c417f01c3cf085bb27535e25633c5f4d35fd2..887dc66e022de2cd24c54ad7e49d0425674dad97 100644
+--- a/build/modern/query.cjs
++++ b/build/modern/query.cjs
+@@ -209,8 +209,12 @@ var Query = class extends import_removable.Removable {
+     const fetchFn = () => {
+       const queryFn = (0, import_utils.ensureQueryFn)(this.options, fetchOptions);
+       const createQueryFnContext = () => {
++        const client =
++          this.#client.dependencyTracker
++            ? this.#client.dependencyTracker.wrapQueryClient(this.queryHash)
++            : this.#client
+         const queryFnContext2 = {
+-          client: this.#client,
++          client,
+           queryKey: this.queryKey,
+           meta: this.meta
+         };
+diff --git a/build/modern/query.js b/build/modern/query.js
+index 5df01852fa175cb195453521eaf84bc3c82bd797..f96604f71e04d2a5bc97312dba2df2c82bd67f86 100644
+--- a/build/modern/query.js
++++ b/build/modern/query.js
+@@ -192,8 +192,12 @@ var Query = class extends Removable {
+     const fetchFn = () => {
+       const queryFn = ensureQueryFn(this.options, fetchOptions);
+       const createQueryFnContext = () => {
++        const client =
++          this.#client.dependencyTracker
++            ? this.#client.dependencyTracker.wrapQueryClient(this.queryHash)
++            : this.#client
+         const queryFnContext2 = {
+-          client: this.#client,
++          client,
+           queryKey: this.queryKey,
+           meta: this.meta
+         };
+diff --git a/build/modern/queryClient.cjs b/build/modern/queryClient.cjs
+index 37e298a58dfc44a728dbdc3d27e4d44bb1c85cfd..cdd1fabe4a47d854d5f36c01724355d8e10e1a13 100644
+--- a/build/modern/queryClient.cjs
++++ b/build/modern/queryClient.cjs
+@@ -201,6 +201,7 @@ var QueryClient = class {
+       defaultedOptions.retry = false;
+     }
+     const query = this.#queryCache.build(this, defaultedOptions);
++    options?.trackDependency?.(query);
+     return query.isStaleByTime(
+       (0, import_utils.resolveStaleTime)(defaultedOptions.staleTime, query)
+     ) ? query.fetch(defaultedOptions) : Promise.resolve(query.state.data);
+diff --git a/build/modern/queryClient.js b/build/modern/queryClient.js
+index 64a5a5f3a9d865886501f8546a1c06a3e2541d99..b49b802a53c73a89dec6d0889a9278f2158ef326 100644
+--- a/build/modern/queryClient.js
++++ b/build/modern/queryClient.js
+@@ -185,6 +185,7 @@ var QueryClient = class {
+       defaultedOptions.retry = false;
+     }
+     const query = this.#queryCache.build(this, defaultedOptions);
++    options?.trackDependency?.(query);
+     return query.isStaleByTime(
+       resolveStaleTime(defaultedOptions.staleTime, query)
+     ) ? query.fetch(defaultedOptions) : Promise.resolve(query.state.data);

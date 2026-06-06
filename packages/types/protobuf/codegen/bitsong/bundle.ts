@@ -1,22 +1,22 @@
 import * as _11 from "./fantoken/v1beta1/tx";
-import * as _522 from "./fantoken/v1beta1/tx.amino";
-import * as _523 from "./fantoken/v1beta1/tx.registry";
-import * as _524 from "./fantoken/v1beta1/query.rpc.Query";
-import * as _525 from "./fantoken/v1beta1/tx.rpc.msg";
-import * as _847 from "./rpc.query";
-import * as _848 from "./rpc.tx";
+import * as _547 from "./fantoken/v1beta1/tx.amino";
+import * as _548 from "./fantoken/v1beta1/tx.registry";
+import * as _549 from "./fantoken/v1beta1/query.rpc.Query";
+import * as _550 from "./fantoken/v1beta1/tx.rpc.msg";
+import * as _884 from "./rpc.query";
+import * as _885 from "./rpc.tx";
 export namespace bitsong {
   export const fantoken = {
     ..._11,
-    ..._522,
-    ..._523,
-    ..._525,
+    ..._547,
+    ..._548,
+    ..._550,
     v1beta1: {
-      ..._524
+      ..._549
     }
   };
   export const ClientFactory = {
-    ..._847,
-    ..._848
+    ..._884,
+    ..._885
   };
 }

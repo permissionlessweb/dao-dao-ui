@@ -1,13 +1,13 @@
 {
   "name": "@dao-dao/config",
-  "version": "2.7.1-rc.2",
+  "version": "2.7.1-rc.5",
   "license": "BSD-3-Clause-Clear",
   "dependencies": {
     "@tailwindcss/typography": "^0.5.1",
-    "@typescript-eslint/eslint-plugin": "6.21.0",
-    "@typescript-eslint/parser": "6.21.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.1",
+    "@typescript-eslint/parser": "^8.39.1",
     "autoprefixer": "^9.8.6",
-    "eslint": "^8.23.1",
+    "eslint": "^8.57.0",
     "eslint-config-next": "^12.1.5",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-i18next": "^6.0.0-4",
@@ -16,7 +16,7 @@
     "eslint-plugin-react-i18n": "^1.0.3",
     "eslint-plugin-regex": "^1.9.0",
     "eslint-plugin-tailwindcss": "^3.6.2",
-    "eslint-plugin-unused-imports": "^2.0.0",
+    "eslint-plugin-unused-imports": "^4.1.4",
     "postcss": "^8.4.16",
     "postcss-loader": "^7.0.1",
     "prettier": "^3.4.2",
@@ -28,7 +28,6 @@
     "@cosmwasm/ts-codegen": "^1.10.0"
   },
   "prettier": "./prettier/index.js",
-  "gitHead": "f3eca5c8b53d2d3f16cab978f08fc24c15e2f783",
   "publishConfig": {
     "access": "public"
   }

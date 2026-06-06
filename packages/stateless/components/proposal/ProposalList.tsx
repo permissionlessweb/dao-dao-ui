@@ -23,6 +23,7 @@ export const ProposalList = <T extends { proposalId: string }>({
   canLoadMore,
   loadMore,
   loadingMore,
+  placeholderLoaders = 20,
   isMember,
   daoName,
   ProposalLine,
@@ -50,7 +51,8 @@ export const ProposalList = <T extends { proposalId: string }>({
   // Infinite scroll by loading more when scrolled near bottom.
   const { infiniteScrollRef } = useInfiniteScroll({
     loadMore,
-    disabled: !lastCollapsibleSectionOpen || !canLoadMore || loadingMore,
+    disabled:
+      !lastCollapsibleSectionOpen || !canLoadMore || loadingMore || !!error,
   })
 
   return (
@@ -147,7 +149,7 @@ export const ProposalList = <T extends { proposalId: string }>({
         </div>
       ) : // If loading but no proposals are loaded yet, show placeholders.
       loadingMore ? (
-        <LineLoaders lines={20} type="proposal" />
+        <LineLoaders lines={placeholderLoaders} type="proposal" />
       ) : error ? (
         <ErrorPage error={error} />
       ) : (

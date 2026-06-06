@@ -1,6 +1,6 @@
 {
   "name": "@dao-dao/math",
-  "version": "2.7.1-rc.2",
+  "version": "2.7.1-rc.5",
   "license": "BSD-3-Clause-Clear",
   "scripts": {
     "format": "eslint . --fix",
@@ -11,12 +11,12 @@
     "bignumber.js": "^9.1.2"
   },
   "devDependencies": {
-    "@dao-dao/config": "2.7.1-rc.2",
+    "@dao-dao/config": "workspace:*",
+    "eslint": "^8.57.0",
     "typescript": "5.4.5",
     "vitest": "^3.1.1"
   },
   "prettier": "@dao-dao/config/prettier",
-  "gitHead": "f3eca5c8b53d2d3f16cab978f08fc24c15e2f783",
   "publishConfig": {
     "access": "public"
   }

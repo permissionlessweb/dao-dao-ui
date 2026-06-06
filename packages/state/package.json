@@ -1,6 +1,6 @@
 {
   "name": "@dao-dao/state",
-  "version": "2.7.1-rc.2",
+  "version": "2.7.1-rc.5",
   "license": "BSD-3-Clause-Clear",
   "scripts": {
     "build": "tsc && npm run build:gql",
@@ -11,17 +11,18 @@
   "dependencies": {
     "@apollo/client": "^3.8.7",
     "@confio/relayer": "^0.12.0",
-    "@cosmjs/amino": "0.33.1",
-    "@cosmjs/cosmwasm-stargate": "0.33.1",
-    "@cosmjs/crypto": "0.33.1",
-    "@cosmjs/encoding": "0.33.1",
-    "@cosmjs/math": "0.33.1",
-    "@cosmjs/proto-signing": "0.33.1",
-    "@cosmjs/stargate": "0.33.1",
-    "@cosmjs/tendermint-rpc": "0.33.1",
-    "@dao-dao/math": "2.7.1-rc.2",
-    "@dao-dao/utils": "2.7.1-rc.2",
-    "@tanstack/react-query": "5.40.0",
+    "@cosmjs/amino": "0.37.0",
+    "@cosmjs/cosmwasm-stargate": "0.37.0",
+    "@cosmjs/crypto": "0.37.0",
+    "@cosmjs/encoding": "0.37.0",
+    "@cosmjs/math": "0.37.0",
+    "@cosmjs/proto-signing": "0.37.0",
+    "@cosmjs/stargate": "0.37.0",
+    "@cosmjs/tendermint-rpc": "0.37.0",
+    "@cosmos-kit/core": "^2.16.7",
+    "@dao-dao/math": "workspace:*",
+    "@dao-dao/utils": "workspace:*",
+    "@tanstack/react-query": "5.83.1",
     "@types/lodash.uniq": "^4.5.7",
     "@types/lodash.uniqby": "^4.7.9",
     "graphql": "^16.8.1",
@@ -29,21 +30,22 @@
     "lodash.uniq": "^4.5.0",
     "lodash.uniqby": "^4.7.0",
     "meilisearch": "^0.30.0",
+    "nanoid": "^5.0.7",
     "pusher-js": "^7.6.0",
     "recoil": "^0.7.2",
-    "secretjs": "^1.12.5"
+    "secretjs": "^1.15.1"
   },
   "devDependencies": {
-    "@chain-registry/types": "0.50.159",
-    "@dao-dao/config": "2.7.1-rc.2",
-    "@dao-dao/types": "2.7.1-rc.2",
+    "@chain-registry/types": "^0.50.246",
+    "@dao-dao/config": "workspace:*",
+    "@dao-dao/types": "workspace:*",
     "@graphql-codegen/cli": "^5.0.0",
     "@graphql-codegen/client-preset": "^4.1.0",
     "@graphql-typed-document-node/core": "^3.2.0",
+    "eslint": "^8.57.0",
     "typescript": "5.4.5"
   },
   "prettier": "@dao-dao/config/prettier",
-  "gitHead": "f3eca5c8b53d2d3f16cab978f08fc24c15e2f783",
   "publishConfig": {
     "access": "public"
   }

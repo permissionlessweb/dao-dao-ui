@@ -1,9 +1,4 @@
-import { Chain, IBCInfo } from '@chain-registry/types'
-import {
-  assets as chainRegistryAssets,
-  chains as chainRegistryChains,
-  ibc as chainRegistryIbc,
-} from 'chain-registry'
+import { Chain } from '@chain-registry/types'
 
 import {
   AnyChain,
@@ -13,17 +8,17 @@ import {
   CodeIdConfig,
   ContractVersion,
   PolytoneConfig,
-  SkipChain,
   SupportedChainConfig,
+  SupportedChainIndexerMode,
   TokenType,
 } from '@dao-dao/types'
 
 import { NftBasedCreatorId } from './adapters'
 import _ALL_CODE_HASHES from './codeHashes.json'
 import _ALL_CODE_IDS from './codeIds.json'
-import { NEUTRON_GOVERNANCE_DAO } from './env'
 import { TEST_ENV } from './other'
 import _ALL_POLYTONE from './polytone.json'
+import { chains, convertChainRegistryChainToAnyChain } from './registry'
 
 const ALL_CODE_HASHES = _ALL_CODE_HASHES as unknown as Partial<
   Record<ChainId, Partial<Record<ContractVersion, CodeHashConfig>>>
@@ -461,27 +456,23 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.CosmosHubMainnet,
         name: 'cosmos',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
         accentColor: '#5064fb',
         factoryContractAddress:
-          'cosmos1az0ae4wsthlcg8yar3ydhsc6xw6h9uvzdvvgf737qu02nq8ekcxq6v7ymq',
+          'cosmos19jjaejvhfyqzjlgc6l2xa7w3gwwtvx4qvgad2gkw5dynxx2lmpxq9s5g3y',
         explorerUrlTemplates: {
           tx: 'https://mintscan.io/cosmos/tx/REPLACE',
           gov: 'https://mintscan.io/cosmos/proposals',
           govProp: 'https://mintscan.io/cosmos/proposals/REPLACE',
           wallet: 'https://mintscan.io/cosmos/account/REPLACE',
         },
-        // Disable token creation.
-        noTokenFactory: true,
-        daoCreatorDisabled: {
-          // No NFTs on the Hub.
-          [NftBasedCreatorId]: 'unsupported',
-        },
-        latestVersion: ContractVersion.V270,
+        latestVersion: ContractVersion.V271,
       },
       {
         chainId: ChainId.JunoMainnet,
         name: 'juno',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.All,
         accentColor: '#f74a49',
         factoryContractAddress:
           'juno1f3xxy7cw5lvljf38ehhcxavxlawpmkezq7qtrhesvympfudjvlaqzz6exr',
@@ -506,6 +497,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.OsmosisMainnet,
         name: 'osmosis',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
         accentColor: '#5604e8',
         factoryContractAddress:
           'osmo1qpszqk458arkkdff5z4vrqlqv4k2n9a0tjme23vn00uyt30nrr7sfe87cv',
@@ -524,14 +516,10 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.NeutronMainnet,
         name: 'neutron',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
         accentColor: '#000000',
         factoryContractAddress:
           'neutron1asszs9mjglv2rzpeu8fzlsa0cy55th0jkv27hsw3ulddt7f74gpsrqhatg',
-        govContractAddress: NEUTRON_GOVERNANCE_DAO,
-        subDaos: [
-          'neutron1fuyxwxlsgjkfjmxfthq8427dm2am3ya3cwcdr8gls29l7jadtazsuyzwcc',
-          'neutron1zjdv3u6svlazlydmje2qcp44yqkt0059chz8gmyl5yrklmgv6fzq9chelu',
-        ],
         explorerUrlTemplates: {
           tx: 'https://neutron.celat.one/neutron-1/txs/REPLACE',
           wallet: 'https://neutron.celat.one/neutron-1/accounts/REPLACE',
@@ -552,6 +540,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.StargazeMainnet,
         name: 'stargaze',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
         accentColor: '#8ac3cc',
         factoryContractAddress:
           'stars1rncaxmp9n0cw6l5uw9qjwzptqjckdrk99hewh857j72pr3gv7tzqv5s88r',
@@ -567,6 +556,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.MigalooMainnet,
         name: 'migaloo',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#3ccd64',
         factoryContractAddress:
           'migaloo1d08e0gph0awec2ut76tzh92c6ftl6n85wpm0gq8xxe0eu8j97kzqpys8nw',
@@ -582,15 +572,16 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.TerraMainnet,
         name: 'terra',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
         overrideChainImageUrl: '/chains/terra.png',
         accentColor: '#113da5',
         factoryContractAddress:
           'terra1hm8w8474vq46fj4na9cjaud2ruzddhc0xttu87tg8s667ncsnhtq3l04mj',
         explorerUrlTemplates: {
-          tx: 'https://finder.terra.money/mainnet/tx/REPLACE',
-          gov: 'https://mintscan.io/terra/proposals',
-          govProp: 'https://mintscan.io/terra/proposals/REPLACE',
-          wallet: 'https://finder.terra.money/mainnet/address/REPLACE',
+          tx: 'https://chainsco.pe/terra2/tx/REPLACE',
+          gov: 'https://chainsco.pe/terra2/governance',
+          govProp: 'https://chainsco.pe/terra2/governance/proposal/REPLACE',
+          wallet: 'https://chainsco.pe/terra2/address/REPLACE',
         },
         tokenDaoType: 'both',
         latestVersion: ContractVersion.V270,
@@ -601,6 +592,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.TerraClassicMainnet,
         name: 'terraclassic',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
         accentColor: '#ffd842',
         noInstantiate2Create: true,
         factoryContractAddress:
@@ -619,6 +611,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.OraichainMainnet,
         name: 'oraichain',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
         overrideChainImageUrl: '/chains/oraichain.svg',
         accentColor: '#ffffff',
         factoryContractAddress:
@@ -636,6 +629,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.KujiraMainnet,
         name: 'kujira',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
         accentColor: '#e53935',
         // Permissioned, only Kujira governance can create DAOs.
         factoryContractAddress:
@@ -650,9 +644,26 @@ const BASE_SUPPORTED_CHAINS: Omit<
         latestVersion: ContractVersion.V250,
       },
       {
+        chainId: ChainId.ThorchainMainnet,
+        name: 'thorchain',
+        mainnet: true,
+        noGov: true,
+        indexer: SupportedChainIndexerMode.Tx,
+        createSubDaoViaDao: true,
+        accentColor: '#00eed1',
+        factoryContractAddress:
+          'thor1d8thneasuuhrflhel59hcvj77rj5vf6vjmz3njsu5n3ss94jjh5s73xqh5',
+        explorerUrlTemplates: {
+          tx: 'https://thorchain.net/tx/REPLACE',
+          wallet: 'https://thorchain.net/address/REPLACE',
+        },
+        latestVersion: ContractVersion.V271,
+      },
+      {
         chainId: ChainId.BitsongMainnet,
         name: 'bitsong',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
         accentColor: '#c53381',
         factoryContractAddress:
           'bitsong1glrutywr7268g9ew0uwj6xq5z5hv7rv0t7pum9gyvpkj7egty5cqzf7rdt',
@@ -662,10 +673,10 @@ const BASE_SUPPORTED_CHAINS: Omit<
           'bitsong1qfwdjcmxgjr9jwa2grhf7pce87afx57j2664tvhh29j7r68a9tgqj9kuf3',
         ],
         explorerUrlTemplates: {
-          tx: 'https://mintscan.io/bitsong/txs/REPLACE',
-          gov: 'https://mintscan.io/bitsong/proposals',
-          govProp: 'https://mintscan.io/bitsong/proposals/REPLACE',
-          wallet: 'https://mintscan.io/bitsong/account/REPLACE',
+          tx: 'https://explorer.chainroot.io/bitsong/transactions/REPLACE',
+          gov: 'https://explorer.chainroot.io/bitsong/proposals',
+          govProp: 'https://explorer.chainroot.io/bitsong/proposals/REPLACE',
+          wallet: 'https://explorer.chainroot.io/bitsong/accounts/REPLACE',
         },
         latestVersion: ContractVersion.V270,
       },
@@ -673,6 +684,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.OmniflixHubMainnet,
         name: 'omniflixhub',
         mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
         accentColor: '#d71d6a',
         factoryContractAddress:
           'omniflix1rg5jtk5984e3um65l92pagexxj9z6xrkkaw2lrrkhfeyq4376rlsf6j04f',
@@ -688,27 +700,23 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.CosmosHubProviderTestnet,
         name: 'cosmosprovider',
         mainnet: false,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#5064fb',
         factoryContractAddress:
-          'cosmos1kp83xmg04ramd3n82p5chnekzem4yxmeawrgx4uv4ldszqtcedgqvqrwn0',
+          'cosmos1re4sge3zf9fr8g0j0q4lf6ks2gedq50qgp8jvhac7agavjvlhrdqqp5wqr',
         explorerUrlTemplates: {
           tx: 'https://explorer.polypore.xyz/provider/tx/REPLACE',
           gov: 'https://explorer.polypore.xyz/provider/gov',
           govProp: 'https://explorer.polypore.xyz/provider/gov/REPLACE',
           wallet: 'https://explorer.polypore.xyz/provider/account/REPLACE',
         },
-        // Disable token creation.
-        noTokenFactory: true,
-        daoCreatorDisabled: {
-          // No NFTs on the Hub.
-          [NftBasedCreatorId]: 'unsupported',
-        },
-        latestVersion: ContractVersion.V270,
+        latestVersion: ContractVersion.V271,
       },
       {
         chainId: ChainId.JunoTestnet,
         name: 'juno',
         mainnet: false,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#f74a49',
         factoryContractAddress:
           'juno10kkn698hpzm07kj0klhj3hrkxjsmngj9598esypm5kh9hfpealpq9vjvcw',
@@ -724,6 +732,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.OsmosisTestnet,
         name: 'osmosis',
         mainnet: false,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#5604e8',
         factoryContractAddress:
           'osmo1em9rp0zucf9dm7luqf06n20ke9dj9q0yyyd26k5w348sm8rq7h4qwrx8uw',
@@ -739,6 +748,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.StargazeTestnet,
         name: 'stargaze',
         mainnet: false,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#8ac3cc',
         factoryContractAddress:
           'stars1ezkctzcnrvnwy94d6vjp2zkg68z272qndw688crzhh9nn4ud0q6sw8z03f',
@@ -754,6 +764,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.MigalooTestnet,
         name: 'migaloo',
         mainnet: false,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#3ccd64',
         factoryContractAddress:
           'migaloo1x393zjpv0ve7wk2w3d40gwjxeww7n8c0unxtdf87u366dlvazryq239pxu',
@@ -770,6 +781,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
       //   chainId: ChainId.KujiraTestnet,
       //   name: 'kujira',
       //   mainnet: false,
+      //   indexer: SupportedChainIndexerMode.None,
       //   accentColor: '#e53935',
       //   factoryContractAddress:
       //     'kujira13aa6np9kh2ejue5mgqd88ktmkmswcs4vyn6djtf3d0h8n0dt2uysfxx9a7',
@@ -787,10 +799,10 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.NeutronTestnet,
         name: 'neutron',
         mainnet: false,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#000000',
         factoryContractAddress:
           'neutron1caflev8smuslum9uque5z2qhma8xxxmap5dafeynekl37s966k8sq034r4',
-        govContractAddress: NEUTRON_GOVERNANCE_DAO,
         explorerUrlTemplates: {
           tx: 'https://neutron.celat.one/pion-1/txs/REPLACE',
           wallet: 'https://neutron.celat.one/pion-1/accounts/REPLACE',
@@ -802,6 +814,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
       //   chainId: ChainId.BitsongTestnet,
       //   name: 'bitsong',
       //   mainnet: false,
+      //   indexer: SupportedChainIndexerMode.None,
       //   accentColor: '#c53381',
       //   factoryContractAddress:
       //     'bitsong1zftu69lqmhgwyuqlyawssrm62h58hqyl0gvv4n9aj8pvkr6qqd8s2wl5ve',
@@ -813,6 +826,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.OmniflixHubTestnet,
         name: 'omniflixhub',
         mainnet: false,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#d71d6a',
         factoryContractAddress:
           'omniflix1dlz906ww79sq49yykjvvlkf9fu0tv4u94gywfd7ldrtyjd8873hqufdvuc',
@@ -828,15 +842,15 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.SecretTestnet,
         name: 'secret',
         mainnet: false,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#000000',
-        factoryContractAddress: 'secret15rtkhedsr9gx2z4vq2p7zqk25z4kssju5ae0yy',
-        noIndexer: true,
+        factoryContractAddress: 'secret1us532v7wpky7af5vhk68nj7th976d6lygpalaf',
         noInstantiate2Create: true,
         explorerUrlTemplates: {
-          tx: 'https://testnet.ping.pub/secret/tx/REPLACE',
-          gov: 'https://testnet.ping.pub/secret/gov',
-          govProp: 'https://testnet.ping.pub/secret/gov/REPLACE',
-          wallet: 'https://testnet.ping.pub/secret/account/REPLACE',
+          tx: 'https://secretnodes.com/pulsar/transactions/REPLACE',
+          gov: 'https://secretnodes.com/pulsar/governance',
+          govProp: 'https://secretnodes.com/pulsar/proposals/REPLACE',
+          wallet: 'https://secretnodes.com/pulsar/accounts/REPLACE',
         },
         tokenDaoType: TokenType.Cw20,
         latestVersion: ContractVersion.V242,
@@ -845,7 +859,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.BabylonTestnet,
         name: 'babylon',
         mainnet: false,
-        noIndexer: true,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#ce6533',
         factoryContractAddress:
           'bbn1jwx9r9hcdmcag2zka3dwsg4ekx965ega3wd9gl90pd46gcp7ecnqh3se4m',
@@ -866,6 +880,8 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.ThorchainStagenet,
         name: 'thorchain',
         mainnet: false,
+        noGov: true,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#00eed1',
         factoryContractAddress:
           'sthor122ht2h5ca482vlyqt22ecs6yw5n8f3rx6mwj9wu3jym99ct9xl2qj4cgrz',
@@ -879,9 +895,10 @@ const BASE_SUPPORTED_CHAINS: Omit<
         chainId: ChainId.DaodiseoTestnet,
         name: 'daodiseo',
         mainnet: false,
+        indexer: SupportedChainIndexerMode.None,
         accentColor: '#a454ac',
         factoryContractAddress:
-          'odiseo1hrpna9v7vs3stzyd4z3xf00676kf78zpe2u5ksvljswn2vnjp3ysjs33cp',
+          'odiseo124x902fdvdcaawkr7njtjtccx94jq5vq4vtw6mhshxlrjqqxezqqgzgzrq',
         explorerUrlTemplates: {
           tx: 'https://testnet.explorer.chaintools.tech/odiseo/tx/REPLACE',
           gov: 'https://testnet.explorer.chaintools.tech/odiseo/gov',
@@ -890,8 +907,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
           wallet:
             'https://testnet.explorer.chaintools.tech/odiseo/account/REPLACE',
         },
-        latestVersion: ContractVersion.V270,
-        noIndexer: true,
+        latestVersion: ContractVersion.V271,
       },
       {
         chainId: ChainId.KopiMainnet,
@@ -907,7 +923,93 @@ const BASE_SUPPORTED_CHAINS: Omit<
           wallet: 'https://explorer.kopi.money/luwak-1/account/REPLACE',
         },
         latestVersion: ContractVersion.V270,
-        noIndexer: true,
+        indexer: SupportedChainIndexerMode.None,
+      },
+      {
+        chainId: ChainId.RegenMainnet,
+        name: 'regen',
+        mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
+        noTokenCreation: true,
+        accentColor: '#53b878',
+        factoryContractAddress:
+          'regen1gg4etmpcvnk49fwxn0tuvn2cw7txvhcrkmgltnxur7r6gc2xl5fsdz2kut',
+        explorerUrlTemplates: {
+          tx: 'https://explorer.chainroot.io/regen/transactions/REPLACE',
+          gov: 'https://explorer.chainroot.io/regen/proposals',
+          govProp: 'https://explorer.chainroot.io/regen/proposals/REPLACE',
+          wallet: 'https://explorer.chainroot.io/regen/accounts/REPLACE',
+        },
+        latestVersion: ContractVersion.V280Alpha2,
+      },
+      {
+        chainId: ChainId.RegenTestnet,
+        name: 'regen',
+        mainnet: false,
+        indexer: SupportedChainIndexerMode.Tx,
+        accentColor: '#53b878',
+        factoryContractAddress:
+          'regen1cpewugrc7gx9lx9qf63ahxsslhs004zvdfuagdunfpfqzxn3fnyq5drgqn',
+        explorerUrlTemplates: {
+          tx: 'https://explorer-regen-upgrade.vitwit.com/regen-upgrade/tx/REPLACE',
+          gov: 'https://explorer-regen-upgrade.vitwit.com/regen-upgrade/gov',
+          govProp:
+            'https://explorer-regen-upgrade.vitwit.com/regen-upgrade/gov/REPLACE',
+          wallet:
+            'https://explorer-regen-upgrade.vitwit.com/regen-upgrade/account/REPLACE',
+        },
+        latestVersion: ContractVersion.V280Alpha2,
+      },
+      {
+        chainId: ChainId.TerpMainnet,
+        name: 'terp',
+        mainnet: true,
+        accentColor: '#b4e07c',
+        factoryContractAddress:
+          '',
+        explorerUrlTemplates: {
+          tx: 'https://explorer.terp.network/tx/REPLACE',
+          gov: 'https://explorer.terp.network/gov',
+          govProp: 'https://explorer.terp.network/gov/REPLACE',
+          wallet: 'https://explorer.terp.network/account/REPLACE',
+        },
+        latestVersion: ContractVersion.V270,
+        indexer: SupportedChainIndexerMode.None,
+      },
+      {
+        chainId: ChainId.RegenMainnet,
+        name: 'regen',
+        mainnet: true,
+        indexer: SupportedChainIndexerMode.Tx,
+        noTokenCreation: true,
+        accentColor: '#53b878',
+        factoryContractAddress:
+          'regen1gg4etmpcvnk49fwxn0tuvn2cw7txvhcrkmgltnxur7r6gc2xl5fsdz2kut',
+        explorerUrlTemplates: {
+          tx: 'https://explorer.chainroot.io/regen/transactions/REPLACE',
+          gov: 'https://explorer.chainroot.io/regen/proposals',
+          govProp: 'https://explorer.chainroot.io/regen/proposals/REPLACE',
+          wallet: 'https://explorer.chainroot.io/regen/accounts/REPLACE',
+        },
+        latestVersion: ContractVersion.V280Alpha2,
+      },
+      {
+        chainId: ChainId.RegenTestnet,
+        name: 'regen',
+        mainnet: false,
+        indexer: SupportedChainIndexerMode.Tx,
+        accentColor: '#53b878',
+        factoryContractAddress:
+          'regen1cpewugrc7gx9lx9qf63ahxsslhs004zvdfuagdunfpfqzxn3fnyq5drgqn',
+        explorerUrlTemplates: {
+          tx: 'https://explorer-regen-upgrade.vitwit.com/regen-upgrade/tx/REPLACE',
+          gov: 'https://explorer-regen-upgrade.vitwit.com/regen-upgrade/gov',
+          govProp:
+            'https://explorer-regen-upgrade.vitwit.com/regen-upgrade/gov/REPLACE',
+          wallet:
+            'https://explorer-regen-upgrade.vitwit.com/regen-upgrade/account/REPLACE',
+        },
+        latestVersion: ContractVersion.V280Alpha2,
       },
       {
         chainId: ChainId.TerpMainnet,
@@ -1028,8 +1130,8 @@ export const CHAIN_ENDPOINTS: Partial<
     rest: 'https://cosmos-testnet-api.polkachu.com',
   },
   [ChainId.TerraMainnet]: {
-    rpc: 'https://terra-rpc.polkachu.com',
-    rest: 'https://terra-api.polkachu.com',
+    rpc: 'https://rpc.phoenix-foundation.dev',
+    rest: 'https://lcd.phoenix-foundation.dev',
   },
   [ChainId.TerraClassicMainnet]: {
     rpc: 'https://terra-classic-rpc.publicnode.com',
@@ -1080,12 +1182,16 @@ export const CHAIN_ENDPOINTS: Partial<
     rest: 'https://api.testnet.omniflix.network',
   },
   [ChainId.SecretTestnet]: {
-    rpc: 'https://rpc.pulsar.scrttestnet.com',
-    rest: 'https://api.pulsar.scrttestnet.com',
+    rpc: 'https://pulsar.rpc.secretnodes.com',
+    rest: 'https://pulsar.lcd.secretnodes.com',
   },
   [ChainId.BabylonTestnet]: {
     rpc: 'https://babylon-testnet-rpc.polkachu.com',
     rest: 'https://babylon-testnet-api.polkachu.com',
+  },
+  [ChainId.ThorchainMainnet]: {
+    rpc: 'https://gateway.liquify.com/chain/thorchain_rpc',
+    rest: 'https://gateway.liquify.com/chain/thorchain_api',
   },
   [ChainId.ThorchainStagenet]: {
     rpc: 'https://stagenet-rpc.ninerealms.com',
@@ -1102,6 +1208,18 @@ export const CHAIN_ENDPOINTS: Partial<
   [ChainId.KopiMainnet]: {
     rpc: 'https://rpc.kopi.money',
     rest: 'https://rest.kopi.money',
+  },
+  [ChainId.PryzmMainnet]: {
+    rpc: 'https://pryzm-rpc.polkachu.com',
+    rest: 'https://pryzm-api.polkachu.com',
+  },
+  [ChainId.RegenMainnet]: {
+    rpc: 'https://regen-rpc.publicnode.com',
+    rest: 'https://regen-lcd.publicnode.com',
+  },
+  [ChainId.RegenTestnet]: {
+    rpc: 'https://rpc-regen-upgrade.vitwit.com',
+    rest: 'https://api-regen-upgrade.vitwit.com',
   },
   [ChainId.TerpMainnet]: {
     rpc: 'https://rpc.terp.network',
@@ -1296,15 +1414,26 @@ export const _addChain = ({
     'chain_id' in chain ? convertChainRegistryChainToAnyChain(chain) : chain
 
   // Remove any existing chain with the same chain ID or name.
-  chains = chains.filter(
+  const indexOfChain = chains.findIndex(
     (c) => c.chainId !== anyChain.chainId && c.chainName !== anyChain.chainName
   )
-  CONFIGURED_CHAINS = CONFIGURED_CHAINS.filter(
+  if (indexOfChain !== -1) {
+    chains.splice(indexOfChain, 1)
+  }
+
+  const indexOfConfiguredChain = CONFIGURED_CHAINS.findIndex(
     (c) => c.chainId !== anyChain.chainId && c.name !== anyChain.chainName
   )
-  SUPPORTED_CHAINS = SUPPORTED_CHAINS.filter(
+  if (indexOfConfiguredChain !== -1) {
+    CONFIGURED_CHAINS.splice(indexOfConfiguredChain, 1)
+  }
+
+  const indexOfSupportedChain = SUPPORTED_CHAINS.findIndex(
     (c) => c.chainId !== anyChain.chainId && c.name !== anyChain.chainName
   )
+  if (indexOfSupportedChain !== -1) {
+    SUPPORTED_CHAINS.splice(indexOfSupportedChain, 1)
+  }
 
   // Add the new chain.
   chains.push(anyChain)
@@ -1350,9 +1479,9 @@ export const _addSupportedChain = ({
     chainId: anyChain.chainId,
     name: anyChain.chainName,
     mainnet: false,
+    indexer: SupportedChainIndexerMode.None,
     accentColor: '',
     factoryContractAddress,
-    noIndexer: true,
     explorerUrlTemplates: {
       tx: `${baseExplorerUrl}/tx/REPLACE`,
       gov: `${baseExplorerUrl}/gov`,

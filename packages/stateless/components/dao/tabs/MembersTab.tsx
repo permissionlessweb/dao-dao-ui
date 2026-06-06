@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { HugeDecimal } from '@dao-dao/math'
 import {
   ButtonLinkProps,
+  Entity,
   LoadingDataWithError,
   StatefulDaoMemberCardProps,
   StatefulEntityDisplayProps,
@@ -26,7 +27,14 @@ import { VotingPowerDistribution } from '../../VotingPowerDistribution'
 
 export interface MembersTabProps {
   DaoMemberCard: ComponentType<StatefulDaoMemberCardProps>
+  /**
+   * The members of the DAO.
+   */
   members: LoadingDataWithError<StatefulDaoMemberCardProps[]>
+  /**
+   * Optional map of member address to entity for the CSV download.
+   */
+  entityMap?: Record<string, Entity | undefined>
   /**
    * URL to add a new member. Probably a prefilled proposal URL.
    */
@@ -61,6 +69,7 @@ const MEMBERS_PER_PAGE = 100
 export const MembersTab = ({
   DaoMemberCard,
   members,
+  entityMap,
   isMember,
   addMemberHref,
   ButtonLink,
@@ -287,6 +296,8 @@ export const MembersTab = ({
             data={[
               [
                 'Member',
+                'Name',
+                'Image',
                 members.data.length
                   ? members.data[0].balanceLabel +
                     (!members.data[0].balance.loading &&
@@ -299,6 +310,8 @@ export const MembersTab = ({
               ...members.data.map(
                 ({ address, balance, votingPowerPercent }) => [
                   address,
+                  entityMap?.[address]?.name || '',
+                  entityMap?.[address]?.imageUrl || '',
                   balance.loading
                     ? '...'
                     : HugeDecimal.from(

@@ -9,12 +9,12 @@ import {
   processError,
 } from '@dao-dao/utils'
 
-import { CosmosMessageDisplay } from '../../../CosmosMessageDisplay'
 import { Checkbox } from '../../../inputs/Checkbox'
+import { RawJsonDisplay } from '../../../RawJsonDisplay'
 import { DaoInfoCards } from '../../DaoInfoCards'
 
 export const CreateDaoReview = ({
-  form: { watch },
+  newDao,
   commonVotingConfig,
   creator,
   proposalModuleDaoCreationAdapters,
@@ -23,7 +23,6 @@ export const CreateDaoReview = ({
 }: CreateDaoContext) => {
   const { t } = useTranslation()
 
-  const newDao = watch()
   const {
     creator: { data: creatorData },
     proposalModuleAdapters,
@@ -232,7 +231,7 @@ export const CreateDaoReview = ({
 
       {showingPreview && !!previewJson && (
         <div className="mt-4">
-          <CosmosMessageDisplay value={previewJson} />
+          <RawJsonDisplay value={previewJson} />
         </div>
       )}
       {!!previewError && (

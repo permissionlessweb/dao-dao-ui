@@ -1,9 +1,8 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { HugeDecimal } from '@dao-dao/math'
-import { TokenStakedVotingModule } from '@dao-dao/state/clients'
-import { indexerQueries } from '@dao-dao/state/query'
+import { NativeStakedVotingModule } from '@dao-dao/state/clients'
+import { daoVotingTokenStakedExtraQueries } from '@dao-dao/state/query'
 import {
   MembersTab as StatelessMembersTab,
   useVotingModule,
@@ -15,7 +14,7 @@ import {
   DaoMemberCard,
   EntityDisplay,
 } from '../../../../components'
-import { useQueryLoadingDataWithError } from '../../../../hooks'
+import { useEntityMap, useQueryLoadingDataWithError } from '../../../../hooks'
 import { useGovernanceTokenInfo } from '../hooks/useGovernanceTokenInfo'
 
 export const MembersTab = () => {
@@ -23,16 +22,11 @@ export const MembersTab = () => {
   const votingModule = useVotingModule()
   const { governanceToken } = useGovernanceTokenInfo()
 
-  const queryClient = useQueryClient()
   const members = useQueryLoadingDataWithError(
-    indexerQueries.queryContract(queryClient, {
+    daoVotingTokenStakedExtraQueries.topStakers({
       chainId: votingModule.chainId,
-      contractAddress: votingModule.address,
-      formula:
-        votingModule instanceof TokenStakedVotingModule
-          ? 'daoVotingTokenStaked/topStakers'
-          : 'daoVotingNativeStaked/topStakers',
-      noFallback: true,
+      address: votingModule.address,
+      legacyNativeStaked: votingModule instanceof NativeStakedVotingModule,
     }),
     (data) =>
       data?.map(
@@ -58,10 +52,18 @@ export const MembersTab = () => {
       ) ?? []
   )
 
+  const { map: entityMap } = useEntityMap({
+    addresses:
+      members.loading || members.errored
+        ? []
+        : members.data.map((member) => member.address),
+  })
+
   return (
     <StatelessMembersTab
       ButtonLink={ButtonLink}
       DaoMemberCard={DaoMemberCard}
+      entityMap={entityMap}
       members={members}
       topVoters={{
         show: true,

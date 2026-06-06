@@ -22,8 +22,9 @@ export const WalletProfileHeader = ({
     editable &&
     profile &&
     !profile.loading &&
-    profile.data.nonce >= 0 &&
-    !mergeProfileType
+    // Can edit profile if no UUID set (first time profile is created) or if
+    // mergeProfileType is not set (no need to merge).
+    (!profile.data.uuid || !mergeProfileType)
 
   const imageUrl =
     !entity || entity.loading
@@ -46,7 +47,7 @@ export const WalletProfileHeader = ({
         entity.data.type !== EntityType.Dao &&
         profile &&
         !profile.loading &&
-        profile.data.nonce > -1 &&
+        !!profile.data.uuid &&
         mergeProfileType && (
           <StatusCard
             className="max-w-xs mb-4 text-left"

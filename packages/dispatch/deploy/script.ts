@@ -7,18 +7,23 @@ import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
 import chalk from 'chalk'
 import { Command } from 'commander'
 
+import { chainQueries, makeGetSignerOptions } from '@dao-dao/state'
 import {
-  chainQueries,
-  makeGetSignerOptions,
-  makeReactQueryClient,
-} from '@dao-dao/state'
-import { ContractVersion, SupportedChainConfig } from '@dao-dao/types'
-import { getChainForChainId, getRpcForChainId, retry } from '@dao-dao/utils'
+  ContractVersion,
+  SupportedChainConfig,
+  SupportedChainIndexerMode,
+} from '@dao-dao/types'
+import {
+  getChainForChainId,
+  getRpcForChainId,
+  makeDependencyTrackedQueryClient,
+  retry,
+} from '@dao-dao/utils'
 
 import { getDispatchConfig } from '../config'
 import { instantiateContract } from '../utils'
 import { CodeIdConfig } from './CodeIdConfig'
-import { chainIdToDeploymentArgs } from './config'
+import { chainDeploymentArgs } from './config'
 import { DeploySet, deploySets } from './DeploySet'
 
 const { log } = console
@@ -102,7 +107,7 @@ let {
 } = program.opts()
 
 // Add deployment arguments if they exist.
-const deploymentArgs = chainIdToDeploymentArgs[chainId]
+const deploymentArgs = chainDeploymentArgs[chainId]
 if (deploymentArgs) {
   if (deploymentArgs.mode !== undefined) {
     mode = deploymentArgs.mode
@@ -134,7 +139,7 @@ if (!Object.values(Mode).includes(mode)) {
 }
 
 const main = async () => {
-  const queryClient = await makeReactQueryClient()
+  const queryClient = await makeDependencyTrackedQueryClient()
 
   if (!mnemonic) {
     log(chalk.red(`Mnemonic with name "${mnemonicName}" not found in config.`))
@@ -245,6 +250,15 @@ const main = async () => {
               )
             )
 
+            // If indexer, make sure the code ID is set in the indexer config.
+            if (indexer) {
+              await codeIds.setCodeIdIndexerConfig({
+                chainId,
+                name: contract.name,
+                codeId: existingCodeId,
+              })
+            }
+
             continue
           } else {
             const latest = await codeIds.getLatestCodeId({
@@ -311,6 +325,16 @@ const main = async () => {
                 )}${existingCodeId} (already set)`
               )
             )
+
+            // If indexer, make sure the code ID is set in the indexer config.
+            if (indexer) {
+              await codeIds.setCodeIdIndexerConfig({
+                chainId,
+                name: contract.name,
+                codeId: existingCodeId,
+              })
+            }
+
             continue
           } else {
             // Otherwise, upload the contract.
@@ -339,7 +363,7 @@ const main = async () => {
     }
 
     // Format the code IDs file.
-    execSync(`cd ${path.join(__dirname, '../../utils')} && yarn format`)
+    execSync(`cd ${path.join(__dirname, '../../utils')} && pnpm format`)
   }
 
   // Instantiate admin factory.
@@ -393,6 +417,9 @@ const main = async () => {
       chainId,
       name: chainName,
       mainnet,
+      indexer: indexer
+        ? SupportedChainIndexerMode.Tx
+        : SupportedChainIndexerMode.None,
       accentColor: 'ACCENT_COLOR',
       factoryContractAddress: adminFactoryAddress,
       explorerUrlTemplates: {

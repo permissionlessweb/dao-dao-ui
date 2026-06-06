@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -43,13 +42,12 @@ const Component: ActionComponent = (props) => {
     address,
     chain: { chainId: srcChainId },
   } = useActionOptions()
-  const queryClient = useQueryClient()
 
   const { watch, setError, clearErrors } = useFormContext<CreateIcaData>()
   const destChainId = watch((props.fieldNamePrefix + 'chainId') as 'chainId')
 
   const createdAddressLoading = useQueryLoadingDataWithError(
-    accountQueries.remoteIcaAddress(queryClient, {
+    accountQueries.remoteIcaAddress({
       address,
       srcChainId,
       destChainId,
@@ -61,8 +59,8 @@ const Component: ActionComponent = (props) => {
     })
   )
 
-  // If ICA account already exists or ICA host not enabled for this chain during
-  // creation, add error preventing submission.
+  // If ICA host not enabled for this chain during creation, add error
+  // preventing submission.
   useEffect(() => {
     if (
       destChainId &&
@@ -79,26 +77,11 @@ const Component: ActionComponent = (props) => {
               chain: getDisplayNameForChainId(destChainId),
             }),
       })
-    } else if (
-      destChainId &&
-      !createdAddressLoading.loading &&
-      !createdAddressLoading.updating &&
-      !createdAddressLoading.errored &&
-      createdAddressLoading.data &&
-      props.isCreating
-    ) {
-      setError((props.fieldNamePrefix + 'chainId') as 'chainId', {
-        type: 'manual',
-        message: t('error.icaAlreadyExists', {
-          chain: getDisplayNameForChainId(destChainId),
-        }),
-      })
     } else {
       clearErrors((props.fieldNamePrefix + 'chainId') as 'chainId')
     }
   }, [
     clearErrors,
-    createdAddressLoading,
     destChainId,
     icaHostSupported,
     props.fieldNamePrefix,
@@ -169,7 +152,7 @@ export class CreateIcaAction extends ActionBase<CreateIcaData> {
 
     // Get existing ICA address.
     const existingIcaAddress = await this.options.queryClient.fetchQuery(
-      accountQueries.remoteIcaAddress(this.options.queryClient, {
+      accountQueries.remoteIcaAddress({
         address: this.options.address,
         srcChainId: this.options.chain.chainId,
         destChainId: chainId,

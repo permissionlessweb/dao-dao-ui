@@ -1,8 +1,7 @@
 import { Decimal } from '@cosmjs/math'
 import { GasPrice } from '@cosmjs/stargate'
-import { QueryClient } from '@tanstack/react-query'
 
-import { AnyChain } from '@dao-dao/types'
+import { AnyChain, IQueryClient } from '@dao-dao/types'
 import { DecCoin } from '@dao-dao/types/protobuf/codegen/cosmos/base/v1beta1/coin'
 import { GAS_OVERRIDES, maybeGetNativeTokenForChainId } from '@dao-dao/utils'
 
@@ -21,7 +20,7 @@ export class DynamicGasPrice implements GasPrice {
   }
 
   public constructor(
-    private readonly queryClient: QueryClient,
+    private readonly queryClient: IQueryClient,
     private readonly chain: AnyChain
   ) {
     const override =
@@ -47,9 +46,9 @@ export class DynamicGasPrice implements GasPrice {
       )
 
       const gasPriceAmount =
-        feeToken?.low_gas_price ??
-        feeToken?.average_gas_price ??
         feeToken?.high_gas_price ??
+        feeToken?.average_gas_price ??
+        feeToken?.low_gas_price ??
         feeToken?.fixed_min_gas_price ??
         0
 

@@ -61,6 +61,8 @@ import {
   publicawesomeProtoRegistry as stargazeProtoRegistry,
   switcheoAminoConverters,
   switcheoProtoRegistry,
+  umeeAminoConverters,
+  umeeProtoRegistry,
 } from './codegen'
 import {
   MsgCreateAllianceProposal,
@@ -103,6 +105,20 @@ import {
 export const cwMsgToProtobuf = (
   ...params: Parameters<typeof cwMsgToEncodeObject>
 ): Any => {
+  // If already encoded as stargate Any, don't decode and re-encode, in case
+  // type doesn't exist in registry.
+  if (
+    'stargate' in params[1] &&
+    'type_url' in params[1].stargate &&
+    'value' in params[1].stargate &&
+    typeof params[1].stargate.value === 'string'
+  ) {
+    return {
+      typeUrl: params[1].stargate.type_url,
+      value: fromBase64(params[1].stargate.value),
+    }
+  }
+
   const { typeUrl, value } = cwMsgToEncodeObject(...params)
   return {
     typeUrl,
@@ -714,6 +730,7 @@ export const getProtobufTypes = (): ReadonlyArray<[string, GeneratedType]> => [
   ...slinkyProtoRegistry,
   ...elysProtoRegistry,
   ...pryzmProtoRegistry,
+  ...umeeProtoRegistry,
   // Not a query or TX so it isn't included in any of the registries. But we
   // want to decode this because it appears in gov props. We need to find a
   // better way to collect all generated types in a single registry...
@@ -763,6 +780,7 @@ export const getAminoTypes = () =>
     ...slinkyAminoConverters,
     ...elysAminoConverters,
     ...pryzmAminoConverters,
+    ...umeeAminoConverters,
     // gaia.metaprotocols
     [ExtensionData.typeUrl]: {
       // the Amino type is the same as the protobuf type URL, deviating from

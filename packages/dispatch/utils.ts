@@ -81,7 +81,10 @@ export const instantiateContract = async ({
         CHAIN_GAS_MULTIPLIER
       )
     } catch (err) {
-      log(chalk.red, 'instantiate failed')
+      log(
+        chalk.red,
+        `instantiate failed (${err instanceof Error ? err.message : err})`
+      )
       throw err
     }
 
@@ -89,7 +92,7 @@ export const instantiateContract = async ({
 
     // Poll for TX.
     let events
-    let tries = 15
+    let tries = 60
     while (tries > 0) {
       try {
         events = (await client.getTx(transactionHash))?.events
@@ -99,7 +102,7 @@ export const instantiateContract = async ({
       } catch {}
 
       tries--
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 500))
     }
 
     if (!events) {
@@ -204,7 +207,7 @@ export const uploadContract = async ({
           // succeed.
           throw bail('No authz permission granted')
         } else {
-          log(chalk.red, 'failed')
+          log(chalk.red, `failed (${err instanceof Error ? err.message : err})`)
           throw err
         }
       }
@@ -213,7 +216,7 @@ export const uploadContract = async ({
 
       // Poll for TX.
       let tx
-      let tries = 50
+      let tries = 60
       while (tries > 0) {
         try {
           tx = await client.getTx(transactionHash)
@@ -223,7 +226,7 @@ export const uploadContract = async ({
         } catch {}
 
         tries--
-        await new Promise((resolve) => setTimeout(resolve, 300))
+        await new Promise((resolve) => setTimeout(resolve, 500))
       }
 
       if (!tx) {
@@ -232,7 +235,7 @@ export const uploadContract = async ({
       }
 
       if (tx.code) {
-        log(chalk.red, 'TX failed')
+        log(chalk.red, `TX failed (${tx.code})`)
         throw new Error(`Upload failed for ${id} in TX ${transactionHash}`)
       }
 

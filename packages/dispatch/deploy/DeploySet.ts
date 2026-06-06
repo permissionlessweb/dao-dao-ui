@@ -138,6 +138,9 @@ export const deploySets: DeploySet[] = [
     new DeploySetContract('dao_pre_propose_single'),
     new DeploySetContract('dao_proposal_multiple'),
     new DeploySetContract('dao_proposal_single'),
+    new DeploySetContract('cw_filter'),
+    new DeploySetContract('cw_protobuf_registry'),
+    new DeploySetContract('dao_rbam'),
     new DeploySetContract('dao_rewards_distributor'),
     new DeploySetContract('dao_vote_delegation'),
     new DeploySetContract('dao_voting_cw4'),
@@ -233,6 +236,7 @@ export const deploySets: DeploySet[] = [
         ChainId.JunoMainnet,
         ChainId.JunoTestnet,
 
+        ChainId.ThorchainMainnet,
         ChainId.ThorchainStagenet,
 
         'layer',
@@ -251,6 +255,11 @@ export const deploySets: DeploySet[] = [
 
         ChainId.TerraMainnet,
         ChainId.TerraClassicMainnet,
+
+        ChainId.DaodiseoTestnet,
+
+        ChainId.RegenMainnet,
+        ChainId.RegenTestnet,
       ],
     }
   ),
@@ -262,12 +271,16 @@ export const deploySets: DeploySet[] = [
     [new DeploySetContract('dao_voting_cw721_staked')],
     {
       chainIds: [
+        ChainId.CosmosHubMainnet,
+        ChainId.CosmosHubProviderTestnet,
+
         ChainId.BitsongMainnet,
         ChainId.BitsongTestnet,
 
         ChainId.JunoMainnet,
         ChainId.JunoTestnet,
 
+        ChainId.ThorchainMainnet,
         ChainId.ThorchainStagenet,
 
         'layer',
@@ -289,6 +302,11 @@ export const deploySets: DeploySet[] = [
 
         ChainId.TerraMainnet,
         ChainId.TerraClassicMainnet,
+
+        ChainId.DaodiseoTestnet,
+
+        ChainId.RegenMainnet,
+        ChainId.RegenTestnet,
       ],
     }
   ),
@@ -327,6 +345,11 @@ export const deploySets: DeploySet[] = [
         ChainId.StargazeTestnet,
 
         ChainId.TerraMainnet,
+
+        ChainId.DaodiseoTestnet,
+
+        ChainId.CosmosHubMainnet,
+        ChainId.CosmosHubProviderTestnet,
       ],
     }
   ),
@@ -342,7 +365,7 @@ export const deploySets: DeploySet[] = [
       ),
     ],
     {
-      chainIds: [ChainId.ThorchainStagenet],
+      chainIds: [ChainId.ThorchainMainnet, ChainId.ThorchainStagenet],
     }
   ),
 
@@ -405,6 +428,11 @@ export const deploySets: DeploySet[] = [
         ChainId.TerraMainnet,
 
         ChainId.BabylonTestnet,
+
+        ChainId.DaodiseoTestnet,
+
+        ChainId.RegenMainnet,
+        ChainId.RegenTestnet,
       ],
     }
   ),
@@ -420,7 +448,7 @@ export const deploySets: DeploySet[] = [
       ),
     ],
     {
-      chainIds: [ChainId.ThorchainStagenet],
+      chainIds: [ChainId.ThorchainMainnet, ChainId.ThorchainStagenet],
     }
   ),
 

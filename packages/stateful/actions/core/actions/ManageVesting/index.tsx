@@ -1,4 +1,4 @@
-import { useQueries, useQueryClient } from '@tanstack/react-query'
+import { useQueries } from '@tanstack/react-query'
 import { ComponentType, useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { HugeDecimal } from '@dao-dao/math'
 import {
   chainQueries,
+  contractQueries,
   cw1WhitelistExtraQueries,
   cwPayrollFactoryQueries,
   cwVestingExtraQueries,
@@ -45,6 +46,7 @@ import {
 } from '@dao-dao/types/contracts/CwPayrollFactory'
 import { InstantiateMsg as VestingInstantiateMsg } from '@dao-dao/types/contracts/CwVesting'
 import {
+  ContractName,
   chainIsIndexed,
   convertDurationWithUnitsToSeconds,
   convertSecondsToDurationWithUnits,
@@ -145,13 +147,13 @@ const getVestingInfosOwnedByEntityQueries = (
     moduleData && getVestingSourcesFromModuleData(options, moduleData)
   return options.context.accounts.flatMap(({ chainId, address }) =>
     chainIsIndexed(chainId)
-      ? cwVestingExtraQueries.vestingInfosOwnedBy(options.queryClient, {
+      ? cwVestingExtraQueries.vestingInfosOwnedBy({
           address,
           chainId,
         })
       : // Fallback to factory query for this chain if no indexer. This is limited as vesting payments created by other entities will not load, even if the current entity has the power to cancel.
         sources?.[chainId]?.factory
-        ? cwVestingExtraQueries.vestingInfosForFactory(options.queryClient, {
+        ? cwVestingExtraQueries.vestingInfosForFactory({
             chainId,
             address: sources[chainId].factory!,
           })
@@ -221,10 +223,10 @@ const Component: ComponentType<
   const tokenBalances = useTokenBalances()
 
   // Only used on pre-v1 vesting modules.
-  const queryClient = useQueryClient()
+
   const preV1VestingFactoryOwner = useQueryLoadingDataWithError(
     moduleData && !moduleData.version && moduleData.factory
-      ? cwPayrollFactoryQueries.ownership(queryClient, {
+      ? cwPayrollFactoryQueries.ownership({
           chainId: nativeChainId,
           contractAddress: moduleData.factory,
         })
@@ -241,7 +243,7 @@ const Component: ComponentType<
     !!selectedAddress
   const selectedVest = useQueryLoadingData(
     didSelectVest
-      ? cwVestingExtraQueries.info(queryClient, {
+      ? cwVestingExtraQueries.info({
           chainId: selectedChainId,
           address: selectedAddress,
         })
@@ -577,7 +579,7 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
             })
           ),
           this.options.queryClient.fetchQuery(
-            tokenQueries.info(this.options.queryClient, {
+            tokenQueries.info({
               chainId,
               type: begin.type,
               denomOrAddress: begin.denomOrAddress,
@@ -587,7 +589,7 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
           this.moduleData.factory && !this.moduleData.version
             ? this.options.queryClient
                 .fetchQuery(
-                  cwPayrollFactoryQueries.ownership(this.options.queryClient, {
+                  cwPayrollFactoryQueries.ownership({
                     chainId: this.options.chain.chainId,
                     contractAddress: this.moduleData.factory,
                   })
@@ -878,11 +880,27 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
     }
   }
 
-  match([message]: ProcessedMessage[]): ActionMatch {
+  async match([message]: ProcessedMessage[]): Promise<ActionMatch> {
     const { isNativeBegin, isCw20Begin, isRegisterSlash, isCancel } =
       this.breakDownMessage(message)
 
-    return isNativeBegin || isCw20Begin || isRegisterSlash || isCancel
+    if (!(isNativeBegin || isCw20Begin || isRegisterSlash || isCancel)) {
+      return false
+    }
+
+    // Ensure it is the expected contract.
+    return await this.options.queryClient.fetchQuery(
+      contractQueries.isContract({
+        chainId: message.account.chainId,
+        address: isCw20Begin
+          ? message.decodedMessage.wasm.execute.msg.send.contract
+          : message.decodedMessage.wasm.execute.contract_addr,
+        nameOrNames:
+          isNativeBegin || isCw20Begin
+            ? ContractName.CwPayrollFactory
+            : ContractName.CwVesting,
+      })
+    )
   }
 
   async decode([message]: ProcessedMessage[]): Promise<
@@ -909,7 +927,7 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
 
       const [token, cw1WhitelistAdmins] = await Promise.all([
         this.options.queryClient.fetchQuery(
-          tokenQueries.info(this.options.queryClient, {
+          tokenQueries.info({
             chainId,
             type: isNativeBegin ? TokenType.Native : TokenType.Cw20,
             denomOrAddress: isNativeBegin
@@ -922,13 +940,10 @@ export class ManageVestingAction extends ActionBase<ManageVestingData> {
         // returns null.
         instantiateMsg.owner
           ? this.options.queryClient.fetchQuery(
-              cw1WhitelistExtraQueries.adminsIfCw1Whitelist(
-                this.options.queryClient,
-                {
-                  chainId,
-                  address: instantiateMsg.owner,
-                }
-              )
+              cw1WhitelistExtraQueries.adminsIfCw1Whitelist({
+                chainId,
+                address: instantiateMsg.owner,
+              })
             )
           : null,
       ])

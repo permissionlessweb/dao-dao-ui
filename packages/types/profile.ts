@@ -14,10 +14,10 @@ export type PfpkPublicKey = {
 
 export type PfpkProfile = {
   /**
-   * Unique ID for this profile. Will be null if no profile has been created.
+   * Unique ID for this profile. Will be an empty string if no profile has been
+   * created.
    */
-  uuid: string | null
-  nonce: number
+  uuid: string
   name: string | null
   nft: {
     chainId: string
@@ -81,7 +81,6 @@ export type DnasKeyUnregister = {
 }
 
 export type PfpkProfileUpdate = {
-  nonce: number
   name?: string | null
   nft?: {
     chainId: string
@@ -107,7 +106,7 @@ export type DnasKeyUpdateFunction = (updates: DnasKeyUpdate[]) => Promise<void>
  * Function used to update a profile. Throws an error on failure.
  */
 export type PfpkProfileUpdateFunction = (
-  updates: Omit<PfpkProfileUpdate, 'nonce'>
+  updates: PfpkProfileUpdate
 ) => Promise<void>
 
 /**

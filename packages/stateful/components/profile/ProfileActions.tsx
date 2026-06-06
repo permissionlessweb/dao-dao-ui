@@ -7,16 +7,10 @@ import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { useRecoilValue, useSetRecoilState } from 'recoil'
 
-import {
-  meTransactionAtom,
-  refreshSavedTxsAtom,
-  savedTxsSelector,
-  temporarySavedTxsAtom,
-} from '@dao-dao/state'
+import { meTransactionAtom, walletChainIdAtom } from '@dao-dao/state'
 import {
   ProfileActionsProps,
   ProfileActions as StatelessProfileActions,
-  useCachedLoading,
   useChain,
   useHoldingKey,
   useUpdatingRef,
@@ -28,15 +22,21 @@ import {
 } from '@dao-dao/types'
 import {
   CHAIN_GAS_MULTIPLIER,
-  KVPK_API_BASE,
-  ME_SAVED_TX_PREFIX,
+  SITE_URL,
   decodeJsonFromBase64,
+  getActionBuilderPrefillPath,
+  isErrorWithSubstring,
   objectMatchesStructure,
   processError,
 } from '@dao-dao/utils'
 
 import { useActionEncodeContext } from '../../actions'
-import { useCfWorkerAuthPostRequest, useWallet } from '../../hooks'
+import {
+  useProfile,
+  useQueryLoadingDataWithError,
+  useTransactionSavesKvpkClient,
+  useWallet,
+} from '../../hooks'
 import { SuspenseLoader } from '../SuspenseLoader'
 import { WalletChainSwitcher } from '../wallet'
 
@@ -47,12 +47,12 @@ export const ProfileActions = ({
 
   const {
     address: walletAddress = '',
-    hexPublicKey,
     getSigningClient,
     chain,
   } = useWallet({
     loadAccount: true,
   })
+  const { profile } = useProfile()
 
   const meTransactionSave = useRecoilValue(meTransactionAtom(chain.chainId))
   // Only set defaults once to prevent unnecessary useForm re-renders.
@@ -70,6 +70,8 @@ export const ProfileActions = ({
 
   // Load from prefill query.
   const router = useRouter()
+  const setWalletChainId = useSetRecoilState(walletChainIdAtom)
+  const [loadedFromPrefill, setLoadedFromPrefill] = useState(false)
   useEffect(() => {
     const potentialPrefill = router.query.prefill
     if (typeof potentialPrefill !== 'string' || !potentialPrefill) {
@@ -99,9 +101,15 @@ export const ProfileActions = ({
         actions: {},
       })
     ) {
+      // Switch chain if chainId is specified in prefill data.
+      if (typeof prefillData.chainId === 'string') {
+        setWalletChainId(prefillData.chainId)
+      }
+
       formMethods.reset(prefillData)
+      setLoadedFromPrefill(true)
     }
-  }, [formMethods, router.query])
+  }, [formMethods, router.query, setWalletChainId])
 
   const holdingAltForDirectSign = useHoldingKey({ key: 'alt' })
 
@@ -117,9 +125,9 @@ export const ProfileActions = ({
       setError('')
       setTxHash('')
 
-      try {
+      const doExecute = async (direct: boolean) => {
         const signingCosmWasmClient = await getSigningClient(
-          holdingAltForDirectSign ? 'direct' : 'amino'
+          direct ? 'direct' : 'amino'
         )
 
         const encodeObjects = data.map((msg) =>
@@ -133,6 +141,26 @@ export const ProfileActions = ({
 
         toast.success(t('success.transactionExecuted'))
         setTxHash(tx.transactionHash)
+      }
+
+      try {
+        try {
+          await doExecute(holdingAltForDirectSign)
+        } catch (err) {
+          // If signature verification failed with amino, try direct sign.
+          if (
+            !holdingAltForDirectSign &&
+            isErrorWithSubstring(err, 'signature verification failed')
+          ) {
+            console.log(
+              'Signature verification failed with amino, trying direct sign...'
+            )
+            await doExecute(true)
+          } else {
+            // Otherwise, throw the original error.
+            throw err
+          }
+        }
       } catch (err) {
         console.error(err)
         const error = processError(err)
@@ -142,26 +170,22 @@ export const ProfileActions = ({
     [chain.chainId, getSigningClient, holdingAltForDirectSign, t, walletAddress]
   )
 
-  const { ready: txSavesReady, postRequest: postTxSavesRequest } =
-    useCfWorkerAuthPostRequest(KVPK_API_BASE, 'Transaction Saves')
+  const { isWalletConnected, client: transactionSavesKvpkClient } =
+    useTransactionSavesKvpkClient()
 
-  const setRefreshSaves = useSetRecoilState(refreshSavedTxsAtom)
-  const refreshSaves = useCallback(
-    () => setRefreshSaves((id) => id + 1),
-    [setRefreshSaves]
-  )
-
-  const setTemporarySaves = useSetRecoilState(
-    temporarySavedTxsAtom(hexPublicKey.loading ? '' : hexPublicKey.data)
-  )
-  const savesLoading = useCachedLoading(
-    !hexPublicKey.loading ? savedTxsSelector(hexPublicKey.data) : undefined,
-    []
+  const savesLoading = useQueryLoadingDataWithError(
+    !profile.loading
+      ? transactionSavesKvpkClient.listQuery({ uuid: profile.data.uuid })
+      : undefined,
+    (data) =>
+      data
+        .map(({ value }) => value as AccountTxSave)
+        .sort((a, b) => a.name.localeCompare(b.name))
   )
   const [saving, setSaving] = useState(false)
 
   const save = async (save: AccountTxSave) => {
-    if (!txSavesReady) {
+    if (!isWalletConnected) {
       toast.error(t('error.logInToContinue'))
       return false
     }
@@ -177,17 +201,10 @@ export const ProfileActions = ({
         )
       )
 
-      const key = ME_SAVED_TX_PREFIX + nameHash
-      await postTxSavesRequest('/set', {
-        key,
+      await transactionSavesKvpkClient.set({
+        key: nameHash,
         value: save,
       })
-
-      setTemporarySaves((prev) => ({
-        ...prev,
-        [key]: save,
-      }))
-      refreshSaves()
 
       return true
     } catch (err) {
@@ -199,8 +216,9 @@ export const ProfileActions = ({
 
     return false
   }
+
   const deleteSave = async (save: AccountTxSave) => {
-    if (!txSavesReady) {
+    if (!isWalletConnected) {
       toast.error(t('error.logInToContinue'))
       return false
     }
@@ -215,17 +233,9 @@ export const ProfileActions = ({
         )
       )
 
-      const key = ME_SAVED_TX_PREFIX + nameHash
-      await postTxSavesRequest('/set', {
-        key,
-        value: null,
+      await transactionSavesKvpkClient.delete({
+        key: nameHash,
       })
-
-      setTemporarySaves((prev) => ({
-        ...prev,
-        [key]: null,
-      }))
-      refreshSaves()
 
       return true
     } catch (err) {
@@ -238,6 +248,14 @@ export const ProfileActions = ({
 
   const actionEncodeContext = useActionEncodeContext()
 
+  // Copy draft link function.
+  const copyDraftLink = useCallback(async () => {
+    const actions = formMethods.getValues('actions')
+    const url = SITE_URL + getActionBuilderPrefillPath(actions, chain.chainId)
+    navigator.clipboard.writeText(url)
+    toast.success(t('info.copiedLinkToClipboard'))
+  }, [chain.chainId, formMethods, t])
+
   return (
     <FormProvider {...formMethods}>
       <StatelessProfileActions
@@ -245,10 +263,12 @@ export const ProfileActions = ({
         WalletChainSwitcher={WalletChainSwitcher}
         actionEncodeContext={actionEncodeContext}
         actionsReadOnlyMode={actionsReadOnlyMode}
+        copyDraftLink={copyDraftLink}
         deleteSave={deleteSave}
         error={error}
         execute={execute}
         holdingAltForDirectSign={holdingAltForDirectSign}
+        loadedFromPrefill={loadedFromPrefill}
         save={save}
         saves={savesLoading}
         saving={saving}

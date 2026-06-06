@@ -6,10 +6,6 @@ import { constSelector, useRecoilValueLoadable } from 'recoil'
 import { HugeDecimal } from '@dao-dao/math'
 import { genericTokenSelector } from '@dao-dao/state/recoil'
 import {
-  GovernanceTokenType,
-  CreatorData as TokenBasedCreatorData,
-} from '@dao-dao/stateful/creators/TokenBased/types'
-import {
   AddressInput,
   FormSwitchCard,
   InputErrorMessage,
@@ -37,7 +33,13 @@ import {
   getChainAssets,
   isValidBech32Address,
   makeValidateAddress,
+  tokensEqual,
 } from '@dao-dao/utils'
+
+import {
+  GovernanceTokenType,
+  CreatorData as TokenBasedCreatorData,
+} from '../../../creators/TokenBased/types'
 
 const DepositRefundPolicyValues = Object.values(DepositRefundPolicy)
 
@@ -113,7 +115,11 @@ const ProposalDepositInput = ({
     // Update token info so we can use symbol and decimals later.
     if (
       tokenLoadable.state === 'hasValue' &&
-      token !== tokenLoadable.contents
+      ((!token && tokenLoadable.contents) ||
+        (token && !tokenLoadable.contents) ||
+        (token &&
+          tokenLoadable.contents &&
+          !tokensEqual(token, tokenLoadable.contents)))
     ) {
       setValue('proposalDeposit.token', tokenLoadable.contents)
     }

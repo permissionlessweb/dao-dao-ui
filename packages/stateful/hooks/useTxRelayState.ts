@@ -1,4 +1,6 @@
+import { queryOptions, useQueries } from '@tanstack/react-query'
 import uniq from 'lodash.uniq'
+import { nanoid } from 'nanoid'
 import { useEffect, useMemo } from 'react'
 import {
   constSelector,
@@ -8,6 +10,7 @@ import {
 } from 'recoil'
 import { useDeepCompareMemoize } from 'use-deep-compare-effect'
 
+import { chainQueries } from '@dao-dao/state/query'
 import {
   PolytoneListenerSelectors,
   ibcAckReceivedSelector,
@@ -25,6 +28,7 @@ import {
 } from '@dao-dao/stateless'
 import {
   BaseProposalStatusAndInfoProps,
+  ChainId,
   CrossChainPacketInfoState,
   CrossChainPacketInfoStatus,
   LoadingData,
@@ -36,6 +40,7 @@ import {
 import { ExecutionResponse } from '@dao-dao/types/contracts/PolytoneListener'
 import {
   decodeCrossChainMessages,
+  makeCombineQueryResultsIntoLoadingDataWithError,
   makeWasmMessage,
   objectMatchesStructure,
 } from '@dao-dao/utils'
@@ -105,7 +110,10 @@ export const useTxRelayState = ({
       srcChainId,
       coreAddress,
       msgs
-    )
+    ).map((packet) => ({
+      uuid: nanoid(),
+      ...packet,
+    }))
 
     const dstChainIds = uniq(
       crossChainPackets.map(({ data: { chainId } }) => chainId)
@@ -193,6 +201,60 @@ export const useTxRelayState = ({
         ),
     []
   )
+  const relayedTxHashes = useQueries({
+    queries:
+      packetsLoadable.loading || packetsLoadable.errored
+        ? []
+        : crossChainPackets.map(
+            ({ uuid, data: { chainId }, srcPort, dstPort }) => {
+              const packets = (packetsLoadable.data || []).filter(
+                (packet) =>
+                  packet.sourcePort === srcPort &&
+                  packet.destinationPort === dstPort
+              )
+
+              return queryOptions({
+                queryKey: [
+                  'txRelayState',
+                  'relayedTxHashes',
+                  {
+                    srcChainId,
+                    srcPort,
+                    dstChainId: chainId,
+                    dstPort,
+                    packets: packets.length,
+                  },
+                ],
+                queryFn: async (ctx) => ({
+                  uuid,
+                  hashes: uniq(
+                    (
+                      await Promise.all(
+                        packets.map(
+                          ({ sourceChannel, destinationChannel, sequence }) =>
+                            ctx.client.fetchQuery(
+                              chainQueries.relayedCrossChainPacketTxHash({
+                                srcPort,
+                                srcChannel: sourceChannel,
+                                dstChainId: chainId,
+                                dstPort,
+                                dstChannel: destinationChannel,
+                                packetSequence: sequence.toString(),
+                              })
+                            )
+                        )
+                      )
+                    ).flatMap((h) => h || [])
+                  ),
+                }),
+              })
+            }
+          ),
+    combine: makeCombineQueryResultsIntoLoadingDataWithError({
+      firstLoad: 'one',
+      errorIf: 'all',
+    }),
+  })
 
   // Polytone relay results.
   const polytoneRelayResults = useCachedLoading(
@@ -252,6 +314,13 @@ export const useTxRelayState = ({
                       ? {
                           packet,
                           status: CrossChainPacketInfoStatus.Relayed,
+                          txHashes:
+                            (!relayedTxHashes.loading &&
+                              !relayedTxHashes.errored &&
+                              relayedTxHashes.data.find(
+                                (r) => r.uuid === packet.uuid
+                              )?.hashes) ||
+                            undefined,
                           msgResponses: (
                             (result.contents as any)!.callback.result.execute
                               .Ok as ExecutionResponse
@@ -309,6 +378,13 @@ export const useTxRelayState = ({
                   ? {
                       packet,
                       status: CrossChainPacketInfoStatus.Relayed,
+                      txHashes:
+                        (!relayedTxHashes.loading &&
+                          !relayedTxHashes.errored &&
+                          relayedTxHashes.data.find(
+                            (r) => r.uuid === packet.uuid
+                          )?.hashes) ||
+                        undefined,
                       // Cannot reliably fetch message events from ICA yet.
                       msgResponses: [],
                     }
@@ -382,6 +458,7 @@ export const useTxRelayState = ({
     polytoneRelayResults,
     crossChainPackets,
     packetsLoadable,
+    relayedTxHashes,
   ])
 
   // Refresh every 10 seconds while anything is unrelayed.
@@ -406,11 +483,11 @@ export const useTxRelayState = ({
     return () => clearInterval(interval)
   }, [anyPending, refreshIbcData])
 
-  const executedOverOneMinuteAgo =
-    (context.type === 'proposal' || context.type === 'dao_initial_actions') &&
-    !!context.executedAt &&
-    // If executed over 1 minute ago...
-    Date.now() - context.executedAt.getTime() > 1 * 60 * 1000
+  // const executedOverOneMinuteAgo =
+  //   executed &&
+  //   !!context.executedAt &&
+  //   // If executed over 1 minute ago...
+  //   Date.now() - context.executedAt.getTime() > 1 * 60 * 1000
   const messagesNeedingSelfRelay =
     unreceivedPackets.loading ||
     unreceivedAcks.loading ||
@@ -419,13 +496,18 @@ export const useTxRelayState = ({
       ? undefined
       : crossChainPackets.filter(
           (packet) =>
+            // Not Injective, since we don't support signing for it yet.
+            // TODO: support injective signing
+            packet.data.chainId !== ChainId.InjectiveMainnet &&
             // Not yet relayed.
             states.pending.some((p) => p.packet === packet) &&
-            // Executed a few minutes ago and still has not been relayed, or the
-            // Polytone connection needs self-relay.
-            (executedOverOneMinuteAgo ||
-              (packet.type === 'polytone' &&
-                !!packet.data.polytoneConnection.needsSelfRelay))
+            // Executed.
+            executed
+          // Executed a few minutes ago and still has not been relayed, or the
+          // Polytone connection needs self-relay.
+          // (executed ||
+          //   (packet.type === 'polytone' &&
+          //     !!packet.data.polytoneConnection.needsSelfRelay))
         )
   const hasCrossChainMessagesNeedingSelfRelay =
     !!messagesNeedingSelfRelay?.length

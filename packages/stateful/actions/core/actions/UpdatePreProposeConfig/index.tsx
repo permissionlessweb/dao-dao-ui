@@ -32,30 +32,43 @@ const getUpdatePreProposeConfigActions = async (
 
   const { dao } = options.context
 
-  return (
-    (
-      await Promise.all(
-        dao.proposalModules.flatMap(
-          (proposalModule): Promise<ProposalModuleWithAction> | [] => {
-            const action = matchAndLoadCommon(
-              dao,
-              proposalModule.address
-            ).fields.updatePreProposeConfigActionMaker?.(options)
+  // Allow any to fail as long as one succeeds.
+  const results = await Promise.allSettled(
+    dao.proposalModules.flatMap(
+      (proposalModule): Promise<ProposalModuleWithAction> | [] => {
+        const action = matchAndLoadCommon(
+          dao,
+          proposalModule.address
+        ).fields.updatePreProposeConfigActionMaker?.(options)
 
-            if (!action) {
-              return []
-            }
+        if (!action) {
+          return []
+        }
 
-            return Promise.resolve(
-              action.ready ? undefined : action.init()
-            ).then(() => ({
-              proposalModule,
-              action,
-            }))
-          }
+        return Promise.resolve(action.ready ? undefined : action.init()).then(
+          () => ({
+            proposalModule,
+            action,
+          })
         )
-      )
+      }
     )
+  )
+
+  // If all error, combine all errors into a single error.
+  const errors = results.flatMap((r) =>
+    r.status === 'rejected' ? [r.reason] : []
+  )
+  if (errors.length === results.length) {
+    throw new Error(
+      `Failed to load update pre-propose config actions for all proposal modules:\n${errors.map((err, index) => `- ${dao.proposalModules[index].prefix}: ${err instanceof Error ? err.message : err}`).join('\n')}`
+    )
+  }
+
+  // If any succeeds, return all successful results.
+  return (
+    results
+      .flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))
       // Sort proposal modules by prefix.
       .sort((a, b) =>
         a.proposalModule.prefix.localeCompare(b.proposalModule.prefix)

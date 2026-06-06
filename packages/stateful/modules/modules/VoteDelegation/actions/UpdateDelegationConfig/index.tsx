@@ -35,12 +35,6 @@ import {
   UpdateDelegationConfigData,
 } from './Component'
 
-export const defaultExtra: UpdateDelegationConfigData = {
-  validityBlocks: '7776000',
-  vpCapPercent: '10',
-  maxDelegations: '50',
-}
-
 export class UpdateDelegationConfigAction extends ActionBase<UpdateDelegationConfigData> {
   public readonly key = ActionKey.UpdateDelegationConfig
   public readonly Component: ActionComponent
@@ -84,16 +78,13 @@ export class UpdateDelegationConfigAction extends ActionBase<UpdateDelegationCon
     this.Component = function Component(props: ActionComponentProps) {
       const currentConfig = useQueries({
         queries: [
-          daoVoteDelegationQueries.config<Config & VotingPowerCapResponse>(
-            options.queryClient,
-            {
-              chainId: options.chain.chainId,
-              contractAddress: action.voteDelegationAddress,
-            }
-          ),
+          daoVoteDelegationQueries.config<Config & VotingPowerCapResponse>({
+            chainId: options.chain.chainId,
+            contractAddress: action.voteDelegationAddress,
+          }),
           daoVoteDelegationQueries.votingPowerCap<
             Config & VotingPowerCapResponse
-          >(options.queryClient, {
+          >({
             chainId: options.chain.chainId,
             contractAddress: action.voteDelegationAddress,
             args: {},
@@ -131,13 +122,13 @@ export class UpdateDelegationConfigAction extends ActionBase<UpdateDelegationCon
       { vp_cap_percent },
     ] = await Promise.all([
       this.options.queryClient.fetchQuery(
-        daoVoteDelegationQueries.config(this.options.queryClient, {
+        daoVoteDelegationQueries.config({
           chainId: this.options.chain.chainId,
           contractAddress: this.voteDelegationAddress,
         })
       ),
       this.options.queryClient.fetchQuery(
-        daoVoteDelegationQueries.votingPowerCap(this.options.queryClient, {
+        daoVoteDelegationQueries.votingPowerCap({
           chainId: this.options.chain.chainId,
           contractAddress: this.voteDelegationAddress,
           args: {},

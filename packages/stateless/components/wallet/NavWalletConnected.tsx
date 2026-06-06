@@ -199,7 +199,6 @@ export const NavWalletConnected = ({
         !entity.loading &&
         entity.data.type !== EntityType.Dao &&
         !profile.loading &&
-        profile.data.nonce > -1 &&
         mergeProfileType && (
           <Tooltip
             title={

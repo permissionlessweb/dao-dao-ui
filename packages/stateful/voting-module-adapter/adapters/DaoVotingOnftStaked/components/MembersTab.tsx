@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { daoVotingOnftStakedExtraQueries } from '@dao-dao/state'
@@ -15,6 +14,7 @@ import {
 } from '../../../../components'
 import {
   useDaoGovernanceToken,
+  useEntityMap,
   useQueryLoadingDataWithError,
 } from '../../../../hooks'
 
@@ -23,9 +23,8 @@ export const MembersTab = () => {
   const votingModule = useVotingModule()
   const token = useDaoGovernanceToken() ?? undefined
 
-  const queryClient = useQueryClient()
   const members = useQueryLoadingDataWithError(
-    daoVotingOnftStakedExtraQueries.topStakers(queryClient, {
+    daoVotingOnftStakedExtraQueries.topStakers({
       chainId: votingModule.chainId,
       address: votingModule.address,
     }),
@@ -53,10 +52,18 @@ export const MembersTab = () => {
       ) ?? []
   )
 
+  const { map: entityMap } = useEntityMap({
+    addresses:
+      members.loading || members.errored
+        ? []
+        : members.data.map((member) => member.address),
+  })
+
   return (
     <StatelessMembersTab
       ButtonLink={ButtonLink}
       DaoMemberCard={DaoMemberCard}
+      entityMap={entityMap}
       members={members}
       topVoters={{
         show: true,

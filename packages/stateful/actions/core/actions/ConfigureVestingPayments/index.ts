@@ -15,14 +15,21 @@ import {
 } from '@dao-dao/types/actions'
 
 import { getModuleById } from '../../../../modules'
+import { VestingPaymentsModuleExtraData } from '../../../../modules/modules/VestingPayments/editAction'
 import { ManageModulesAction } from '../ManageModules'
-import { ConfigureVestingPaymentsComponent } from './Component'
+import {
+  ConfigureVestingPaymentsComponent,
+  ConfigureVestingPaymentsData,
+} from './Component'
 
-export class ConfigureVestingPaymentsAction extends ActionBase<VestingPaymentsModuleData> {
+export class ConfigureVestingPaymentsAction extends ActionBase<ConfigureVestingPaymentsData> {
   public readonly key = ActionKey.ConfigureVestingPayments
   public readonly Component = ConfigureVestingPaymentsComponent
 
-  private manageModulesAction: ManageModulesAction
+  private manageModulesAction: ManageModulesAction<
+    VestingPaymentsModuleData,
+    VestingPaymentsModuleExtraData
+  >
 
   constructor(options: ActionOptions) {
     if (options.context.type !== ActionContextType.Dao) {
@@ -52,23 +59,36 @@ export class ConfigureVestingPaymentsAction extends ActionBase<VestingPaymentsMo
     await this.manageModulesAction.setup()
 
     // Attempt to load existing module data.
-    const module = this.manageModulesAction.dao.modules.find(
+    const existingModule = this.manageModulesAction.dao.modules.find(
       ({ id }) => id === ModuleId.VestingPayments
     )
 
-    this._defaults = module
-      ? cloneDeep(module.values)
+    this._defaults = existingModule
+      ? {
+          values: cloneDeep(existingModule.values),
+          extra: {
+            factories: {},
+          },
+        }
       : {
-          factories: {},
+          values: {
+            factories: {},
+          },
+          extra: {
+            factories: {},
+          },
         }
   }
 
-  encode(data: VestingPaymentsModuleData): Promise<UnifiedCosmosMsg[]> {
+  encode({
+    values,
+    extra,
+  }: ConfigureVestingPaymentsData): Promise<UnifiedCosmosMsg[]> {
     return this.manageModulesAction.encode({
       mode: 'set',
       id: ModuleId.VestingPayments,
-      values: data,
-      extra: {},
+      values,
+      extra,
     })
   }
 
@@ -81,11 +101,17 @@ export class ConfigureVestingPaymentsAction extends ActionBase<VestingPaymentsMo
     // Ensure this is setting the vesting payments module item.
     const { mode, id } = await this.manageModulesAction.decode(messages)
     return mode === 'set' && id === ModuleId.VestingPayments
+      ? manageModulesMatch
+      : false
   }
 
   async decode(
     messages: ProcessedMessage[]
-  ): Promise<VestingPaymentsModuleData> {
-    return (await this.manageModulesAction.decode(messages)).values
+  ): Promise<ConfigureVestingPaymentsData> {
+    const { values, extra } = await this.manageModulesAction.decode(messages)
+    return {
+      values,
+      extra,
+    }
   }
 }

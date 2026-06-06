@@ -3,7 +3,7 @@ import { ChainId } from '@dao-dao/types'
 /**
  * Map chain ID to indexer ansible group_vars name.
  */
-export const chainIdToIndexerGroupVarsName: Record<string, string> = {
+export const chainIndexerGroupVarsName: Record<string, string> = {
   [ChainId.BitsongMainnet]: 'bitsong_mainnet',
   [ChainId.BitsongTestnet]: 'bitsong_testnet',
   [ChainId.CosmosHubMainnet]: 'cosmosHub_mainnet',
@@ -26,13 +26,16 @@ export const chainIdToIndexerGroupVarsName: Record<string, string> = {
   [ChainId.TerraMainnet]: 'terra_mainnet',
   [ChainId.TerraClassicMainnet]: 'terraClassic_mainnet',
   [ChainId.BabylonTestnet]: 'babylon_testnet',
+  [ChainId.ThorchainMainnet]: 'thorChain_mainnet',
   [ChainId.ThorchainStagenet]: 'thorChain_stagenet',
+  [ChainId.RegenMainnet]: 'regen_mainnet',
+  [ChainId.RegenTestnet]: 'regen_testnet',
 }
 
 /**
  * Map chain ID to deployment argument overrides.
  */
-export const chainIdToDeploymentArgs: Record<string, Record<string, any>> = {
+export const chainDeploymentArgs: Record<string, Record<string, any>> = {
   [ChainId.StargazeMainnet]: {
     authz: 'stars1565xc6aq0ycfx5zwusevpmwx6f5uzp93zuutfp',
   },
@@ -52,5 +55,8 @@ export const chainIdToDeploymentArgs: Record<string, Record<string, any>> = {
   },
   [ChainId.DaodiseoTestnet]: {
     mnemonic: 'daodiseo_testnet',
+  },
+  [ChainId.PryzmMainnet]: {
+    restrictInstantiation: true,
   },
 }

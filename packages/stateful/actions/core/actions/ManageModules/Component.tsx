@@ -17,13 +17,16 @@ import {
 import { DaoModule, Module, SuspenseLoaderProps } from '@dao-dao/types'
 import { ActionComponent } from '@dao-dao/types/actions'
 
-export type ManageModulesData = {
+export type ManageModulesData<
+  Values extends Record<string, unknown> = Record<string, unknown>,
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> = {
   mode: 'set' | 'delete'
   id: string
   // Module data type.
-  values: Record<string, unknown>
+  values: Values
   // Module extra data type used only for encoding.
-  extra: Record<string, unknown>
+  extra: Extra
 }
 
 export type ManageModulesOptions = {
@@ -49,7 +52,9 @@ export const ManageModulesComponent: ActionComponent<ManageModulesOptions> = (
   const mode = watch((fieldNamePrefix + 'mode') as 'mode')
   const moduleId = watch((fieldNamePrefix + 'id') as 'id')
 
-  const module = availableModules.find((module) => module.id === moduleId)
+  const existingModule = availableModules.find(
+    (module) => module.id === moduleId
+  )
 
   // Memoize so the callbacks don't infinite loop.
   const existingModulesRef = useUpdatingRef(existingModules)
@@ -170,10 +175,12 @@ export const ManageModulesComponent: ActionComponent<ManageModulesOptions> = (
                   variant: 'ghost_outline',
                   children: (
                     <>
-                      {module ? (
+                      {existingModule ? (
                         <div className="flex flex-col items-start gap-1 text-left">
-                          <p>{module.title}</p>
-                          <p className="caption-text">{module.description}</p>
+                          <p>{existingModule.title}</p>
+                          <p className="caption-text">
+                            {existingModule.description}
+                          </p>
                         </div>
                       ) : (
                         <p className="text-text-secondary">
@@ -189,14 +196,15 @@ export const ManageModulesComponent: ActionComponent<ManageModulesOptions> = (
             />
           </div>
 
-          {mode === 'set' && module?.Editor && (
+          {mode === 'set' && existingModule?.Editor && (
             <SuspenseLoader fallback={<Loader />}>
               <div className="flex flex-col gap-4">
-                <module.Editor
+                <existingModule.Editor
                   {...props}
                   accounts={actionOptions.context.accounts}
                   data={props.data.values}
                   errors={errors?.values}
+                  extra={props.data.extra}
                   extraErrors={errors?.extra}
                   extraFieldNamePrefix={fieldNamePrefix + 'extra.'}
                   fieldNamePrefix={fieldNamePrefix + 'values.'}
@@ -210,17 +218,20 @@ export const ManageModulesComponent: ActionComponent<ManageModulesOptions> = (
       ) : (
         <div className="flex flex-col gap-4">
           <InputThemedText className="!flex-col !items-start !gap-1 self-start">
-            <p>{module?.title || moduleId}</p>
-            {module && <p className="caption-text">{module.description}</p>}
+            <p>{existingModule?.title || moduleId}</p>
+            {existingModule && (
+              <p className="caption-text">{existingModule.description}</p>
+            )}
           </InputThemedText>
 
-          {mode === 'set' && module?.Editor && (
+          {mode === 'set' && existingModule?.Editor && (
             <SuspenseLoader fallback={<Loader />}>
               <div className="flex flex-col gap-4">
-                <module.Editor
+                <existingModule.Editor
                   {...props}
                   accounts={actionOptions.context.accounts}
                   data={props.data.values}
+                  extra={props.data.extra}
                   extraErrors={{}}
                   extraFieldNamePrefix={fieldNamePrefix + 'extra.'}
                   fieldNamePrefix={fieldNamePrefix + 'values.'}
