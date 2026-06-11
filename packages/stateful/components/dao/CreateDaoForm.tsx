@@ -601,6 +601,10 @@ export const InnerCreateDaoForm = ({
     // Otherwise, use the factory contract address.
     factoryContractAddress
   // Predict DAO address via instantiate2.
+  console.log(chainId)
+  console.log(daoCreator)
+  console.log(daoDaoCoreCodeId)
+  console.log(uuid)
   const predictedDaoAddress = useGenerateInstantiate2({
     chainId,
     creator: daoCreator,
@@ -612,6 +616,8 @@ export const InnerCreateDaoForm = ({
   // and clear modules, since modules depend on knowing the DAO address ahead of
   // time.
   useEffect(() => {
+    console.log("effecting predictedDaoAddress state")
+    console.log(predictedDaoAddress)
     if (
       !predictedDaoAddress.loading &&
       !predictedDaoAddress.errored &&
@@ -687,7 +693,7 @@ export const InnerCreateDaoForm = ({
         setCreating(true)
 
         const contractLabel = `DAO DAO DAO (${Date.now()})`
-
+          console.log(newDao)
         if (supportsInstantiate2 && !newDao.predictedDaoAddress) {
           throw new Error('Predicted DAO address not found')
         }
@@ -856,6 +862,7 @@ export const InnerCreateDaoForm = ({
                 'set contract admin as itself'
               )!
             } else {
+                console.log(newDao)
               if (supportsInstantiate2 && !newDao.predictedDaoAddress) {
                 throw new Error('Predicted DAO address not found')
               }

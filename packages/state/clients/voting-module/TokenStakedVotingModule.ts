@@ -105,7 +105,7 @@ export class TokenStakedVotingModule extends VotingModuleBase<CwDao> {
                         {
                           aliases: [],
                           denom: config.token.new.symbol,
-                          exponent: config.token.new.decimals.toString(),
+                          exponent: config.token.new.decimals,
                         },
                       ],
                       description: 'Governance Token',

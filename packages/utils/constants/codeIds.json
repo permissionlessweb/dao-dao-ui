@@ -334,6 +334,30 @@
       "DaoVotingCw721Staked": 9989
     }
   },
+  "morocco-1": {
+    "2.8.0-alpha.2": {
+    "Cw1Whitelist": 63,
+    "Cw4Group": 61,
+    "CwAdminFactory": 39,
+    "CwPayrollFactory": 41,
+    "CwTokenSwap": 42,
+    "CwTokenfactoryIssuer": 43,
+    "CwVesting": 44,
+    "DaoDaoCore": 23,
+    "DaoPreProposeApprovalMultiple": 30,
+    "DaoPreProposeApprovalSingle": 31,
+    "DaoPreProposeApprover": 29,
+    "DaoPreProposeMultiple": 30,
+    "DaoPreProposeSingle": 31,
+    "DaoProposalMultiple": 25,
+    "DaoProposalSingle": 24,
+    "DaoRewardsDistributor": 38,
+    "DaoVoteDelegation": 62,
+    "DaoVotingCw4": 56,
+    "DaoVotingCw721Staked": 59,
+    "DaoVotingTokenStaked": 60
+    }
+  },
   "cosmoshub-4": {
     "2.5.0": {
       "Cw1Whitelist": 2,

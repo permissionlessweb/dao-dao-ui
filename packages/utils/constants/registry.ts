@@ -1,4 +1,6 @@
-import { Chain, IBCInfo } from '@chain-registry/types'
+import { Asset, AssetList, Chain, IBCInfo } from '@chain-registry/types'
+import morocco1Data from './terp-state.json'
+
 import {
   assets as chainRegistryAssets,
   chains as chainRegistryChains,
@@ -6,6 +8,9 @@ import {
 } from 'chain-registry'
 
 import { AnyChain, ChainId } from '@dao-dao/types'
+import { anyToSinglePubkey } from '@cosmjs/proto-signing'
+import { IBCData } from '@chain-registry/types/ibc_data.schema'
+import { C } from 'vitest/dist/chunks/reporters.d.CfRkRKN2.js'
 
 /**
  * Convert ChainRegistry chain to AnyChain.
@@ -30,65 +35,10 @@ const chainsToRemove = [
   // Remove althea and andromeda1 since they spam the console.
   'althea',
   'andromeda1',
+
 ]
 chains = chains.filter((chain) => !chainsToRemove.includes(chain.chainName))
 
-// BitSong Testnet: halted indefinitely
-// const bitSongTestnetChain = convertChainRegistryChainToAnyChain({
-//   ...chains.find((c) => c.chainId === ChainId.BitsongMainnet)!.chainRegistry!,
-//   chain_id: ChainId.BitsongTestnet,
-//   chain_name: 'bitsongtestnet',
-//   status: 'live',
-//   network_type: 'testnet',
-//   pretty_name: 'BitSong Testnet',
-//   apis: {
-//     rpc: [
-//       {
-//         address: 'https://rpc-testnet.explorebitsong.com',
-//       },
-//     ],
-//     rest: [
-//       {
-//         address: 'https://lcd-testnet.explorebitsong.com',
-//       },
-//     ],
-//   },
-// })
-// chains.push(bitSongTestnetChain)
-// assets.push({
-//   chain_name: bitSongTestnetChain.chainName,
-//   // Copy assets from BitSong mainnet.
-//   assets: assets.find((a) => a.chain_name === 'bitsong')?.assets ?? [],
-// })
-
-// OmniFlix Hub Testnet
-const omniFlixHubTestnetChain = convertChainRegistryChainToAnyChain({
-  ...chains.find((c) => c.chainId === ChainId.OmniflixHubMainnet)!
-    .chainRegistry!,
-  chain_id: ChainId.OmniflixHubTestnet,
-  chain_name: 'omniflixhubtestnet',
-  status: 'live',
-  network_type: 'testnet',
-  pretty_name: 'OmniFlix Hub Testnet',
-  apis: {
-    rpc: [
-      {
-        address: 'https://rpc.testnet.omniflix.network',
-      },
-    ],
-    rest: [
-      {
-        address: 'https://api.testnet.omniflix.network',
-      },
-    ],
-  },
-})
-chains.push(omniFlixHubTestnetChain)
-assets.push({
-  chain_name: omniFlixHubTestnetChain.chainName,
-  // Copy assets from OmniFlix Hub mainnet.
-  assets: assets.find((a) => a.chain_name === 'omniflixhub')?.assets ?? [],
-})
 
 // Replace Juno testnet uni-6 with uni-7.
 const junoTestnetChain = chains.find((c) => c.chainId === 'uni-6')
@@ -270,193 +220,6 @@ assets.push({
         },
       ],
       type_asset: 'sdk.coin',
-    },
-  ],
-})
-
-// Intergaze (Stargaze + Initia)
-// https://github.com/initia-labs/initia-registry/blob/main/mainnets/intergaze/chain.json
-const intergazeChain = convertChainRegistryChainToAnyChain({
-  $schema: '../../chain.schema.json',
-  chain_name: 'intergaze',
-  pretty_name: 'Intergaze',
-  chain_id: ChainId.IntergazeMainnet,
-  bech32_prefix: 'init',
-  network_type: 'mainnet',
-  codebase: {
-    git_repo: 'https://github.com/public-awesome/intergaze',
-    recommended_version: 'v1.0.0-rc.5',
-    genesis: {
-      genesis_url: 'https://rpc.intergaze-apis.com/genesis',
-    },
-  },
-  peers: {
-    seeds: [],
-    persistent_peers: [],
-  },
-  apis: {
-    rpc: [
-      {
-        address: 'https://rpc.intergaze-apis.com',
-      },
-    ],
-    rest: [
-      {
-        address: 'https://rest.intergaze-apis.com',
-      },
-    ],
-    grpc: [
-      {
-        address: 'grpc.intergaze-apis.com:443',
-      },
-    ],
-  },
-  // @ts-ignore
-  key_algos: ['initia_ethsecp256k1', 'secp256k1'],
-  slip44: 60,
-  fees: {
-    fee_tokens: [
-      {
-        denom:
-          'l2/fb936ffef4eb4019d82941992cc09ae2788ce7197fcb08cb00c4fe6f5e79184e',
-        fixed_min_gas_price: 0.03,
-      },
-    ],
-  },
-  images: [
-    {
-      png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/intergaze.png',
-    },
-  ],
-  logo_URIs: {
-    png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/intergaze.png',
-  },
-  metadata: {
-    op_bridge_id: '31',
-    op_denoms: ['uinit'],
-    executor_uri: 'https://executor.intergaze-apis.com',
-    ibc_channels: [
-      {
-        chain_id: 'interwoven-1',
-        port_id:
-          'wasm.init1wug8sewp6cedgkmrmvhl3lf3tulagm9hnvy8p0rppz9yjw0g4wtq7947m6',
-        channel_id: 'channel-1',
-        version: 'ics721-1',
-      },
-      {
-        chain_id: 'interwoven-1',
-        port_id: 'transfer',
-        channel_id: 'channel-0',
-        version: 'ics20-1',
-      },
-    ],
-    assetlist:
-      'https://raw.githubusercontent.com/initia-labs/initia-registry/main/mainnets/intergaze/assetlist.json',
-    minitia: {
-      type: 'miniwasm',
-      version: 'v1.0.2',
-    },
-  },
-})
-chains.push(intergazeChain)
-// https://github.com/initia-labs/initia-registry/blob/main/mainnets/intergaze/assetlist.json
-assets.push({
-  chain_name: intergazeChain.chainName,
-  assets: [
-    {
-      description: 'The native token of Initia',
-      denom_units: [
-        {
-          denom:
-            'l2/fb936ffef4eb4019d82941992cc09ae2788ce7197fcb08cb00c4fe6f5e79184e',
-          exponent: 0,
-        },
-        {
-          denom: 'INIT',
-          exponent: 6,
-        },
-      ],
-      base: 'l2/fb936ffef4eb4019d82941992cc09ae2788ce7197fcb08cb00c4fe6f5e79184e',
-      display: 'INIT',
-      traces: [
-        {
-          // @ts-ignore
-          type: 'op',
-          counterparty: {
-            base_denom: 'uinit',
-            chain_name: 'initia',
-          },
-          chain: {
-            // @ts-ignore
-            bridge_id: '31',
-          },
-        },
-      ],
-      name: 'Initia Native Token',
-      symbol: 'INIT',
-      coingecko_id: '',
-      images: [
-        {
-          png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/INIT.png',
-        },
-      ],
-      logo_URIs: {
-        png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/INIT.png',
-      },
-    },
-    {
-      description: 'USDC on Initia',
-      denom_units: [
-        {
-          denom:
-            'l2/db147f1ded7ffcc336f5f8d1eff83c4feb95fcfff5c84f1b9c135444b816e48e',
-          exponent: 0,
-        },
-        {
-          denom: 'USDC',
-          exponent: 6,
-        },
-      ],
-      base: 'l2/db147f1ded7ffcc336f5f8d1eff83c4feb95fcfff5c84f1b9c135444b816e48e',
-      display: 'USDC',
-      name: 'USD Coin',
-      symbol: 'USDC',
-      coingecko_id: '',
-      traces: [
-        {
-          type: 'ibc',
-          counterparty: {
-            chain_name: 'noble',
-            base_denom: 'uusdc',
-            channel_id: 'channel-129',
-          },
-          chain: {
-            channel_id: 'channel-3',
-            path: 'transfer/channel-3/uusdc',
-          },
-        },
-        {
-          // @ts-ignore
-          type: 'op',
-          counterparty: {
-            base_denom:
-              'ibc/6490A7EAB61059BFC1CDDEB05917DD70BDF3A611654162A1A47DB930D40D8AF4',
-            chain_name: 'initia',
-          },
-          chain: {
-            // @ts-ignore
-            bridge_id: '31',
-          },
-        },
-      ],
-      images: [
-        {
-          png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/USDC.png',
-        },
-      ],
-      logo_URIs: {
-        png: 'https://raw.githubusercontent.com/initia-labs/initia-registry/main/images/USDC.png',
-      },
     },
   ],
 })
@@ -750,5 +513,121 @@ const ibc: IBCInfo[] = [
     ],
   },
 ]
+
+
+// Helper to normalize assets
+// === Normalize Asset (unchanged, but make sure it's solid) ===
+const normalizeAsset = (asset: any): Asset => ({
+  ...asset,
+  typeAsset: (asset.type_asset || asset.typeAsset || 'ics20') as Asset['type_asset'],
+  name: asset.name || asset.symbol || 'Unknown Asset',
+  display: asset.display || asset.base?.split('/').pop() || 'unknown',
+  symbol: asset.symbol || asset.display || 'UNKNOWN',
+  denomUnits: asset.denom_units || asset.denomUnits || [],
+  traces: asset.traces || [],
+});
+
+// === Improved IBC Normalizer ===
+const normalizeIbcConnection = (ibcEntry: any): IBCData => {
+  let chain1Info: any = {};
+  let chain2Info: any = {};
+  let rawChannels: any[] = [];
+
+  // Handle both formats in your morocco-1.ibc_data
+  if (ibcEntry.chain_1 && ibcEntry.chain_2) {
+    // Standard format
+    chain1Info = ibcEntry.chain_1;
+    chain2Info = ibcEntry.chain_2;
+    rawChannels = ibcEntry.channels || [];
+  } else {
+    // "X-terp" format (e.g. akash-terp, osmosis-terp, etc.)
+    const keys = Object.keys(ibcEntry).filter(k =>
+      k !== '$schema' && k !== 'channels' && k !== 'terp'
+    );
+    const otherKey = keys[0];
+
+    if (otherKey && ibcEntry[otherKey] && ibcEntry.terp) {
+      chain1Info = ibcEntry[otherKey];
+      chain2Info = ibcEntry.terp;
+      rawChannels = ibcEntry.channels || [];
+    }
+  }
+
+  return {
+    chain_1: {  // ← snake_case as expected by @chain-registry/types
+      chain_name: chain1Info.chain_name || chain1Info.chainName || 'terp',
+      client_id: chain1Info.client_id || chain1Info.clientId || '',
+      connection_id: chain1Info.connection_id || chain1Info.connectionId || '',
+    },
+    chain_2: {
+      chain_name: chain2Info.chain_name || chain2Info.chainName || 'unknown',
+      client_id: chain2Info.client_id || chain2Info.clientId || '',
+      connection_id: chain2Info.connection_id || chain2Info.connectionId || '',
+    },
+    channels: rawChannels.map((ch: any) => ({
+      chain_1: {  // ← snake_case here too!
+        channel_id: ch.chain_1?.channel_id || ch.chain1?.channelId || ch.chain_1?.channelId || '',
+        port_id: ch.chain_1?.port_id || ch.chain1?.portId || 'transfer',
+      },
+      chain_2: {
+        channel_id: ch.chain_2?.channel_id || ch.chain2?.channelId || '',
+        port_id: ch.chain_2?.port_id || ch.chain2?.portId || 'transfer',
+      },
+      ordering: (ch.ordering === 1 || ch.ordering === 'unordered') ? 'unordered' : 'ordered',
+      version: ch.version || 'ics20-1',
+      tags: ch.tags || {},
+    })),
+  };
+};
+// === Terp Network ===
+const terpnetworkchain = convertChainRegistryChainToAnyChain({
+  ...chains.find((c) => c.chainId === ChainId.TerpMainnet)!.chainRegistry!,
+})
+
+// Find existing Terp AssetList
+const existingTerpIndex = chainRegistryAssets.findIndex(
+  (assetList) => assetList.chain_name === 'terp' || assetList.chain_name === 'terpnetwork'
+);
+
+if (existingTerpIndex !== -1) {
+  const terpAssetList = chainRegistryAssets[existingTerpIndex];
+
+  // Add the new assets from morocco-1 data (additive)
+  const newAssets = [
+    ...morocco1Data['morocco-1'].assets[''].map(normalizeAsset),
+    ...morocco1Data['morocco-1'].assets.ibc.map(normalizeAsset),
+  ];
+
+  // Optional: deduplicate by base denom to avoid duplicates
+  const existingBases = new Set(terpAssetList.assets.map((a: Asset) => a.base));
+
+  const uniqueNewAssets = newAssets.filter((asset: Asset) =>
+    !existingBases.has(asset.base)
+  );
+
+  terpAssetList.assets.push(...uniqueNewAssets);
+
+  console.log(`✅ Added ${uniqueNewAssets.length} new assets to existing Terp registry`);
+} else {
+  // Fallback: create new if not found (shouldn't happen)
+  console.warn('⚠️ Terp AssetList not found, creating new one');
+  const terpAssets: AssetList = {
+    chain_name: 'terp',           // ← use consistent name
+    assets: [
+      ...morocco1Data['morocco-1'].assets[''].map(normalizeAsset),
+      ...morocco1Data['morocco-1'].assets.ibc.map(normalizeAsset),
+    ],
+  };
+  chainRegistryAssets.push(terpAssets);
+}
+
+// === Terp IBC Information ===
+// === Terp IBC Information ===
+const terpIbcConnections: IBCData[] = Object.values(
+  morocco1Data['morocco-1'].ibc_data
+).map(normalizeIbcConnection);
+
+ibc.push(...terpIbcConnections);
+
 
 export { chains, assets, ibc }

@@ -1,0 +1,50 @@
+import { ComponentMeta, ComponentStory } from '@storybook/react'
+
+import { AddressInput } from '@dao-dao/stateless'
+import { makeProps as makeNftInfoProps } from '@dao-dao/stateless/components/nft/NftCard.stories'
+import {
+  CHAIN_ID,
+  makeDaoInfo,
+  makeDaoProvidersDecorator,
+  makeReactHookFormDecorator,
+} from '@dao-dao/storybook'
+
+import { MintNftData } from '../types'
+import { MintNft } from './MintNft'
+
+export default {
+  title: 'DAO DAO / packages / stateful / actions / core / actions / MintNft',
+  component: MintNft,
+  decorators: [
+    makeReactHookFormDecorator<MintNftData>({
+      chainId: CHAIN_ID,
+      contractChosen: true,
+      collectionAddress: 'junoNftCollection',
+      mintMsg: {
+        owner: '',
+        token_id: '',
+      },
+    }),
+    makeDaoProvidersDecorator(makeDaoInfo()),
+  ],
+} as ComponentMeta<typeof MintNft>
+
+const Template: ComponentStory<typeof MintNft> = (args) => (
+  <div className="max-w-xl">
+    <MintNft {...args} />
+  </div>
+)
+
+export const Default = Template.bind({})
+Default.args = {
+  fieldNamePrefix: '',
+  allActionsWithData: [],
+  index: 0,
+  data: {},
+  isCreating: true,
+  errors: {},
+  options: {
+    nftInfo: makeNftInfoProps(),
+    AddressInput,
+  },
+}

@@ -19,6 +19,8 @@ import _ALL_CODE_IDS from './codeIds.json'
 import { TEST_ENV } from './other'
 import _ALL_POLYTONE from './polytone.json'
 import { chains, convertChainRegistryChainToAnyChain } from './registry'
+import morocco1Data from './terp-state.json'
+
 
 const ALL_CODE_HASHES = _ALL_CODE_HASHES as unknown as Partial<
   Record<ChainId, Partial<Record<ContractVersion, CodeHashConfig>>>
@@ -33,6 +35,79 @@ const ALL_POLYTONE = _ALL_POLYTONE as unknown as Partial<
   Record<ChainId, PolytoneConfig>
 >
 
+// // === Merge Code IDs from cw-orchestrator into ALL_CODE_IDS ===
+// const moroccoCodeIdsRaw = morocco1Data['morocco-1']?.code_ids || {};
+
+// const targetVersion = '2.7.1';
+// const daoDaoCodeIds = {
+//   "2.7.1": {
+//     Cw1Whitelist: 2,
+//     Cw4Group: 3,
+//     CwAdminFactory: 176,
+//     CwPayrollFactory: 177,
+//     CwTokenSwap: 178,
+//     CwTokenfactoryIssuer: 395,
+//     CwVesting: 190,
+//     DaoDaoCore: 179,
+//     DaoPreProposeApprovalMultiple: 180,
+//     DaoPreProposeApprovalSingle: 181,
+//     DaoPreProposeApprover: 182,
+//     DaoPreProposeMultiple: 183,
+//     DaoPreProposeSingle: 184,
+//     DaoProposalMultiple: 185,
+//     DaoProposalSingle: 186,
+//     DaoRewardsDistributor: 187,
+//     DaoVoteDelegation: 188,
+//     DaoVotingCw4: 189,
+//     DaoVotingCw721Staked: 191,
+//     DaoVotingTokenStaked: 192,
+//     // Add future contracts here
+//   },
+// } as const;
+
+// const allowedKeys = new Set(
+//   Object.keys(daoDaoCodeIds[targetVersion] || {})
+//     .map(snakeToCamel)   // normalize to camelCase
+// );
+
+// // Ensure structure exists
+// if (!ALL_CODE_IDS[ChainId.TerpMainnet]) {
+//   ALL_CODE_IDS[ChainId.TerpMainnet] = {};
+// }
+// if (!ALL_CODE_IDS[ChainId.TerpMainnet][targetVersion]) {
+//   ALL_CODE_IDS[ChainId.TerpMainnet][targetVersion] = {} as CodeIdConfig;
+// }
+
+// const terpCodeIdConfig = ALL_CODE_IDS[ChainId.TerpMainnet][targetVersion]!;
+// // Helper function: snake_case → camelCase
+// function snakeToCamel(str: string): string {
+//   return str
+//     .replace(/[-_]+(.)/g, (_, char) => char.toUpperCase())
+//     .replace(/^./, (char) => char.toLowerCase());
+// }
+
+// // 1. Merge ONLY expected contracts from orchestrator raw data
+// Object.entries(moroccoCodeIdsRaw).forEach(([key, value]) => {
+//   if (value == null) return;
+
+//   const camelKey = snakeToCamel(key);
+
+//   // ← This is the key filter
+//   if (allowedKeys.has(camelKey)) {
+//     terpCodeIdConfig[camelKey as keyof CodeIdConfig] = Number(value);
+//   }
+// });
+
+// // 2. Merge/override with clean DAO DAO values (guaranteed to match type)
+// const versionedDaoCodes = daoDaoCodeIds[targetVersion] || {};
+// Object.entries(versionedDaoCodes).forEach(([key, value]) => {
+//   const camelKey = snakeToCamel(key);
+//   terpCodeIdConfig[camelKey as keyof CodeIdConfig] = Number(value);
+// });
+
+// console.log(`✅ Successfully merged Terp code IDs for ${ChainId.TerpMainnet} v${targetVersion}`);
+// console.log(`   → Only ${allowedKeys.size} expected DAO contracts were curated.`);
+
 /**
  * Chains where DAO DAO is deployed.
  */
@@ -42,6 +117,22 @@ const BASE_SUPPORTED_CHAINS: Omit<
 >[] = TEST_ENV
     ? []
     : [
+      {
+        chainId: ChainId.TerpMainnet,
+        name: 'cosmos',
+        mainnet: true,
+        indexer: SupportedChainIndexerMode.None,
+        accentColor: '#56f5da',
+        factoryContractAddress:
+          'terp1405rgu0e4rrzkwpvscl5xc8ypf6edseyjxljft4jp7qxrchqlnws28au53',
+        explorerUrlTemplates: {
+          tx: 'https://explorer.terp.network/tx/REPLACE',
+          gov: 'https://explorer.terp.network/gov',
+          govProp: 'https://explorer.terp.network/gov/REPLACE',
+          wallet: 'https://explorer.terp.network/account/REPLACE',
+        },
+        latestVersion: ContractVersion.V300Terp,
+      },
       {
         chainId: ChainId.CosmosHubMainnet,
         name: 'cosmos',
@@ -139,22 +230,6 @@ const BASE_SUPPORTED_CHAINS: Omit<
           gov: 'https://mintscan.io/stargaze/proposals',
           govProp: 'https://mintscan.io/stargaze/proposals/REPLACE',
           wallet: 'https://mintscan.io/stargaze/account/REPLACE',
-        },
-        latestVersion: ContractVersion.V270,
-      },
-      {
-        chainId: ChainId.MigalooMainnet,
-        name: 'migaloo',
-        mainnet: true,
-        indexer: SupportedChainIndexerMode.None,
-        accentColor: '#3ccd64',
-        factoryContractAddress:
-          'migaloo1d08e0gph0awec2ut76tzh92c6ftl6n85wpm0gq8xxe0eu8j97kzqpys8nw',
-        explorerUrlTemplates: {
-          tx: 'https://inbloc.org/migaloo/transactions/REPLACE',
-          gov: 'https://inbloc.org/migaloo/governance',
-          govProp: 'https://inbloc.org/migaloo/proposal/REPLACE',
-          wallet: 'https://inbloc.org/migaloo/account/REPLACE',
         },
         latestVersion: ContractVersion.V270,
       },
@@ -271,22 +346,6 @@ const BASE_SUPPORTED_CHAINS: Omit<
         latestVersion: ContractVersion.V270,
       },
       {
-        chainId: ChainId.OmniflixHubMainnet,
-        name: 'omniflixhub',
-        mainnet: true,
-        indexer: SupportedChainIndexerMode.Tx,
-        accentColor: '#d71d6a',
-        factoryContractAddress:
-          'omniflix1rg5jtk5984e3um65l92pagexxj9z6xrkkaw2lrrkhfeyq4376rlsf6j04f',
-        explorerUrlTemplates: {
-          tx: 'https://mintscan.io/omniflix/txs/REPLACE',
-          gov: 'https://mintscan.io/omniflix/proposals',
-          govProp: 'https://mintscan.io/omniflix/proposals/REPLACE',
-          wallet: 'https://mintscan.io/omniflix/account/REPLACE',
-        },
-        latestVersion: ContractVersion.V270,
-      },
-      {
         chainId: ChainId.CosmosHubProviderTestnet,
         name: 'cosmosprovider',
         mainnet: false,
@@ -350,41 +409,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         },
         latestVersion: ContractVersion.V270,
       },
-      {
-        chainId: ChainId.MigalooTestnet,
-        name: 'migaloo',
-        mainnet: false,
-        indexer: SupportedChainIndexerMode.None,
-        accentColor: '#3ccd64',
-        factoryContractAddress:
-          'migaloo1x393zjpv0ve7wk2w3d40gwjxeww7n8c0unxtdf87u366dlvazryq239pxu',
-        explorerUrlTemplates: {
-          tx: 'https://testnet.ping.pub/migaloo/tx/REPLACE',
-          gov: 'https://testnet.ping.pub/migaloo/gov',
-          govProp: 'https://testnet.ping.pub/migaloo/gov/REPLACE',
-          wallet: 'https://testnet.ping.pub/migaloo/account/REPLACE',
-        },
-        latestVersion: ContractVersion.V270,
-      },
-      // Kujira Testnet is halted indefinitely
-      // {
-      //   chainId: ChainId.KujiraTestnet,
-      //   name: 'kujira',
-      //   mainnet: false,
-      //   indexer: SupportedChainIndexerMode.None,
-      //   accentColor: '#e53935',
-      //   factoryContractAddress:
-      //     'kujira13aa6np9kh2ejue5mgqd88ktmkmswcs4vyn6djtf3d0h8n0dt2uysfxx9a7',
-      //   explorerUrlTemplates: {
-      //     tx: 'https://finder.kujira.network/harpoon-4/tx/REPLACE',
-      //     // cannot link directly to testnet
-      //     // gov: 'https://kujira.network/govern',
-      //     // cannot link directly to testnet
-      //     // govProp: 'https://kujira.network/govern/REPLACE',
-      //     wallet: 'https://finder.kujira.network/harpoon-4/address/REPLACE',
-      //   },
-      //   latestVersion: ContractVersion.V260,
-      // },
+
       {
         chainId: ChainId.NeutronTestnet,
         name: 'neutron',
@@ -399,35 +424,7 @@ const BASE_SUPPORTED_CHAINS: Omit<
         },
         latestVersion: ContractVersion.V270,
       },
-      // BitSong Testnet is halted indefinitely
-      // {
-      //   chainId: ChainId.BitsongTestnet,
-      //   name: 'bitsong',
-      //   mainnet: false,
-      //   indexer: SupportedChainIndexerMode.None,
-      //   accentColor: '#c53381',
-      //   factoryContractAddress:
-      //     'bitsong1zftu69lqmhgwyuqlyawssrm62h58hqyl0gvv4n9aj8pvkr6qqd8s2wl5ve',
-      //   tokenCreationFactoryAddress:
-      //     'bitsong13ackt4dv4ngt4jpngnvyyecjhu33w6gge3mad3n9vc0qkqcrk6cqzfm9vx',
-      //   latestVersion: ContractVersion.V260,
-      // },
-      {
-        chainId: ChainId.OmniflixHubTestnet,
-        name: 'omniflixhub',
-        mainnet: false,
-        indexer: SupportedChainIndexerMode.None,
-        accentColor: '#d71d6a',
-        factoryContractAddress:
-          'omniflix1dlz906ww79sq49yykjvvlkf9fu0tv4u94gywfd7ldrtyjd8873hqufdvuc',
-        explorerUrlTemplates: {
-          tx: 'https://testnet.ping.pub/omniflix/tx/REPLACE',
-          gov: 'https://testnet.ping.pub/omniflix/gov',
-          govProp: 'https://testnet.ping.pub/omniflix/gov/REPLACE',
-          wallet: 'https://testnet.ping.pub/omniflix/account/REPLACE',
-        },
-        latestVersion: ContractVersion.V270,
-      },
+
       {
         chainId: ChainId.SecretTestnet,
         name: 'secret',
@@ -549,22 +546,6 @@ const BASE_SUPPORTED_CHAINS: Omit<
             'https://explorer-regen-upgrade.vitwit.com/regen-upgrade/account/REPLACE',
         },
         latestVersion: ContractVersion.V280Alpha2,
-      },
-      {
-        chainId: ChainId.TerpMainnet,
-        name: 'terp',
-        mainnet: true,
-        accentColor: '#b4e07c',
-        factoryContractAddress:
-          '',
-        explorerUrlTemplates: {
-          tx: 'https://explorer.terp.network/tx/REPLACE',
-          gov: 'https://explorer.terp.network/gov',
-          govProp: 'https://explorer.terp.network/gov/REPLACE',
-          wallet: 'https://explorer.terp.network/account/REPLACE',
-        },
-        latestVersion: ContractVersion.V270,
-        indexer: SupportedChainIndexerMode.None,
       },
       {
         chainId: ChainId.RegenMainnet,
@@ -810,6 +791,10 @@ export const CHAIN_ENDPOINTS: Partial<
   [ChainId.RegenTestnet]: {
     rpc: 'https://rpc-regen-upgrade.vitwit.com',
     rest: 'https://api-regen-upgrade.vitwit.com',
+  },
+  [ChainId.TerpMainnet]: {
+    rpc: 'https://rpc.terp.network',
+    rest: 'https://api.terp.network',
   },
 }
 

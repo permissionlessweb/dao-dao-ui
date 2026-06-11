@@ -47,6 +47,7 @@ export enum ContractVersion {
   V280Beta = '2.8.0-beta',
   // https://github.com/DA0-DA0/dao-contracts/releases/tag/v2.8.0-alpha.2
   V280Alpha2 = '2.8.0-alpha.2',
+  V300Terp = '2.8.0-alpha.2',
 }
 
 /**
